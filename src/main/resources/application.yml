@@ -1,0 +1,27 @@
+#/服务端口配置
+server:
+  port: 8080
+  #端口号
+  servlet:
+    context-path: /xycontrol   #项目根路径（前面必须加/）
+
+spring:
+  #项目名称
+  application:
+    name: springboot-template
+  # Mysql配置
+  datasource:
+    driver-class-name:  com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/xyHouse?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    username: root
+    password: root
+  #spring security安全配置
+  security:
+    user:
+      name: xywl
+      password: 20240709
+
+# Mybatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml #指定Mybatis的Mapper文件
+  type-aliases-package: com.example.springboottemplate.entity  #指定Mybatis的实体目录

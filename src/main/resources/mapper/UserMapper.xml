@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.UserMapper">
+    <insert id="insert" parameterType="User">
+        INSERT into user (username) value (#{username})
+    </insert>
+<!--    <select id="findall" resultType="User">-->
+<!--        select * from user-->
+<!--    </select>-->
+
+<!--    <select id="selectbyid" parameterType="String" resultType="User">-->
+<!--        select * from user where id = #{id}-->
+<!--    </select>-->
+
+<!--    <update id="updatepeople" parameterType="User">-->
+<!--        update user set username = #{username}, passw = #{passw} where id = #{id}-->
+<!--    </update>-->
+</mapper>
