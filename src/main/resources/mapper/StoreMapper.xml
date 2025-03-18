@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreMapper">
+    <insert id="addStore" parameterType="Store">
+        INSERT into store (name, address, storeType, storeTime, stauts, identityName, identityCompanyName, identityNo, identityFontImg, identityBackImg, identityPhone, identityEmail) value (#{name}, #{address}, #{storeType}, #{storeTime}, #{stauts}, #{identityName}, #{identityCompanyName}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail})
+    </insert>
+
+    <select id="findStore" resultType="Store">
+        select * from store
+    </select>
+
+    <!-- 根据用户ID查找商户信息 -->
+    <select id="selectStoreById" parameterType="int" resultType="Store">
+        select * from store where id = #{id}
+    </select>
+
+    <!-- 根据用户ID修改商户信息 -->
+    <update id="updateStore" parameterType="Store">
+        update store set name = #{name}, address = #{address}, storeType = #{storeType}, storeTime = #{storeTime}, stauts = #{stauts}, identityName = #{identityName}, identityCompanyName = #{identityCompanyName}, identityNo = #{identityNo}, identityFontImg = #{identityFontImg}, identityBackImg = #{identityBackImg}, identityPhone = #{identityPhone}, identityEmail = #{identityEmail} where id = #{id}
+    </update>
+
+    <!-- 根据用户ID删除商户 -->
+    <delete id="deleteStore" parameterType="int">
+        delete from store where id = #{id}
+    </delete>
+</mapper>

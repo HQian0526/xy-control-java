@@ -2,18 +2,26 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.springboottemplate.mapper.UserMapper">
-    <insert id="insert" parameterType="User">
-        INSERT into user (username) value (#{username})
+    <insert id="addUser" parameterType="User">
+        INSERT into user (userName, realName, sex, phone, address, birthday, registDate, email, identity) value (#{userName}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{registDate}, #{email}, #{identity})
     </insert>
-<!--    <select id="findall" resultType="User">-->
-<!--        select * from user-->
-<!--    </select>-->
 
-<!--    <select id="selectbyid" parameterType="String" resultType="User">-->
-<!--        select * from user where id = #{id}-->
-<!--    </select>-->
+    <select id="findUser" resultType="User">
+        select * from user
+    </select>
 
-<!--    <update id="updatepeople" parameterType="User">-->
-<!--        update user set username = #{username}, passw = #{passw} where id = #{id}-->
-<!--    </update>-->
+    <!-- 根据用户ID查找用户信息 -->
+    <select id="selectUserById" parameterType="int" resultType="User">
+        select * from user where id = #{id}
+    </select>
+
+    <!-- 根据用户ID修改用户信息 -->
+    <update id="updateUser" parameterType="User">
+        update user set username = #{username}, phone = #{phone}, address = #{address}, email = #{email}, identity = #{identity} where id = #{id}
+    </update>
+
+    <!-- 根据用户ID删除用户 -->
+    <delete id="deleteUser" parameterType="int">
+        delete from user where id = #{id}
+    </delete>
 </mapper>
