@@ -6,9 +6,7 @@ import com.example.springboottemplate.entity.Store;
 public interface StoreService {
     public Response addStore(Store store);
 
-    public Response findStore();
-
-    public Response selectStoreById(int id);
+    public Response findStore(Store store);
 
     public Response updateStore(Store store);
 

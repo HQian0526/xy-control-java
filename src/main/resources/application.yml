@@ -3,12 +3,12 @@ server:
   port: 8080
   #端口号
   servlet:
-    context-path: /xycontrol   #项目根路径（前面必须加/）
+    context-path: /smartstore   #项目根路径（前面必须加/）
 
 spring:
   #项目名称
   application:
-    name: springboot-template
+    name: smart-store
   # Mysql配置
   datasource:
     driver-class-name:  com.mysql.cj.jdbc.Driver
@@ -16,10 +16,10 @@ spring:
     username: root
     password: root
   #spring security安全配置
-  security:
-    user:
-      name: xywl
-      password: 20240709
+#  security:
+#    user:
+#      name: xywl
+#      password: 20240709
 
 # Mybatis配置
 mybatis:

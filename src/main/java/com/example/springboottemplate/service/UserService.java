@@ -6,9 +6,7 @@ import com.example.springboottemplate.entity.User;
 public interface UserService {
     public Response addUser(User user);
 
-    public Response findUser();
-
-    public Response selectUserById(int id);
+    public Response findUser(User user);
 
     public Response updateUser(User user);
 

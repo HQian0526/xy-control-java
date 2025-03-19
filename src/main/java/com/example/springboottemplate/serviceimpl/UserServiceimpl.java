@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,14 +22,8 @@ public class UserServiceimpl implements UserService {
     }
 
     @Override
-    public Response findUser() {
-        List<User> list = (List<User>) this.Usermapper.findUser();
-        return new Response(200, list, "操作成功");
-    }
-
-    @Override
-    public Response selectUserById(int id) {
-        List<User> list = (List<User>) this.Usermapper.selectUserById(id);
+    public Response findUser(User user) {
+        List<User> list = (List<User>) this.Usermapper.findUser(user);
         return new Response(200, list, "操作成功");
     }
 

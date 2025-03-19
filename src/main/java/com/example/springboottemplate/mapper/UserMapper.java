@@ -9,7 +9,7 @@ import java.util.List;
 public interface UserMapper {
     public void addUser(User user);  //新增用户
 
-    public List<User> findUser(); //查找所有用户
+    public List<User> findUser(User user); //查找所有用户
 
     public List<User> selectUserById(int id); //根据id查找用户
 

@@ -22,14 +22,8 @@ public class StoreServiceimpl implements StoreService {
     }
 
     @Override
-    public Response findStore() {
-        List<Store> list = (List<Store>) this.storeMapper.findStore();
-        return new Response(200, list, "操作成功");
-    }
-
-    @Override
-    public Response selectStoreById(int id) {
-        List<Store> list = (List<Store>) this.storeMapper.selectStoreById(id);
+    public Response findStore(Store store) {
+        List<Store> list = (List<Store>) this.storeMapper.findStore(store);
         return new Response(200, list, "操作成功");
     }
 

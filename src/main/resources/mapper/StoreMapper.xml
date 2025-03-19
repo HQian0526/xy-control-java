@@ -6,13 +6,47 @@
         INSERT into store (name, address, storeType, storeTime, stauts, identityName, identityCompanyName, identityNo, identityFontImg, identityBackImg, identityPhone, identityEmail) value (#{name}, #{address}, #{storeType}, #{storeTime}, #{stauts}, #{identityName}, #{identityCompanyName}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail})
     </insert>
 
-    <select id="findStore" resultType="Store">
+    <!-- 查询所有商户信息（模糊查询）-->
+    <select id="findStore" parameterType="Store" resultType="Store">
         select * from store
-    </select>
-
-    <!-- 根据用户ID查找商户信息 -->
-    <select id="selectStoreById" parameterType="int" resultType="Store">
-        select * from store where id = #{id}
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and storeId like CONCAT('%', #{storeId}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                and name like CONCAT('%', #{name}, '%')
+            </if>
+            <if test="storeType != null and storeType != ''">
+                and storeType = #{storeType}
+            </if>
+            <if test="storeTime != null and storeTime != ''">
+                and storeTime = #{storeTime}
+            </if>
+            <if test="stauts != null and stauts != ''">
+                and stauts = #{stauts}
+            </if>
+            <if test="address != null and address != ''">
+                and address like CONCAT('%', #{address}, '%')
+            </if>
+            <if test="identityName != null and identityName != ''">
+                and identityName like CONCAT('%', #{identityName}, '%')
+            </if>
+            <if test="identityCompanyName != null and identityCompanyName != ''">
+                and identityCompanyName like CONCAT('%', #{identityCompanyName}, '%')
+            </if>
+            <if test="identityNo != null and identityNo != ''">
+                and identityNo = like CONCAT('%', #{identityNo}, '%')
+            </if>
+            <if test="identityPhone != null and identityPhone != ''">
+                and identityPhone = like CONCAT('%', #{identityPhone}, '%')
+            </if>
+            <if test="identityEmail != null and identityEmail != ''">
+                and identityEmail = like CONCAT('%', #{identityEmail}, '%')
+            </if>
+        </where>
     </select>
 
     <!-- 根据用户ID修改商户信息 -->

@@ -2,25 +2,51 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.springboottemplate.mapper.UserMapper">
+    <!-- 新增用户 -->
     <insert id="addUser" parameterType="User">
-        INSERT into user (userName, realName, sex, phone, address, birthday, registDate, email, identity) value (#{userName}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{registDate}, #{email}, #{identity})
+        INSERT into user (user_name, real_name, sex, phone, address, birthday, email, identity) value (#{userName}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity})
     </insert>
 
-    <select id="findUser" resultType="User">
+    <!-- 查询所有用户信息（模糊查询）-->
+    <select id="findUser" parameterType="User" resultType="User">
         select * from user
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="userName != null and userName != ''">
+                and user_name like CONCAT('%', #{userName}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                and real_name like CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="sex != null and sex != ''">
+                and sex = #{sex}
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="address != null and address != ''">
+                and address like CONCAT('%', #{address}, '%')
+            </if>
+            <if test="birthday != null and birthday != ''">
+                and birthday like CONCAT('%', #{birthday}, '%')
+            </if>
+            <if test="email != null and email != ''">
+                and email like CONCAT('%', #{email}, '%')
+            </if>
+            <if test="registDate != null and registDate != ''">
+                and registDate = #{registDate}
+            </if>
+        </where>
     </select>
 
-    <!-- 根据用户ID查找用户信息 -->
-    <select id="selectUserById" parameterType="int" resultType="User">
-        select * from user where id = #{id}
-    </select>
-
-    <!-- 根据用户ID修改用户信息 -->
+    <!-- 修改用户信息 -->
     <update id="updateUser" parameterType="User">
         update user set username = #{username}, phone = #{phone}, address = #{address}, email = #{email}, identity = #{identity} where id = #{id}
     </update>
 
-    <!-- 根据用户ID删除用户 -->
+    <!-- 删除用户信息 -->
     <delete id="deleteUser" parameterType="int">
         delete from user where id = #{id}
     </delete>
