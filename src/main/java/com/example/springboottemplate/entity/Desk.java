@@ -1,71 +1,30 @@
 package com.example.springboottemplate.entity;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor // 生成全参构造函数
+@NoArgsConstructor // 生成无参构造函数
+@ApiModel(description = "桌台信息")
 public class Desk {
-    private int id; //自增id
-    private int seatId; //桌台/座位id
-    private String seatName; //桌台/座位名
-    private int storeId; //所属店铺id
-    private String remark; //备注
+    @ApiModelProperty(value = "id", required = true)
+    private int id;
 
-    public Desk() {
-    }
+    @ApiModelProperty(value = "桌台/座位id", required = true)
+    private int seatId;
 
-    public Desk(int id, int seatId, String seatName, int storeId, String remark) {
-        this.id = id;
-        this.seatId = seatId;
-        this.seatName = seatName;
-        this.storeId = storeId;
-        this.remark = remark;
-    }
+    @ApiModelProperty(value = "桌台/座位名", required = true)
+    private String seatName;
 
-    public int getId() {
-        return id;
-    }
+    @ApiModelProperty(value = "所属店铺id", required = true)
+    private int storeId;
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getSeatId() {
-        return seatId;
-    }
-
-    public void setSeatId(int seatId) {
-        this.seatId = seatId;
-    }
-
-    public String getSeatName() {
-        return seatName;
-    }
-
-    public void setSeatName(String seatName) {
-        this.seatName = seatName;
-    }
-
-    public int getStoreId() {
-        return storeId;
-    }
-
-    public void setStoreId(int storeId) {
-        this.storeId = storeId;
-    }
-
-    public String getRemark() {
-        return remark;
-    }
-
-    public void setRemark(String remark) {
-        this.remark = remark;
-    }
-
-    @Override
-    public String toString() {
-        return "Desk{" +
-                "id=" + id +
-                ", seatId=" + seatId +
-                ", seatName='" + seatName + '\'' +
-                ", storeId=" + storeId +
-                ", remark='" + remark + '\'' +
-                '}';
-    }
+    @ApiModelProperty(value = "备注", required = false)
+    private String remark;
 }
