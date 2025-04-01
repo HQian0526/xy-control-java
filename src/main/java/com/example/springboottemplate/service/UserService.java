@@ -3,12 +3,14 @@ package com.example.springboottemplate.service;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.entity.User;
 
+import java.util.List;
+
 public interface UserService {
-    public Response addUser(User user);
+    Response addUser(User user);
 
-    public Response findUser(User user);
+    Response findUser(User user);
 
-    public Response updateUser(User user);
+    Response updateUser(User user);
 
-    public Response deleteUser(int id);
+    Response deleteUser(List<Integer> idList);
 }

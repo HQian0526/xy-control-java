@@ -1,5 +1,6 @@
 package com.example.springboottemplate.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -42,4 +43,8 @@ public class User {
 
     @ApiModelProperty(value = "会员等级 1基础用户 2vip会员 3管理员", required = false)
     private String identity;
+
+    @ApiModelProperty(value = "逻辑删除标识", required = false)
+    @TableLogic
+    private String deleted;
 }

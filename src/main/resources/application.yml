@@ -22,9 +22,14 @@ spring:
 #      password: 20240709
 
 # Mybatis配置
-mybatis:
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml #指定Mybatis的Mapper文件
   type-aliases-package: com.example.springboottemplate.entity  #指定Mybatis的实体目录
   #开启驼峰命名 处理下划线映射到实体
   configuration:
     map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted #逻辑删除字段名
+      logic-delete-value: 1 #已删除
+      logic-not-delete-value: 0 #未删除

@@ -3,12 +3,14 @@ package com.example.springboottemplate.service;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.entity.Store;
 
+import java.util.List;
+
 public interface StoreService {
-    public Response addStore(Store store);
+    Response addStore(Store store);
 
-    public Response findStore(Store store);
+    Response findStore(Store store);
 
-    public Response updateStore(Store store);
+    Response updateStore(Store store);
 
-    public Response deleteStore(int id);
+    Response deleteStore(List<Integer> idList);
 }

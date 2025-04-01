@@ -2,12 +2,33 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.springboottemplate.mapper.StoreMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="storeResultMap" type="Store">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="storeId" column="store_id"/>
+        <result property="realName" column="real_name"/>
+        <result property="name" column="name"/>
+        <result property="address" column="address"/>
+        <result property="userId" column="user_id"/>
+        <result property="storeType" column="store_type"/>
+        <result property="storeTime" column="store_time"/>
+        <result property="stauts" column="stauts"/>
+        <result property="identityName" column="identity_name"/>
+        <result property="identityCompanyName" column="identity_company_name"/>
+        <result property="identityNo" column="identity_no"/>
+        <result property="identityFontImg" column="identity_font_img"/>
+        <result property="identityBackImg" column="identity_back_img"/>
+        <result property="identityPhone" column="identity_phone"/>
+        <result property="identityEmail" column="identity_email"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
     <insert id="addStore" parameterType="Store">
         INSERT into store (name, address, storeType, storeTime, stauts, identityName, identityCompanyName, identityNo, identityFontImg, identityBackImg, identityPhone, identityEmail) value (#{name}, #{address}, #{storeType}, #{storeTime}, #{stauts}, #{identityName}, #{identityCompanyName}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
-    <select id="findStore" parameterType="Store" resultType="Store">
+    <select id="findStore" parameterType="Store" resultMap="storeResultMap">
         select * from store
         <where>
             <if test="id != null and id != ''">
@@ -53,9 +74,4 @@
     <update id="updateStore" parameterType="Store">
         update store set name = #{name}, address = #{address}, storeType = #{storeType}, storeTime = #{storeTime}, stauts = #{stauts}, identityName = #{identityName}, identityCompanyName = #{identityCompanyName}, identityNo = #{identityNo}, identityFontImg = #{identityFontImg}, identityBackImg = #{identityBackImg}, identityPhone = #{identityPhone}, identityEmail = #{identityEmail} where id = #{id}
     </update>
-
-    <!-- 根据用户ID删除商户 -->
-    <delete id="deleteStore" parameterType="int">
-        delete from store where id = #{id}
-    </delete>
 </mapper>

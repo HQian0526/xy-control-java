@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/store")
 @Api(tags = "商户管理", description = "商户相关接口")
@@ -21,7 +23,7 @@ public class StoreController {
     @ResponseBody
     @ApiOperation(value = "添加商户", notes = "传入商户各项信息进行添加")
     public Response addStore(Store store){
-        return this.storeService.addStore(store);
+        return storeService.addStore(store);
     }
 
     //查询所有商户
@@ -29,7 +31,7 @@ public class StoreController {
     @ResponseBody
     @ApiOperation(value = "查询所有商户", notes = "查询所有商户")
     public Response findStore(Store store){
-        return this.storeService.findStore(store);
+        return storeService.findStore(store);
     }
 
     //修改商户信息
@@ -37,14 +39,14 @@ public class StoreController {
     @ResponseBody
     @ApiOperation(value = "修改商户信息", notes = "根据id更新商户信息")
     public Response updateStore(Store store){
-        return this.storeService.updateStore(store);
+        return storeService.updateStore(store);
     }
 
     //删除商户信息（慎用）
     @DeleteMapping("/deleteStore")
     @ResponseBody
     @ApiOperation(value = "删除商户信息", notes = "根据id删除商户信息")
-    public Response deleteStore(int id){
-        return this.storeService.deleteStore(id);
+    public Response deleteStore(List<Integer> idList){
+        return storeService.deleteStore(idList);
     }
 }

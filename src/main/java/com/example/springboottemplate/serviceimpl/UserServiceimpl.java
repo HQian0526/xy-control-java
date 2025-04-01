@@ -6,7 +6,7 @@ import com.example.springboottemplate.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.example.springboottemplate.utils.ValidateUtil;
 import java.util.List;
 
 @Service
@@ -14,28 +14,35 @@ import java.util.List;
 public class UserServiceimpl implements UserService {
 
     @Autowired
-    private UserMapper Usermapper;
+    private UserMapper usermapper;
     @Override
     public Response addUser(User user) {
-        this.Usermapper.addUser(user);
+        usermapper.addUser(user);
         return new Response(200, null, "操作成功");
     }
 
     @Override
     public Response findUser(User user) {
-        List<User> list = (List<User>) this.Usermapper.findUser(user);
+        List<User> list = usermapper.findUser(user);
         return new Response(200, list, "操作成功");
     }
 
     @Override
     public Response updateUser(User user) {
-        this.Usermapper.updateUser(user);
+        usermapper.updateUser(user);
         return new Response(200, null, "操作成功");
     }
 
     @Override
-    public Response deleteUser(int id) {
-        this.Usermapper.deleteUser(id);
-        return new Response(200, null, "操作成功");
+    public Response deleteUser(List<Integer> idList) {
+        if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
+            return new Response(400, null, "操作失败，ID 列表不能为空");
+        }
+        int affectedRows = usermapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        if (affectedRows > 0) {
+            return new Response(200, null, "操作成功");
+        } else {
+            return new Response(400, null, "操作失败，未找到需要删除的记录");
+        }
     }
 }
