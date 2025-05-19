@@ -13,15 +13,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor // 生成全参构造函数
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "桌台信息")
-public class Desk {
+public class Area {
     @ApiModelProperty(value = "id", required = true)
     private int id;
 
-    @ApiModelProperty(value = "桌台/座位id", required = true)
-    private int seatId;
+    @ApiModelProperty(value = "区域id", required = true)
+    private int areaId;
 
-    @ApiModelProperty(value = "桌台/座位名", required = true)
-    private String seatName;
+    @ApiModelProperty(value = "区域名", required = true)
+    private String areaName;
 
     @ApiModelProperty(value = "所属店铺id", required = true)
     private int storeId;

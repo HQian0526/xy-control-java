@@ -24,7 +24,7 @@ public class Equ {
     private String equName;
 
     @ApiModelProperty(value = "设备类型 1照明 2门禁 3其他", required = true)
-    private int type;
+    private int equType;
 
     @ApiModelProperty(value = "绑定的桌台", required = true)
     private int bindDeskId;

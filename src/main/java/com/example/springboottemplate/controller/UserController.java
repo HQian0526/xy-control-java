@@ -5,7 +5,6 @@ import com.example.springboottemplate.entity.User;
 import com.example.springboottemplate.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -19,6 +18,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    // 新增用户
     @PostMapping("/addUser")
     @ResponseBody
     @ApiOperation(value = "添加用户", notes = "传入用户各项信息进行添加用户")
@@ -42,7 +42,7 @@ public class UserController {
         return userService.updateUser(user);
     }
 
-    //删除用户信息（慎用）
+    //删除用户信息
     @DeleteMapping("/deleteUser")
     @ResponseBody
     @ApiOperation(value = "删除用户", notes = "根据id删除用户")

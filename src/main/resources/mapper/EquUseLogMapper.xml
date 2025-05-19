@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.EquMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="equUseLogResultMap" type="EquUseLog">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="userId" column="user_id"/>
+        <result property="equId" column="equ_id"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <!-- 新增设备使用记录 -->
+    <insert id="addEquUseLog" parameterType="EquUseLog">
+        INSERT into equ_use_log (user_id, equ_id, created_time, remark) value (#{userId}, #{equId}, #{createdTime}, #{remark})
+    </insert>
+
+    <!-- 查询所有设备使用记录信息（模糊查询）-->
+    <select id="findEquUseLog" parameterType="EquUseLog" resultMap="equUseLogResultMap">
+        select * from equ_use_log
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+        </where>
+    </select>
+
+    <!-- 修改设备信息 -->
+    <update id="updateEquUseLog" parameterType="EquUseLog">
+        update equ_use_log set user_id = #{userId}, equ_id = #{equId}, remark = #{remark} where id = #{id}
+    </update>
+</mapper>

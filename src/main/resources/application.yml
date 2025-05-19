@@ -15,11 +15,6 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/autoRoom?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
     username: root
     password: root
-  #spring security安全配置
-#  security:
-#    user:
-#      name: xywl
-#      password: 20240709
 
 # Mybatis配置
 mybatis-plus:

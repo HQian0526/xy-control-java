@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.AreaMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="areaResultMap" type="Area">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="areaId" column="area_id"/>
+        <result property="areaName" column="area_name"/>
+        <result property="storeId" column="store_id"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <!-- 新增区域 -->
+    <insert id="addArea" parameterType="Area">
+        INSERT into area (area_id, area_name, store_id, remark) value (#{areaId}, #{areaName}, #{storeId}, #{remark})
+    </insert>
+
+    <!-- 查询所有区域信息（模糊查询）-->
+    <select id="findArea" parameterType="Area" resultMap="areaResultMap">
+        select * from area
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="areaId != null and areaId != ''">
+                and area_id like CONCAT('%', #{areaId}, '%')
+            </if>
+            <if test="areaName != null and areaName != ''">
+                and area_name like CONCAT('%', #{areaName}, '%')
+            </if>
+            <if test="sex != null and storeId != ''">
+                and storeId = #{storeId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 修改区域信息 -->
+    <update id="updateArea" parameterType="Area">
+        update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark} where id = #{id}
+    </update>
+</mapper>

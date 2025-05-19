@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.EquMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="equResultMap" type="Equ">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="equId" column="equ_id"/>
+        <result property="equName" column="equ_name"/>
+        <result property="equType" column="equ_type"/>
+        <result property="bindDeskId" column="bind_desk_id"/>
+        <result property="bindStoreId" column="bind_store_id"/>
+        <result property="equCode" column="equ_code"/>
+        <result property="equStatus" column="equ_status"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <!-- 新增设备 -->
+    <insert id="addEqu" parameterType="Equ">
+        INSERT into equ (equ_name, equ_type, bind_desk_id, bind_store_id, equ_code, equ_status, remark) value (#{equName}, #{equType}, #{bindDeskId}, #{bindStoreId}, #{equCode}, #{equStatus}, #{remark})
+    </insert>
+
+    <!-- 查询所有设备信息（模糊查询）-->
+    <select id="findEqu" parameterType="Equ" resultMap="equResultMap">
+        select * from equ
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="equName != null and equName != ''">
+                and equ_name like CONCAT('%', #{equName}, '%')
+            </if>
+            <if test="equType != null and equType != ''">
+                and equ_type = #{equType}
+            </if>
+            <if test="bindDeskId != null and bindDeskId != ''">
+                and bind_desk_id = #{bindDeskId}
+            </if>
+            <if test="bindStoreId != null and bindStoreId != ''">
+                and bind_store_id = #{bindStoreId}
+            </if>
+            <if test="equCode != null and equCode != ''">
+                and equ_code like CONCAT('%', #{equCode}, '%')
+            </if>
+            <if test="equStatus != null and equStatus != ''">
+                and equ_status like CONCAT('%', #{equStatus}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 修改设备信息 -->
+    <update id="updateEqu" parameterType="Equ">
+        update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, remark = #{remark} where id = #{id}
+    </update>
+</mapper>

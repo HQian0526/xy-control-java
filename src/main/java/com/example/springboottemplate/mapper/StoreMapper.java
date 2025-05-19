@@ -13,6 +13,4 @@ public interface StoreMapper extends BaseMapper<Store> {
     List<Store> findStore(Store store); //查找所有商户
 
     void updateStore(Store store); //修改商户信息
-
-    void deleteStore(int id); //删除商户信息
 }

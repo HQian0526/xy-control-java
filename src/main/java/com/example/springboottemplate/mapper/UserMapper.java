@@ -12,9 +12,5 @@ public interface UserMapper extends BaseMapper<User> {
 
     List<User> findUser(User user); //查找所有用户
 
-    List<User> selectUserById(int id); //根据id查找用户
-
     void updateUser(User user); //修改用户信息
-
-//    public void deleteUser(int id); //删除用户信息
 }
