@@ -50,7 +50,7 @@
                 and email like CONCAT('%', #{email}, '%')
             </if>
             <if test="registDate != null and registDate != ''">
-                and registDate = #{registDate}
+                and regist_date = #{registDate}
             </if>
         </where>
     </select>

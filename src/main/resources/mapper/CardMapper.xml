@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.CardMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="cardResultMap" type="Card">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="cardId" column="card_id"/>
+        <result property="name" column="name"/>
+        <result property="price" column="price"/>
+        <result property="intro" column="intro"/>
+        <result property="type" column="type"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="status" column="status"/>
+        <result property="effectDay" column="effect_day"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <!-- 新增卡 -->
+    <insert id="addCard" parameterType="Card">
+        INSERT into card (name, price, intro, type, created_time, created_by, status, effect_day, start_time, end_time, remark) value (#{name}, #{price}, #{intro}, #{type}, #{createdTime}, #{createdBy}, #{status}, #{effectDay}, #{startTime}, #{endTime}, #{remark})
+    </insert>
+
+    <!-- 查询所有卡片信息（模糊查询）-->
+    <select id="findCard" parameterType="Card" resultMap="cardResultMap">
+        select * from card
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                and name like CONCAT('%', #{name}, '%')
+            </if>
+            <if test="intro != null and intro != ''">
+                and intro like CONCAT('%', #{intro}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                and type = #{type}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by like CONCAT('%', #{createdBy}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <if test="effectDay != null and effectDay != ''">
+                and effect_day = #{effectDay}
+            </if>
+            <if test="startTime != null and startTime != ''">
+                and start_time = #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and end_time = #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <!-- 修改卡片信息 -->
+    <update id="updateCard" parameterType="Card">
+        update card set name = #{name}, price = #{price}, intro = #{intro}, type = #{type}, status = #{status}, effect_day = #{effectDay}, start_time = #{startTime}, end_time = #{endTime}, remark = #{remark} where id = #{id}
+    </update>
+</mapper>
