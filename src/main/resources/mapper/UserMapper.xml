@@ -11,14 +11,15 @@
         <result property="phone" column="phone"/>
         <result property="address" column="address"/>
         <result property="birthday" column="birthday"/>
-        <result property="registDate" column="regist_date"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="createdTime" column="created_time"/>
         <result property="email" column="email"/>
         <result property="identity" column="identity"/>
     </resultMap>
 
     <!-- 新增用户 -->
     <insert id="addUser" parameterType="User">
-        INSERT into user (user_name, real_name, sex, phone, address, birthday, email, identity) value (#{userName}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity})
+        INSERT into user (user_name, real_name, sex, phone, address, birthday, email, identity, created_time) value (#{userName}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity}, #{cratedTime})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -49,8 +50,11 @@
             <if test="email != null and email != ''">
                 and email like CONCAT('%', #{email}, '%')
             </if>
-            <if test="registDate != null and registDate != ''">
-                and regist_date = #{registDate}
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
             </if>
         </where>
     </select>

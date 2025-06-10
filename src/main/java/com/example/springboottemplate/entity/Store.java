@@ -62,6 +62,18 @@ public class Store {
     @ApiModelProperty(value = "备注", required = false)
     private String remark;
 
+    @ApiModelProperty(value = "店铺创建时间", required = false)
+    private String createdTime;
+
+    @ApiModelProperty(value = "店铺信息创建人", required = false)
+    private String createdBy;
+
+    @ApiModelProperty(value = "信息更新时间", required = false)
+    private String updateTime;
+
+    @ApiModelProperty(value = "店铺信息更新人", required = false)
+    private String updateBy;
+
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
     private String deleted;

@@ -44,6 +44,12 @@ public class Equ {
     @ApiModelProperty(value = "创建人id", required = false)
     private String createdBy;
 
+    @ApiModelProperty(value = "设备信息更新时间", required = false)
+    private String updateTime;
+
+    @ApiModelProperty(value = "设备信息更新人", required = false)
+    private String updateBy;
+
     @ApiModelProperty(value = "备注", required = false)
     private String remark;
 

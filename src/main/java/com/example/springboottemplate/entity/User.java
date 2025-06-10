@@ -35,8 +35,11 @@ public class User {
     @ApiModelProperty(value = "生日", required = false)
     private String birthday;
 
+    @ApiModelProperty(value = "更新日期", required = false)
+    private String updateTime;
+
     @ApiModelProperty(value = "注册日期", required = false)
-    private String registDate;
+    private String createdTime;
 
     @ApiModelProperty(value = "邮箱", required = false)
     private String email;

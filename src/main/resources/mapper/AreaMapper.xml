@@ -8,12 +8,16 @@
         <result property="areaId" column="area_id"/>
         <result property="areaName" column="area_name"/>
         <result property="storeId" column="store_id"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
     </resultMap>
 
     <!-- 新增区域 -->
     <insert id="addArea" parameterType="Area">
-        INSERT into area (area_id, area_name, store_id, remark) value (#{areaId}, #{areaName}, #{storeId}, #{remark})
+        INSERT into area (area_id, area_name, store_id, created_time, created_by, remark) value (#{areaId}, #{areaName}, #{storeId}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有区域信息（模糊查询）-->
@@ -37,6 +41,6 @@
 
     <!-- 修改区域信息 -->
     <update id="updateArea" parameterType="Area">
-        update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark} where id = #{id}
+        update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark}, update_by = #{updateBy} where id = #{id}
     </update>
 </mapper>

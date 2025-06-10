@@ -26,6 +26,18 @@ public class Area {
     @ApiModelProperty(value = "所属店铺id", required = true)
     private int storeId;
 
+    @ApiModelProperty(value = "区域创建时间", required = false)
+    private String createdTime;
+
+    @ApiModelProperty(value = "区域创建人", required = false)
+    private int createdBy;
+
+    @ApiModelProperty(value = "区域更新时间", required = false)
+    private String updateTime;
+
+    @ApiModelProperty(value = "区域更新人", required = false)
+    private int updateBy;
+
     @ApiModelProperty(value = "备注", required = false)
     private String remark;
 

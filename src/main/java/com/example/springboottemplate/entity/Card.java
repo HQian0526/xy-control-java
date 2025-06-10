@@ -36,7 +36,13 @@ public class Card {
     private String createdTime;
 
     @ApiModelProperty(value = "套餐创建人", required = false)
-    private int createdBy;
+    private String createdBy;
+
+    @ApiModelProperty(value = "套餐更新时间", required = false)
+    private String updateTime;
+
+    @ApiModelProperty(value = "套餐更新人", required = false)
+    private String updateBy;
 
     @ApiModelProperty(value = "套餐状态 1启用 2停用 3删除", required = false)
     private int status;

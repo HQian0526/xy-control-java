@@ -13,13 +13,15 @@
         <result property="equCode" column="equ_code"/>
         <result property="equStatus" column="equ_status"/>
         <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
         <result property="createdBy" column="created_by"/>
+        <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
     </resultMap>
 
     <!-- 新增设备 -->
     <insert id="addEqu" parameterType="Equ">
-        INSERT into equ (equ_name, equ_type, bind_desk_id, bind_store_id, equ_code, equ_status, remark) value (#{equName}, #{equType}, #{bindDeskId}, #{bindStoreId}, #{equCode}, #{equStatus}, #{remark})
+        INSERT into equ (equ_name, equ_type, bind_desk_id, bind_store_id, equ_code, equ_status, created_time, created_by, remark) value (#{equName}, #{equType}, #{bindDeskId}, #{bindStoreId}, #{equCode}, #{equStatus}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有设备信息（模糊查询）-->
@@ -47,11 +49,17 @@
             <if test="equStatus != null and equStatus != ''">
                 and equ_status like CONCAT('%', #{equStatus}, '%')
             </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
         </where>
     </select>
 
     <!-- 修改设备信息 -->
     <update id="updateEqu" parameterType="Equ">
-        update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, remark = #{remark} where id = #{id}
+        update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, update_by = #{updateBy}, remark = #{remark} where id = #{id}
     </update>
 </mapper>

@@ -20,11 +20,15 @@
         <result property="identityBackImg" column="identity_back_img"/>
         <result property="identityPhone" column="identity_phone"/>
         <result property="identityEmail" column="identity_email"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (name, address, storeType, storeTime, stauts, identityName, identityCompanyName, identityNo, identityFontImg, identityBackImg, identityPhone, identityEmail) value (#{name}, #{address}, #{storeType}, #{storeTime}, #{stauts}, #{identityName}, #{identityCompanyName}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail})
+        INSERT into store (name, address, user_id, store_type, store_time, stauts, identity_name, identity_company_name, identity_no, identity_font_img, identity_back_img, identity_phone, identity_email, created_time, created_by) value (#{name}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{stauts}, #{identityName}, #{identityCompanyName}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -35,16 +39,16 @@
                 and id LIKE CONCAT('%', #{id}, '%')
             </if>
             <if test="storeId != null and storeId != ''">
-                and storeId like CONCAT('%', #{storeId}, '%')
+                and store_id like CONCAT('%', #{storeId}, '%')
             </if>
             <if test="name != null and name != ''">
                 and name like CONCAT('%', #{name}, '%')
             </if>
             <if test="storeType != null and storeType != ''">
-                and storeType = #{storeType}
+                and store_type = #{storeType}
             </if>
             <if test="storeTime != null and storeTime != ''">
-                and storeTime = #{storeTime}
+                and store_time = #{storeTime}
             </if>
             <if test="stauts != null and stauts != ''">
                 and stauts = #{stauts}
@@ -53,25 +57,31 @@
                 and address like CONCAT('%', #{address}, '%')
             </if>
             <if test="identityName != null and identityName != ''">
-                and identityName like CONCAT('%', #{identityName}, '%')
+                and identity_name like CONCAT('%', #{identityName}, '%')
             </if>
             <if test="identityCompanyName != null and identityCompanyName != ''">
-                and identityCompanyName like CONCAT('%', #{identityCompanyName}, '%')
+                and identity_company_name like CONCAT('%', #{identityCompanyName}, '%')
             </if>
             <if test="identityNo != null and identityNo != ''">
-                and identityNo = like CONCAT('%', #{identityNo}, '%')
+                and identity_no = like CONCAT('%', #{identityNo}, '%')
             </if>
             <if test="identityPhone != null and identityPhone != ''">
-                and identityPhone = like CONCAT('%', #{identityPhone}, '%')
+                and identity_phone = like CONCAT('%', #{identityPhone}, '%')
             </if>
             <if test="identityEmail != null and identityEmail != ''">
-                and identityEmail = like CONCAT('%', #{identityEmail}, '%')
+                and identity_email = like CONCAT('%', #{identityEmail}, '%')
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
             </if>
         </where>
     </select>
 
     <!-- 根据用户ID修改商户信息 -->
     <update id="updateStore" parameterType="Store">
-        update store set name = #{name}, address = #{address}, storeType = #{storeType}, storeTime = #{storeTime}, stauts = #{stauts}, identityName = #{identityName}, identityCompanyName = #{identityCompanyName}, identityNo = #{identityNo}, identityFontImg = #{identityFontImg}, identityBackImg = #{identityBackImg}, identityPhone = #{identityPhone}, identityEmail = #{identityEmail} where id = #{id}
+        update store set name = #{name}, address = #{address}, user_id = #{userId}, storeType = #{storeType}, store_time = #{storeTime}, stauts = #{stauts}, identity_name = #{identityName}, identity_company_name = #{identityCompanyName}, identity_no = #{identityNo}, identity_font_img = #{identityFontImg}, identity_back_img = #{identityBackImg}, identity_phone = #{identityPhone}, identity_email = #{identityEmail}, update_by = #{updateBy} where id = #{id}
     </update>
 </mapper>

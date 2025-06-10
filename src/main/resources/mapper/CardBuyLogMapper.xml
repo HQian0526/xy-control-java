@@ -14,7 +14,7 @@
 
     <!-- 新增套餐购买记录 -->
     <insert id="addCardBuyLog" parameterType="CardBuyLog">
-        INSERT into card_buy_log (user_id, card_id, created_time, status, ticket_status) value (#{userId}, #{cardId}, #{createdTime}, #{status}, #{ticketStatus})
+        INSERT into card_buy_log (user_id, card_id, status, ticket_status) value (#{userId}, #{cardId}, #{status}, #{ticketStatus})
     </insert>
 
     <!-- 查询所有套餐购买记录信息（模糊查询）-->
@@ -44,6 +44,6 @@
 
     <!-- 修改套餐购买记录信息 -->
     <update id="updateCardBuyLog" parameterType="CardBuyLog">
-        update card_buy_log set user_id = #{userid}, card_id = #{cardId}, created_time = #{createdTime}, status = #{status}, ticket_status = #{ticketStatus} where id = #{id}
+        update card_buy_log set user_id = #{userid}, card_id = #{cardId}, status = #{status}, ticket_status = #{ticketStatus} where id = #{id}
     </update>
 </mapper>

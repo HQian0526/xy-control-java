@@ -13,7 +13,7 @@
 
     <!-- 新增设备使用记录 -->
     <insert id="addEquUseLog" parameterType="EquUseLog">
-        INSERT into equ_use_log (user_id, equ_id, created_time, remark) value (#{userId}, #{equId}, #{createdTime}, #{remark})
+        INSERT into equ_use_log (user_id, equ_id, remark) value (#{userId}, #{equId}, #{remark})
     </insert>
 
     <!-- 查询所有设备使用记录信息（模糊查询）-->
