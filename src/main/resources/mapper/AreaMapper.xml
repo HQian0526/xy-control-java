@@ -33,8 +33,20 @@
             <if test="areaName != null and areaName != ''">
                 and area_name like CONCAT('%', #{areaName}, '%')
             </if>
-            <if test="sex != null and storeId != ''">
-                and storeId = #{storeId}
+            <if test="storeId != null and storeId != ''">
+                and store_id = #{storeId}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
             </if>
         </where>
     </select>

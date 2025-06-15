@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.DictMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="dictResultMap" type="Dict">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="code" column="code"/>
+        <result property="dictName" column="dict_name"/>
+        <result property="remark" column="remark"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="dictJson" column="dict_json"/>
+    </resultMap>
+
+    <!-- 新增字典 -->
+    <insert id="addDict" parameterType="Dict">
+        INSERT into dict (code, dict_name, remark, created_time, created_by, dict_json) value (#{code}, #{dictName}, #{remark}, #{createdTime}, #{createdBy}, #{dictJson})
+    </insert>
+
+    <!-- 查询所有字典信息（模糊查询）-->
+    <select id="findDict" parameterType="Dict" resultMap="dictResultMap">
+        select * from dict
+        <where>
+            <if test="code != null and code != ''">
+                and code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="dictName != null and dictName != ''">
+                and dict_name like CONCAT('%', #{dictName}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                and remark like CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+        </where>
+    </select>
+
+    <!-- 修改字典信息 -->
+    <update id="updateDict" parameterType="Dict">
+        update dict set code = #{code}, dict_name = #{dictName}, remark = #{remark}, dict_json = #{dictJson}, update_by = #{updateBy} where id = #{id}
+    </update>
+</mapper>
