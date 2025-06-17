@@ -61,5 +61,5 @@ public class Card {
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private String deleted;
+    private int deleted;
 }

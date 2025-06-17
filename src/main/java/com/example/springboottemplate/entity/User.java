@@ -20,6 +20,9 @@ public class User {
     @ApiModelProperty(value = "用户名", required = true)
     private String userName;
 
+    @ApiModelProperty(value = "密码", required = false)
+    private String password;
+
     @ApiModelProperty(value = "真实姓名", required = true)
     private String realName;
 
@@ -52,5 +55,5 @@ public class User {
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private String deleted;
+    private int deleted;
 }

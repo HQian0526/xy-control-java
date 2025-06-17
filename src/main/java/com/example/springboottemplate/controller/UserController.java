@@ -3,6 +3,7 @@ package com.example.springboottemplate.controller;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.entity.User;
 import com.example.springboottemplate.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -48,5 +49,13 @@ public class UserController {
     @ApiOperation(value = "删除用户", notes = "根据id删除用户")
     public Response deleteUser(List<Integer> idList){
         return userService.deleteUser(idList);
+    }
+
+    //获取当前登录用户信息
+    @GetMapping("/getUserInfo")
+    @ResponseBody
+    @ApiOperation(value = "查询当前登录用户信息", notes = "查询当前登录用户信息")
+    public Response getUserInfo(HttpServletRequest request) {
+        return userService.getUserInfo(request);
     }
 }

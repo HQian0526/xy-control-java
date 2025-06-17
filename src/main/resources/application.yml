@@ -1,15 +1,15 @@
-#/服务端口配置
+# 服务端口配置
 server:
   port: 8080
   #端口号
   servlet:
-    context-path: /smarthouse   #项目根路径（前面必须加/）
+    context-path: /api   #项目根路径（前面必须加/）
 
 spring:
   #项目名称
   application:
     name: smart-house
-  # Mysql配置jdbc:mysql://127.0.0.1:3306/xy-database?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+  # Mysql配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
@@ -28,3 +28,9 @@ mybatis-plus:
       logic-delete-field: deleted #逻辑删除字段名
       logic-delete-value: 1 #已删除
       logic-not-delete-value: 0 #未删除
+
+# 登录令牌配置
+jwt:
+  secret-key: "y7a9fLp9Xy2A/sB1nOq6r4tJwYz8Cv0EeKcHj3mNl+Q="  # Base64编码的256位密钥
+  access-token-expire: 3600      # 访问令牌过期时间（秒）
+  refresh-token-expire: 604800   # 刷新令牌过期时间（秒）

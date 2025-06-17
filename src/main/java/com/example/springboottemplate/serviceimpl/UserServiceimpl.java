@@ -3,6 +3,9 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.entity.User;
 import com.example.springboottemplate.mapper.UserMapper;
 import com.example.springboottemplate.service.UserService;
+import com.example.springboottemplate.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,8 @@ public class UserServiceimpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Override
     public Response addUser(User user) {
         userMapper.addUser(user);
@@ -43,6 +48,26 @@ public class UserServiceimpl implements UserService {
             return new Response(200, null, "操作成功");
         } else {
             return new Response(400, null, "操作失败，未找到需要删除的记录");
+        }
+    }
+
+    @Override
+    public Response getUserInfo(HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+
+        // 3. 查询数据库获取用户详细信息
+        User user = new User();
+        user.setUserName(username);
+        List<User> list = userMapper.findUser(user);
+        if (list.isEmpty()) {
+            return new Response(200, null, "操作成功");
+        } else {
+            return new Response(200, list.get(0), "操作成功");
         }
     }
 }
