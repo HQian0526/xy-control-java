@@ -30,8 +30,8 @@ public class EquController {
     @GetMapping("/findEqu")
     @ResponseBody
     @ApiOperation(value = "查询所有设备", notes = "查询设备表中所有设备")
-    public Response findEqu(Equ equ){
-        return equService.findEqu(equ);
+    public Response findEqu(Equ equ, Integer pageNum, Integer pageSize){
+        return equService.findEqu(equ, pageNum, pageSize);
     }
 
     //修改设备信息

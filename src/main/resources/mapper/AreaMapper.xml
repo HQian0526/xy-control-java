@@ -13,6 +13,7 @@
         <result property="updateTime" column="update_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增区域 -->
@@ -47,6 +48,9 @@
             </if>
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
+            </if>
+            <if test="deleted != null and deleted != ''">
+                and deleted = #{deleted}
             </if>
         </where>
     </select>

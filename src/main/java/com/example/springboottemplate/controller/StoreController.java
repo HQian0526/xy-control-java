@@ -30,8 +30,8 @@ public class StoreController {
     @GetMapping("/findStore")
     @ResponseBody
     @ApiOperation(value = "查询所有商户", notes = "查询所有商户")
-    public Response findStore(Store store){
-        return storeService.findStore(store);
+    public Response findStore(Store store, Integer pageNum, Integer pageSize){
+        return storeService.findStore(store, pageNum, pageSize);
     }
 
     //修改商户信息

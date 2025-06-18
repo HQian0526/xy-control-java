@@ -8,7 +8,7 @@ import java.util.List;
 public interface StoreService {
     Response addStore(Store store);
 
-    Response findStore(Store store);
+    Response findStore(Store store, Integer pageNum, Integer pageSize);
 
     Response updateStore(Store store);
 

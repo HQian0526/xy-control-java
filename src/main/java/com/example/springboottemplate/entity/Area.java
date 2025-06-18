@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor // 生成全参构造函数
 @NoArgsConstructor // 生成无参构造函数
-@ApiModel(description = "桌台信息")
+@ApiModel(description = "区域信息")
 public class Area {
     @ApiModelProperty(value = "id", required = true)
     private int id;
@@ -30,13 +30,13 @@ public class Area {
     private String createdTime;
 
     @ApiModelProperty(value = "区域创建人", required = false)
-    private int createdBy;
+    private String createdBy;
 
     @ApiModelProperty(value = "区域更新时间", required = false)
     private String updateTime;
 
     @ApiModelProperty(value = "区域更新人", required = false)
-    private int updateBy;
+    private String updateBy;
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;

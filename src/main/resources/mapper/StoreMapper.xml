@@ -25,6 +25,7 @@
         <result property="updateTime" column="update_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
@@ -76,6 +77,9 @@
             </if>
             <if test="updateTime != null and updateTime != ''">
                 and update_time = #{updateTime}
+            </if>
+            <if test="deleted != null and deleted != ''">
+                and deleted = #{deleted}
             </if>
         </where>
     </select>

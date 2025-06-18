@@ -29,6 +29,12 @@ mybatis-plus:
       logic-delete-value: 1 #已删除
       logic-not-delete-value: 0 #未删除
 
+# 分页查询配置
+pagehelper:
+  helper-dialect: mysql  # 数据库方言
+  reasonable: true       # 分页合理化，pageNum<=0时会查询第一页，pageNum>pages时会查询最后一页
+  support-methods-arguments: true # 支持通过Mapper接口参数来传递分页参数
+
 # 登录令牌配置
 jwt:
   secret-key: "y7a9fLp9Xy2A/sB1nOq6r4tJwYz8Cv0EeKcHj3mNl+Q="  # Base64编码的256位密钥

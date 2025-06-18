@@ -17,6 +17,7 @@
         <result property="identity" column="identity"/>
         <result property="password" column="password"/>
         <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增用户 -->
@@ -57,6 +58,9 @@
             </if>
             <if test="updateTime != null and updateTime != ''">
                 and update_time = #{updateTime}
+            </if>
+            <if test="deleted != null and deleted != ''">
+                and deleted = #{deleted}
             </if>
         </where>
     </select>

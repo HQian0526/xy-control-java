@@ -8,7 +8,7 @@ import java.util.List;
 public interface CardBuyLogService {
     Response addCardBuyLog(CardBuyLog cardBuyLog);
 
-    Response findCardBuyLog(CardBuyLog cardBuyLog);
+    Response findCardBuyLog(CardBuyLog cardBuyLog, Integer pageNum, Integer pageSize);
 
     Response updateCardBuyLog(CardBuyLog cardBuyLog);
 

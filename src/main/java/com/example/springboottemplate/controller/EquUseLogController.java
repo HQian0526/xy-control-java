@@ -30,8 +30,8 @@ public class EquUseLogController {
     @GetMapping("/findEquUseLog")
     @ResponseBody
     @ApiOperation(value = "查询所有设备使用记录", notes = "查询设备表中所有设备使用记录")
-    public Response findEquUseLog(EquUseLog equUseLog){
-        return equUseLogService.findEquUseLog(equUseLog);
+    public Response findEquUseLog(EquUseLog equUseLog, Integer pageNum, Integer pageSize){
+        return equUseLogService.findEquUseLog(equUseLog, pageNum, pageSize);
     }
 
     //修改设备使用记录信息

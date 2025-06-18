@@ -5,11 +5,15 @@ import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.ValidateUtil;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -23,9 +27,21 @@ public class StoreServiceimpl implements StoreService {
     }
 
     @Override
-    public Response findStore(Store store) {
+    public Response findStore(Store store, Integer pageNum, Integer pageSize) {
+        // 开启分页
+        PageHelper.startPage(pageNum, pageSize);
+        // 查询数据
         List<Store> list = storeMapper.findStore(store);
-        return new Response(200, list, "操作成功");
+        // 封装分页结果
+        PageInfo<Store> pageInfo = new PageInfo<>(list);
+        // 构造返回数据
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", pageInfo.getList());  // 当前页数据
+        data.put("total", pageInfo.getTotal()); // 总记录数
+        data.put("pages", pageInfo.getPages()); // 总页数
+        data.put("pageNum", pageInfo.getPageNum()); // 当前页码
+        data.put("pageSize", pageInfo.getPageSize()); // 每页数量
+        return new Response(200, data, "操作成功");
     }
 
     @Override

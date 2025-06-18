@@ -8,7 +8,7 @@ import java.util.List;
 public interface EquUseLogService {
     Response addEquUseLog(EquUseLog equUseLog);
 
-    Response findEquUseLog(EquUseLog equUseLog);
+    Response findEquUseLog(EquUseLog equUseLog, Integer pageNum, Integer pageSize);
 
     Response updateEquUseLog(EquUseLog equUseLog);
 

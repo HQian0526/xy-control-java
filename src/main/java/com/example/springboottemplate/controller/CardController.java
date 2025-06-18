@@ -30,8 +30,8 @@ public class CardController {
     @GetMapping("/findCard")
     @ResponseBody
     @ApiOperation(value = "查询所有卡", notes = "查询卡片表中所有卡")
-    public Response findCard(Card card){
-        return cardService.findCard(card);
+    public Response findCard(Card card, Integer pageNum, Integer pageSize){
+        return cardService.findCard(card, pageNum, pageSize);
     }
 
     //修改卡信息

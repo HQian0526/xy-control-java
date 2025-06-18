@@ -1,9 +1,9 @@
 package com.example.springboottemplate.serviceimpl;
 
-import com.example.springboottemplate.entity.Dict;
 import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.mapper.DictMapper;
-import com.example.springboottemplate.service.DictService;
+import com.example.springboottemplate.entity.Role;
+import com.example.springboottemplate.mapper.RoleMapper;
+import com.example.springboottemplate.service.RoleService;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -17,24 +17,23 @@ import java.util.Map;
 
 @Service
 @Transactional
-public class DictServiceimpl implements DictService {
+public class RoleServiceimpl implements RoleService {
     @Autowired
-    private DictMapper dictMapper;
-
+    private RoleMapper roleMapper;
     @Override
-    public Response addDict(Dict dict) {
-        dictMapper.addDict(dict);
+    public Response addRole(Role role) {
+        roleMapper.addRole(role);
         return new Response(200, null, "操作成功");
     }
 
     @Override
-    public Response findDict(Dict dict, Integer pageNum, Integer pageSize) {
+    public Response findRole(Role role, Integer pageNum, Integer pageSize) {
         // 开启分页
         PageHelper.startPage(pageNum, pageSize);
         // 查询数据
-        List<Dict> list = dictMapper.findDict(dict);
+        List<Role> list = roleMapper.findRole(role);
         // 封装分页结果
-        PageInfo<Dict> pageInfo = new PageInfo<>(list);
+        PageInfo<Role> pageInfo = new PageInfo<>(list);
         // 构造返回数据
         Map<String, Object> data = new HashMap<>();
         data.put("list", pageInfo.getList());  // 当前页数据
@@ -46,17 +45,17 @@ public class DictServiceimpl implements DictService {
     }
 
     @Override
-    public Response updateDict(Dict dict) {
-        dictMapper.updateDict(dict);
+    public Response updateRole(Role role) {
+        roleMapper.updateRole(role);
         return new Response(200, null, "操作成功");
     }
 
     @Override
-    public Response deleteDict(List<Integer> idList) {
+    public Response deleteRole(List<Integer> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = dictMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = roleMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

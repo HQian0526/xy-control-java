@@ -4,10 +4,15 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.mapper.EquMapper;
 import com.example.springboottemplate.service.EquService;
 import com.example.springboottemplate.utils.ValidateUtil;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -21,9 +26,21 @@ public class EquServiceimpl implements EquService {
     }
 
     @Override
-    public Response findEqu(Equ equ) {
+    public Response findEqu(Equ equ, Integer pageNum, Integer pageSize) {
+        // 开启分页
+        PageHelper.startPage(pageNum, pageSize);
+        // 查询数据
         List<Equ> list = equMapper.findEqu(equ);
-        return new Response(200, list, "操作成功");
+        // 封装分页结果
+        PageInfo<Equ> pageInfo = new PageInfo<>(list);
+        // 构造返回数据
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", pageInfo.getList());  // 当前页数据
+        data.put("total", pageInfo.getTotal()); // 总记录数
+        data.put("pages", pageInfo.getPages()); // 总页数
+        data.put("pageNum", pageInfo.getPageNum()); // 当前页码
+        data.put("pageSize", pageInfo.getPageSize()); // 每页数量
+        return new Response(200, data, "操作成功");
     }
 
     @Override

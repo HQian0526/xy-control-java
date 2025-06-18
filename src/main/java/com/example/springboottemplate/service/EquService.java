@@ -8,7 +8,7 @@ import java.util.List;
 public interface EquService {
     Response addEqu(Equ equ);
 
-    Response findEqu(Equ equ);
+    Response findEqu(Equ equ, Integer pageNum, Integer pageSize);
 
     Response updateEqu(Equ equ);
 

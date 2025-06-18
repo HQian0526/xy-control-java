@@ -31,8 +31,8 @@ public class UserController {
     @GetMapping("/findUser")
     @ResponseBody
     @ApiOperation(value = "查询所有用户", notes = "查询用户表中所有用户")
-    public Response findUser(User user){
-        return userService.findUser(user);
+    public Response findUser(User user, Integer pageNum, Integer pageSize){
+        return userService.findUser(user, pageNum, pageSize);
     }
 
     //修改用户信息

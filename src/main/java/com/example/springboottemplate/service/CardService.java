@@ -8,7 +8,7 @@ import java.util.List;
 public interface CardService {
     Response addCard(Card card);
 
-    Response findCard(Card card);
+    Response findCard(Card card, Integer pageNum, Integer pageSize);
 
     Response updateCard(Card card);
 

@@ -9,7 +9,7 @@ import java.util.List;
 public interface UserService {
     Response addUser(User user);
 
-    Response findUser(User user);
+    Response findUser(User user, Integer pageNum, Integer pageSize);
 
     Response updateUser(User user);
 

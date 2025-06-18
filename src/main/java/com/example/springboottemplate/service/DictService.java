@@ -8,7 +8,7 @@ import java.util.List;
 public interface DictService {
     Response addDict(Dict dict);
 
-    Response findDict(Dict dict);
+    Response findDict(Dict dict, Integer pageNum, Integer pageSize);
 
     Response updateDict(Dict dict);
 

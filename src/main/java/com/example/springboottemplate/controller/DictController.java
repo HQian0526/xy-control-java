@@ -30,8 +30,8 @@ public class DictController {
     @GetMapping("/findDict")
     @ResponseBody
     @ApiOperation(value = "查询所有字典", notes = "查询字典表中所有字典")
-    public Response findDict(Dict dict){
-        return dictService.findDict(dict);
+    public Response findDict(Dict dict, Integer pageNum, Integer pageSize){
+        return dictService.findDict(dict, pageNum, pageSize);
     }
 
     //修改字典信息

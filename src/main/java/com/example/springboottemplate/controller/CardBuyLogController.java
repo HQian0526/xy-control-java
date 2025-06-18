@@ -30,8 +30,8 @@ public class CardBuyLogController {
     @GetMapping("/findCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "查询所有套餐购买记录", notes = "查询套餐购买记录表中所有套餐购买记录")
-    public Response findCardBuyLog(CardBuyLog cardBuyLog){
-        return cardBuyLogService.findCardBuyLog(cardBuyLog);
+    public Response findCardBuyLog(CardBuyLog cardBuyLog, Integer pageNum, Integer pageSize){
+        return cardBuyLogService.findCardBuyLog(cardBuyLog, pageNum, pageSize);
     }
 
     //修改套餐购买记录信息

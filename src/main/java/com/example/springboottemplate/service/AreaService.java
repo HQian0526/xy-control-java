@@ -8,7 +8,7 @@ import java.util.List;
 public interface AreaService {
     Response addArea(Area area);
 
-    Response findArea(Area area);
+    Response findArea(Area area, Integer pageNum, Integer pageSize);
 
     Response updateArea(Area area);
 

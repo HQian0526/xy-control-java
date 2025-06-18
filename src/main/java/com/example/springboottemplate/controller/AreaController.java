@@ -30,8 +30,8 @@ public class AreaController {
     @GetMapping("/findArea")
     @ResponseBody
     @ApiOperation(value = "查询所有区域", notes = "查询区域表中所有区域")
-    public Response findArea(Area area){
-        return areaService.findArea(area);
+    public Response findArea(Area area, Integer pageNum, Integer pageSize){
+        return areaService.findArea(area, pageNum, pageSize);
     }
 
     //修改区域信息

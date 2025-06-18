@@ -19,6 +19,7 @@
         <result property="startTime" column="start_time"/>
         <result property="endTime" column="end_time"/>
         <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增卡 -->
@@ -59,6 +60,9 @@
             </if>
             <if test="endTime != null and endTime != ''">
                 and end_time = #{endTime}
+            </if>
+            <if test="deleted != null and deleted != ''">
+                and deleted = #{deleted}
             </if>
         </where>
     </select>
