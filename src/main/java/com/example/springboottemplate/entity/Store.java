@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
@@ -15,10 +17,10 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "商户信息")
 public class Store {
     @ApiModelProperty(value = "id", required = true)
-    private int id;
+    private Integer id;
 
     @ApiModelProperty(value = "商户id", required = true)
-    private int storeId;
+    private Integer storeId;
 
     @ApiModelProperty(value = "商户名", required = true)
     private String name;
@@ -27,16 +29,16 @@ public class Store {
     private String address;
 
     @ApiModelProperty(value = "关联的userId", required = true)
-    private int userId;
+    private Integer userId;
 
     @ApiModelProperty(value = "商户类型 1永久 2租用", required = true)
-    private int storeType;
+    private Integer storeType;
 
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;
 
     @ApiModelProperty(value = "商户状态 1正常 2异常 3冻结 4注销", required = false)
-    private int stauts;
+    private Integer stauts;
 
     @ApiModelProperty(value = "法人姓名", required = true)
     private String identityName;
@@ -63,18 +65,18 @@ public class Store {
     private String remark;
 
     @ApiModelProperty(value = "店铺创建时间", required = false)
-    private String createdTime;
+    private Date createdTime;
 
     @ApiModelProperty(value = "店铺信息创建人", required = false)
     private String createdBy;
 
     @ApiModelProperty(value = "信息更新时间", required = false)
-    private String updateTime;
+    private Date updateTime;
 
     @ApiModelProperty(value = "店铺信息更新人", required = false)
     private String updateBy;
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private int deleted;
+    private Integer deleted;
 }

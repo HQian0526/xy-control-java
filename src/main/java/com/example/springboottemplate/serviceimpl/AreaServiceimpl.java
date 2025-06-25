@@ -3,13 +3,17 @@ import com.example.springboottemplate.entity.Area;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.mapper.AreaMapper;
 import com.example.springboottemplate.service.AreaService;
+import com.example.springboottemplate.utils.JwtUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.springboottemplate.utils.ValidateUtil;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +24,19 @@ public class AreaServiceimpl implements AreaService {
 
     @Autowired
     private AreaMapper areaMapper;
+    @Autowired
+    private JwtUtil jwtUtil;  // 注入 JwtUtil
+
     @Override
-    public Response addArea(Area area) {
+    public Response addArea(Area area, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        area.setCreatedTime(new Date());
+        area.setCreatedBy(username);
+
         areaMapper.addArea(area);
         return new Response(200, null, "操作成功");
     }
@@ -55,7 +70,7 @@ public class AreaServiceimpl implements AreaService {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = areaMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        Integer affectedRows = areaMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

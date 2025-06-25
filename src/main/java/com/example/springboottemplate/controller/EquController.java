@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.service.EquService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class EquController {
     @PostMapping("/addEqu")
     @ResponseBody
     @ApiOperation(value = "添加设备", notes = "传入用户各项信息进行添加设备")
-    public Response addEqu(Equ equ){
-        return equService.addEqu(equ);
+    public Response addEqu(@RequestBody Equ equ, HttpServletRequest request){
+        return equService.addEqu(equ, request);
     }
 
     //模糊查询所有设备
@@ -46,7 +47,7 @@ public class EquController {
     @DeleteMapping("/deleteEqu")
     @ResponseBody
     @ApiOperation(value = "删除设备", notes = "根据id删除设备")
-    public Response deleteEqu(List<Integer> idList){
+    public Response deleteEqu(@RequestBody List<Integer> idList){
         return equService.deleteEqu(idList);
     }
 }

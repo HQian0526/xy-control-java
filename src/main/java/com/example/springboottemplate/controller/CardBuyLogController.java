@@ -22,7 +22,7 @@ public class CardBuyLogController {
     @PostMapping("/addCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "添加套餐购买记录", notes = "进行添加套餐购买记录")
-    public Response addCardBuyLog(CardBuyLog cardBuyLog){
+    public Response addCardBuyLog(@RequestBody CardBuyLog cardBuyLog){
         return cardBuyLogService.addCardBuyLog(cardBuyLog);
     }
 
@@ -46,7 +46,7 @@ public class CardBuyLogController {
     @DeleteMapping("/deleteCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "删除套餐购买记录", notes = "根据id删除套餐购买记录")
-    public Response deleteCardBuyLog(List<Integer> idList){
+    public Response deleteCardBuyLog(@RequestBody List<Integer> idList){
         return cardBuyLogService.deleteCardBuyLog(idList);
     }
 }

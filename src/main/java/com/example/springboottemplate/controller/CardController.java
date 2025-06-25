@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.service.CardService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class CardController {
     @PostMapping("/addCard")
     @ResponseBody
     @ApiOperation(value = "添加卡", notes = "传入卡片各项信息进行添加卡")
-    public Response addUser(Card card){
-        return cardService.addCard(card);
+    public Response addUser(@RequestBody Card card, HttpServletRequest request){
+        return cardService.addCard(card, request);
     }
 
     //模糊查询所有卡
@@ -46,7 +47,7 @@ public class CardController {
     @DeleteMapping("/deleteCard")
     @ResponseBody
     @ApiOperation(value = "删除卡", notes = "根据id删除卡")
-    public Response deleteCard(List<Integer> idList){
+    public Response deleteCard(@RequestBody List<Integer> idList){
         return cardService.deleteCard(idList);
     }
 }

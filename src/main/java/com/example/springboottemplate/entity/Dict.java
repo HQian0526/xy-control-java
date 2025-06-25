@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "字典管理")
 public class Dict {
     @ApiModelProperty(value = "id", required = true)
-    private int id;
+    private Integer id;
 
     @ApiModelProperty(value = "字典编码", required = true)
     private String code;
@@ -30,18 +32,18 @@ public class Dict {
     private String remark;
 
     @ApiModelProperty(value = "字典创建时间", required = false)
-    private String createdTime;
+    private Date createdTime;
 
     @ApiModelProperty(value = "字典创建人", required = false)
     private String createdBy;
 
     @ApiModelProperty(value = "字典更新时间", required = false)
-    private String updateTime;
+    private Date updateTime;
 
     @ApiModelProperty(value = "字典更新人", required = false)
     private String updateBy;
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private int deleted;
+    private Integer deleted;
 }

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 public interface UserService {
-    Response addUser(User user);
+    Response addUser(User user, HttpServletRequest request);
 
     Response findUser(User user, Integer pageNum, Integer pageSize);
 

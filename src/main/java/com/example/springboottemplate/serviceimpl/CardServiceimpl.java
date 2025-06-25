@@ -4,13 +4,17 @@ import com.example.springboottemplate.entity.Card;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.mapper.CardMapper;
 import com.example.springboottemplate.service.CardService;
+import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +24,19 @@ import java.util.Map;
 public class CardServiceimpl implements CardService {
     @Autowired
     private CardMapper cardMapper;
+    @Autowired
+    private JwtUtil jwtUtil;  // 注入 JwtUtil
 
     @Override
-    public Response addCard(Card card) {
+    public Response addCard(Card card, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        card.setCreatedTime(new Date());
+        card.setCreatedBy(username);
+
         cardMapper.addCard(card);
         return new Response(200, null, "操作成功");
     }

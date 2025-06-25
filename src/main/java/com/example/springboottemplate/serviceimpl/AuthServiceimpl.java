@@ -32,6 +32,7 @@ public class AuthServiceimpl implements AuthService {
         if (list.isEmpty()) {
             throw new RuntimeException("用户不存在");
         }
+        user = list.get(0); // 获取查询到的用户对象
 
         // 2. 验证密码 先注释后续用aes解密
 //        if (!PasswordUtil.verifyPassword(password, user.getSalt(), user.getPassword())) {
@@ -39,7 +40,7 @@ public class AuthServiceimpl implements AuthService {
 //        }
 
         // 3. 验证账号状态
-        if (user.getDeleted() == 1) {
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
             throw new RuntimeException("账号已被冻结");
         }
 
@@ -58,12 +59,13 @@ public class AuthServiceimpl implements AuthService {
     public Response refreshToken(String refreshToken) {
         // 1. 验证refreshToken
         if (!jwtUtil.validateToken(refreshToken)) {
-            throw new RuntimeException("无效的refreshToken");
+//            throw new RuntimeException("无效的refreshToken");
+            return new Response(401, null, "无效的 refreshToken");
         }
 
         // 2. 解析token获取用户信息
         Claims claims = jwtUtil.parseToken(refreshToken);
-        int userId = claims.get("userId", int.class);
+        Integer userId = claims.get("userId", Integer.class);
         String username = claims.getSubject();
 
         // 3. 生成新的accessToken

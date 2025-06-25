@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
@@ -15,25 +17,25 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "区域信息")
 public class Area {
     @ApiModelProperty(value = "id", required = true)
-    private int id;
+    private Integer id;
 
     @ApiModelProperty(value = "区域id", required = true)
-    private int areaId;
+    private Integer areaId;
 
     @ApiModelProperty(value = "区域名", required = true)
     private String areaName;
 
     @ApiModelProperty(value = "所属店铺id", required = true)
-    private int storeId;
+    private Integer storeId;
 
     @ApiModelProperty(value = "区域创建时间", required = false)
-    private String createdTime;
+    private Date createdTime;
 
     @ApiModelProperty(value = "区域创建人", required = false)
     private String createdBy;
 
     @ApiModelProperty(value = "区域更新时间", required = false)
-    private String updateTime;
+    private Date updateTime;
 
     @ApiModelProperty(value = "区域更新人", required = false)
     private String updateBy;
@@ -43,5 +45,5 @@ public class Area {
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private int deleted;
+    private Integer deleted;
 }

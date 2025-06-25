@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public class EquUseLogServiceimpl implements EquUseLogService {
     private EquUseLogMapper equUseLogMapper;
     @Override
     public Response addEquUseLog(EquUseLog equUseLog) {
+        equUseLog.setCreatedTime(new Date());
         equUseLogMapper.addEquUseLog(equUseLog);
         return new Response(200, null, "操作成功");
     }

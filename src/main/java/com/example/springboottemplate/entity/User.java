@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "用户信息")
 public class User {
     @ApiModelProperty(value = "用户ID", required = true)
-    private int id;
+    private Integer id;
 
     @ApiModelProperty(value = "用户名", required = true)
     private String userName;
@@ -27,7 +29,7 @@ public class User {
     private String realName;
 
     @ApiModelProperty(value = "性别 0女 1男", required = true)
-    private int sex;
+    private Integer sex;
 
     @ApiModelProperty(value = "手机号码", required = true)
     private String phone;
@@ -39,10 +41,16 @@ public class User {
     private String birthday;
 
     @ApiModelProperty(value = "更新日期", required = false)
-    private String updateTime;
+    private Date updateTime;
 
     @ApiModelProperty(value = "注册日期", required = false)
-    private String createdTime;
+    private Date createdTime;
+
+    @ApiModelProperty(value = "创建人", required = false)
+    private String updateBy;
+
+    @ApiModelProperty(value = "更新人", required = false)
+    private String createdBy;
 
     @ApiModelProperty(value = "邮箱", required = false)
     private String email;
@@ -55,5 +63,5 @@ public class User {
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private int deleted;
+    private Integer deleted;
 }

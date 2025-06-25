@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
@@ -15,22 +17,22 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "设备信息")
 public class Equ {
     @ApiModelProperty(value = "id", required = true)
-    private int id; //自增id
+    private Integer id; //自增id
 
     @ApiModelProperty(value = "设备id", required = true)
-    private int equId;
+    private Integer equId;
 
     @ApiModelProperty(value = "设备名称", required = true)
     private String equName;
 
     @ApiModelProperty(value = "设备类型 1照明 2门禁 3其他", required = true)
-    private int equType;
+    private Integer equType;
 
     @ApiModelProperty(value = "绑定的桌台", required = true)
-    private int bindDeskId;
+    private Integer bindDeskId;
 
     @ApiModelProperty(value = "绑定的店铺", required = true)
-    private int bindStoreId;
+    private Integer bindStoreId;
 
     @ApiModelProperty(value = "设备控制的三元码", required = false)
     private String equCode;
@@ -39,13 +41,13 @@ public class Equ {
     private String equStatus;
 
     @ApiModelProperty(value = "设备创建时间", required = false)
-    private String createdTime;
+    private Date createdTime;
 
     @ApiModelProperty(value = "创建人id", required = false)
     private String createdBy;
 
     @ApiModelProperty(value = "设备信息更新时间", required = false)
-    private String updateTime;
+    private Date updateTime;
 
     @ApiModelProperty(value = "设备信息更新人", required = false)
     private String updateBy;
@@ -55,5 +57,5 @@ public class Equ {
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
-    private int deleted;
+    private Integer deleted;
 }

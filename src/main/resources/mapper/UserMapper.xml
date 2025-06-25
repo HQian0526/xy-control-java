@@ -13,6 +13,8 @@
         <result property="birthday" column="birthday"/>
         <result property="updateTime" column="update_time"/>
         <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="createdBy" column="created_by"/>
         <result property="email" column="email"/>
         <result property="identity" column="identity"/>
         <result property="password" column="password"/>
@@ -22,7 +24,7 @@
 
     <!-- 新增用户 -->
     <insert id="addUser" parameterType="User">
-        INSERT into user (user_name, password, real_name, sex, phone, address, birthday, email, identity, created_time, remark) value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity}, #{cratedTime}, #{remark})
+        INSERT into user (user_name, password, real_name, sex, phone, address, birthday, email, identity, created_time, created_by, remark) value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -59,8 +61,17 @@
             <if test="updateTime != null and updateTime != ''">
                 and update_time = #{updateTime}
             </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
             <if test="deleted != null and deleted != ''">
                 and deleted = #{deleted}
+            </if>
+            <if test="deleted == 0">
+                and deleted = 0
             </if>
         </where>
     </select>

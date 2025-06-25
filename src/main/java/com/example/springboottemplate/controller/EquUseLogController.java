@@ -22,7 +22,7 @@ public class EquUseLogController {
     @PostMapping("/addEquUseLog")
     @ResponseBody
     @ApiOperation(value = "添加设备使用记录", notes = "添加设备使用记录")
-    public Response addEquUseLog(EquUseLog equUseLog){
+    public Response addEquUseLog(@RequestBody EquUseLog equUseLog){
         return equUseLogService.addEquUseLog(equUseLog);
     }
 
@@ -46,7 +46,7 @@ public class EquUseLogController {
     @DeleteMapping("/deleteEquUseLog")
     @ResponseBody
     @ApiOperation(value = "删除设备使用记录", notes = "根据id删除设备使用记录")
-    public Response deleteEquUseLog(List<Integer> idList){
+    public Response deleteEquUseLog(@RequestBody List<Integer> idList){
         return equUseLogService.deleteEquUseLog(idList);
     }
 }

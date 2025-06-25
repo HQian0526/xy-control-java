@@ -2,11 +2,12 @@ package com.example.springboottemplate.service;
 
 import com.example.springboottemplate.entity.Area;
 import com.example.springboottemplate.entity.Response;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
 public interface AreaService {
-    Response addArea(Area area);
+    Response addArea(Area area, HttpServletRequest request);
 
     Response findArea(Area area, Integer pageNum, Integer pageSize);
 

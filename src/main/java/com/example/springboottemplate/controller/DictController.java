@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.service.DictService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class DictController {
     @PostMapping("/addDict")
     @ResponseBody
     @ApiOperation(value = "添加字典", notes = "传入字典信息进行添加字典")
-    public Response addDict(Dict dict){
-        return dictService.addDict(dict);
+    public Response addDict(@RequestBody Dict dict, HttpServletRequest request){
+        return dictService.addDict(dict, request);
     }
 
     //查询所有字典
@@ -46,7 +47,7 @@ public class DictController {
     @DeleteMapping("/deleteDict")
     @ResponseBody
     @ApiOperation(value = "删除字典", notes = "根据id删除字典")
-    public Response deleteDict(List<Integer> idList){
+    public Response deleteDict(@RequestBody List<Integer> idList){
         return dictService.deleteDict(idList);
     }
 }

@@ -49,6 +49,9 @@
             <if test="deleted != null and deleted != ''">
                 and deleted = #{deleted}
             </if>
+            <if test="deleted == null || deleted == '' || deleted == 0">
+                and deleted = 0
+            </if>
         </where>
     </select>
 

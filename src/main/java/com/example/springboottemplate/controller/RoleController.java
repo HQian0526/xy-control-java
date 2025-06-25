@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Role;
 import com.example.springboottemplate.service.RoleService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class RoleController {
     @PostMapping("/addRole")
     @ResponseBody
     @ApiOperation(value = "添加角色", notes = "传入角色各项信息进行添加")
-    public Response addRole(Role role){
-        return roleService.addRole(role);
+    public Response addRole(@RequestBody Role role, HttpServletRequest request){
+        return roleService.addRole(role, request);
     }
 
     //查询所有角色
@@ -46,7 +47,7 @@ public class RoleController {
     @DeleteMapping("/deleteRole")
     @ResponseBody
     @ApiOperation(value = "删除角色", notes = "根据id删除角色")
-    public Response deleteRole(List<Integer> idList){
+    public Response deleteRole(@RequestBody List<Integer> idList){
         return roleService.deleteRole(idList);
     }
 }

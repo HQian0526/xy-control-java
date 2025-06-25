@@ -1,8 +1,6 @@
 package com.example.springboottemplate.utils;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -52,8 +50,19 @@ public class JwtUtil {
         try {
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            return false;
+        } catch (ExpiredJwtException e) {
+            throw e; // 特殊处理过期异常
+        } catch (JwtException e) {
+            throw new JwtException("Invalid token");
         }
+    }
+
+    // 从Token中提取用户名
+    public String getUsernameFromToken(String token) {
+        return Jwts.parser()
+                .setSigningKey(SECRET_KEY)
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 }

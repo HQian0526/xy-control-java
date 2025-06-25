@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.service.AreaService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class AreaController {
     @PostMapping("/addArea")
     @ResponseBody
     @ApiOperation(value = "添加区域", notes = "传入区域各项信息进行添加区域")
-    public Response addArea(Area area){
-        return areaService.addArea(area);
+    public Response addArea(@RequestBody Area area, HttpServletRequest request){
+        return areaService.addArea(area, request);
     }
 
     //查询所有区域
@@ -46,7 +47,7 @@ public class AreaController {
     @DeleteMapping("/deleteArea")
     @ResponseBody
     @ApiOperation(value = "删除区域", notes = "根据id删除区域")
-    public Response deleteArea(List<Integer> idList){
+    public Response deleteArea(@RequestBody List<Integer> idList){
         return areaService.deleteArea(idList);
     }
 }

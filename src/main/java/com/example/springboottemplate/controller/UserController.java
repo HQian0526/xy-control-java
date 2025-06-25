@@ -23,8 +23,8 @@ public class UserController {
     @PostMapping("/addUser")
     @ResponseBody
     @ApiOperation(value = "添加用户", notes = "传入用户各项信息进行添加用户")
-    public Response addUser(User user){
-        return userService.addUser(user);
+    public Response addUser(@RequestBody User user, HttpServletRequest request){
+        return userService.addUser(user, request);
     }
 
     //查询所有用户
@@ -47,7 +47,7 @@ public class UserController {
     @DeleteMapping("/deleteUser")
     @ResponseBody
     @ApiOperation(value = "删除用户", notes = "根据id删除用户")
-    public Response deleteUser(List<Integer> idList){
+    public Response deleteUser(@RequestBody List<Integer> idList){
         return userService.deleteUser(idList);
     }
 

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.springboottemplate.utils.ValidateUtil;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +26,17 @@ public class UserServiceimpl implements UserService {
     private UserMapper userMapper;
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
+
     @Override
-    public Response addUser(User user) {
+    public Response addUser(User user, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        user.setCreatedTime(new Date());
+        user.setCreatedBy(username);
+
         userMapper.addUser(user);
         return new Response(200, null, "操作成功");
     }

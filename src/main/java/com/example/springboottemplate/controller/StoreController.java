@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.service.StoreService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class StoreController {
     @PostMapping("/addStore")
     @ResponseBody
     @ApiOperation(value = "添加商户", notes = "传入商户各项信息进行添加")
-    public Response addStore(Store store){
-        return storeService.addStore(store);
+    public Response addStore(@RequestBody Store store, HttpServletRequest request){
+        return storeService.addStore(store, request);
     }
 
     //查询所有商户
@@ -46,7 +47,7 @@ public class StoreController {
     @DeleteMapping("/deleteStore")
     @ResponseBody
     @ApiOperation(value = "删除商户信息", notes = "根据id删除商户信息")
-    public Response deleteStore(List<Integer> idList){
+    public Response deleteStore(@RequestBody List<Integer> idList){
         return storeService.deleteStore(idList);
     }
 }
