@@ -1,4 +1,6 @@
 package com.example.springboottemplate.serviceimpl;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.entity.Response;
 import com.example.springboottemplate.entity.User;
 import com.example.springboottemplate.mapper.UserMapper;
@@ -9,9 +11,12 @@ import com.github.pagehelper.PageInfo;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.springboottemplate.utils.ValidateUtil;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -20,7 +25,7 @@ import java.util.Map;
 
 @Service
 @Transactional
-public class UserServiceimpl implements UserService {
+public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Autowired
     private UserMapper userMapper;
@@ -37,8 +42,17 @@ public class UserServiceimpl implements UserService {
         user.setCreatedTime(new Date());
         user.setCreatedBy(username);
 
-        userMapper.addUser(user);
-        return new Response(200, null, "操作成功");
+        try {
+            userMapper.addUser(user);
+            return Response.success();
+        } catch (DuplicateKeyException e) {
+            // 解析错误信息（不同数据库错误信息格式不同）
+            if (e.getMessage().contains("user_name")) {
+                return Response.fail("用户名已存在");
+            }
+            return Response.fail("操作失败，请联系管理员");
+        }
+
     }
 
     @Override

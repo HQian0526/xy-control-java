@@ -16,7 +16,7 @@
         <result property="updateBy" column="update_by"/>
         <result property="createdBy" column="created_by"/>
         <result property="email" column="email"/>
-        <result property="identity" column="identity"/>
+        <result property="identityType" column="identity_type"/>
         <result property="password" column="password"/>
         <result property="remark" column="remark"/>
         <result property="deleted" column="deleted"/>
@@ -24,7 +24,7 @@
 
     <!-- 新增用户 -->
     <insert id="addUser" parameterType="User">
-        INSERT into user (user_name, password, real_name, sex, phone, address, birthday, email, identity, created_time, created_by, remark) value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identity}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into user (user_name, password, real_name, sex, phone, address, birthday, email, identity_type, created_time, created_by, remark) value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identityType}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -78,6 +78,19 @@
 
     <!-- 修改用户信息 -->
     <update id="updateUser" parameterType="User">
-        update user set user_name = #{userName}, password = #{password}, real_name = #{realName}, sex = #{sex}, phone = #{phone}, address = #{address}, birthday = #{birthday}, email = #{email}, identity = #{identity}, remark = #{remark} where id = #{id}
+        update user
+        <set>
+            <if test="userName != null">user_name = #{userName},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="realName != null">real_name = #{realName},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="identityType != null">identity_type = #{identityType},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where id = #{id}
     </update>
 </mapper>

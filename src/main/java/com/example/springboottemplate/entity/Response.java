@@ -46,4 +46,32 @@ public class Response {
                 ", msg='" + msg + '\'' +
                 '}';
     }
+
+    /**
+     * 成功响应（无数据）
+     */
+    public static Response success() {
+        return new Response(200, null, "操作成功");
+    }
+
+    /**
+     * 成功响应（带数据）
+     */
+    public static Response success(Object data) {
+        return new Response(200, data, "操作成功");
+    }
+
+    /**
+     * 失败响应（默认500错误码）
+     */
+    public static Response fail(String msg) {
+        return new Response(500, null, msg);
+    }
+
+    /**
+     * 自定义失败响应
+     */
+    public static Response fail(Integer code, String msg) {
+        return new Response(code, null, msg);
+    }
 }

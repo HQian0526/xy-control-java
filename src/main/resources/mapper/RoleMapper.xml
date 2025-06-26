@@ -58,6 +58,15 @@
 
     <!-- 修改角色信息 -->
     <update id="updateRole" parameterType="Role">
-        update role set role_id = #{roleId}, role_name = #{roleName}, remark = #{remark}, update_by = #{updateBy}, user_list = #{userList}, auth_list = #{authList} where id = #{id}
+        update role
+        <set>
+            <if test="roleId != null">role_id = #{roleId},</if>
+            <if test="roleName != null">role_name = #{roleName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="userList != null">user_list = #{userList},</if>
+            <if test="authList != null">auth_list = #{authList},</if>
+        </set>
+        where id = #{id}
     </update>
 </mapper>

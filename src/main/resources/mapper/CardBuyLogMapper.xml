@@ -44,6 +44,14 @@
 
     <!-- 修改套餐购买记录信息 -->
     <update id="updateCardBuyLog" parameterType="CardBuyLog">
-        update card_buy_log set user_id = #{userid}, card_id = #{cardId}, status = #{status}, ticket_status = #{ticketStatus} where id = #{id}
+        update card_buy_log
+        <set>
+            <if test="userid != null">user_id = #{userid},</if>
+            <if test="cardId != null">card_id = #{cardId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="ticketStatus != null">ticket_status = #{ticketStatus},</if>
+        </set>
+        where id = #{id}
+        <!-- update card_buy_log set user_id = #{userid}, card_id = #{cardId}, status = #{status}, ticket_status = #{ticketStatus} where id = #{id} -->
     </update>
 </mapper>

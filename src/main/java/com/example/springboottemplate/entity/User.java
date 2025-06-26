@@ -56,7 +56,7 @@ public class User {
     private String email;
 
     @ApiModelProperty(value = "会员等级 1基础用户 2vip会员 3管理员", required = false)
-    private String identity;
+    private Integer identityType;
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;

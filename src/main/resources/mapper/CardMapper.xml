@@ -6,10 +6,10 @@
     <resultMap id="cardResultMap" type="Card">
         <id property="id" column="id"/> <!-- 主键字段 -->
         <result property="cardId" column="card_id"/>
-        <result property="name" column="name"/>
+        <result property="cardName" column="card_name"/>
         <result property="price" column="price"/>
         <result property="intro" column="intro"/>
-        <result property="type" column="type"/>
+        <result property="cardType" column="card_type"/>
         <result property="createdTime" column="created_time"/>
         <result property="createdBy" column="created_by"/>
         <result property="updateTime" column="update_time"/>
@@ -24,7 +24,7 @@
 
     <!-- 新增卡 -->
     <insert id="addCard" parameterType="Card">
-        INSERT into card (name, price, intro, type, created_time, created_by, status, effect_day, start_time, end_time, remark) value (#{name}, #{price}, #{intro}, #{type}, #{createdTime}, #{createdBy}, #{status}, #{effectDay}, #{startTime}, #{endTime}, #{remark})
+        INSERT into card (card_name, price, intro, card_type, created_time, created_by, status, effect_day, start_time, end_time, remark) value (#{cardName}, #{price}, #{intro}, #{cardType}, #{createdTime}, #{createdBy}, #{status}, #{effectDay}, #{startTime}, #{endTime}, #{remark})
     </insert>
 
     <!-- 查询所有卡片信息（模糊查询）-->
@@ -34,14 +34,14 @@
             <if test="id != null and id != ''">
                 and id LIKE CONCAT('%', #{id}, '%')
             </if>
-            <if test="name != null and name != ''">
-                and name like CONCAT('%', #{name}, '%')
+            <if test="cardName != null and cardName != ''">
+                and card_name like CONCAT('%', #{cardName}, '%')
             </if>
             <if test="intro != null and intro != ''">
                 and intro like CONCAT('%', #{intro}, '%')
             </if>
-            <if test="type != null and type != ''">
-                and type = #{type}
+            <if test="cardType != null and cardType != ''">
+                and card_type = #{cardType}
             </if>
             <if test="createdTime != null and createdTime != ''">
                 and created_time = #{createdTime}
@@ -72,6 +72,20 @@
 
     <!-- 修改卡片信息 -->
     <update id="updateCard" parameterType="Card">
-        update card set name = #{name}, price = #{price}, intro = #{intro}, type = #{type}, status = #{status}, effect_day = #{effectDay}, start_time = #{startTime}, end_time = #{endTime}, remark = #{remark}, update_by = #{updateBy} where id = #{id}
+        update card
+        <set>
+            <if test="cardName != null">card_name = #{cardName},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="intro != null">intro = #{intro},</if>
+            <if test="cardType != null">card_type = #{cardType},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="effectDay != null">effect_day = #{effectDay},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </set>
+        where id = #{id}
+        <!-- update card set card_name = #{cardName}, price = #{price}, intro = #{intro}, card_type = #{cardType}, status = #{status}, effect_day = #{effectDay}, start_time = #{startTime}, end_time = #{endTime}, remark = #{remark}, update_by = #{updateBy} where id = #{id} -->
     </update>
 </mapper>

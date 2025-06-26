@@ -38,7 +38,7 @@ public class Store {
     private String storeTime;
 
     @ApiModelProperty(value = "商户状态 1正常 2异常 3冻结 4注销", required = false)
-    private Integer stauts;
+    private Integer status;
 
     @ApiModelProperty(value = "法人姓名", required = true)
     private String identityName;

@@ -67,6 +67,18 @@
 
     <!-- 修改设备信息 -->
     <update id="updateEqu" parameterType="Equ">
-        update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, update_by = #{updateBy}, remark = #{remark} where id = #{id}
+        update equ
+        <set>
+            <if test="equName != null">equ_name = #{equName},</if>
+            <if test="equType != null">equ_type = #{equType},</if>
+            <if test="bindDeskId != null">bind_desk_id = #{bindDeskId},</if>
+            <if test="bindStoreId != null">bind_store_id = #{bindStoreId},</if>
+            <if test="equCode != null">equ_code = #{equCode},</if>
+            <if test="equStatus != null">equ_status = #{bindDeskId},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where id = #{id}
+        <!-- update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, update_by = #{updateBy}, remark = #{remark} where id = #{id} -->
     </update>
 </mapper>

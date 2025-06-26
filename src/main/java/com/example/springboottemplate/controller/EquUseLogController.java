@@ -38,7 +38,7 @@ public class EquUseLogController {
     @PutMapping("/updateEquUseLog")
     @ResponseBody
     @ApiOperation(value = "修改设备使用记录信息", notes = "根据id更新设备使用记录信息")
-    public Response updateEquUseLog(EquUseLog equUseLog){
+    public Response updateEquUseLog(@RequestBody EquUseLog equUseLog){
         return equUseLogService.updateEquUseLog(equUseLog);
     }
 

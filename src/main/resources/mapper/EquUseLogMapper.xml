@@ -31,6 +31,13 @@
 
     <!-- 修改设备信息 -->
     <update id="updateEquUseLog" parameterType="EquUseLog">
-        update equ_use_log set user_id = #{userId}, equ_id = #{equId}, remark = #{remark} where id = #{id}
+        update equ_use_log
+        <set>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="equId != null">equ_id = #{equId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        where id = #{id}
+        <!-- update equ_use_log set user_id = #{userId}, equ_id = #{equId}, remark = #{remark} where id = #{id} -->
     </update>
 </mapper>

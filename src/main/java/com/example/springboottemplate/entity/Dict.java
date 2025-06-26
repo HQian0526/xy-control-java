@@ -1,6 +1,10 @@
 package com.example.springboottemplate.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -9,12 +13,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
 @Builder
 @AllArgsConstructor // 生成全参构造函数
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "字典管理")
+@TableName(autoResultMap = true) // 启用自动结果映射
 public class Dict {
     @ApiModelProperty(value = "id", required = true)
     private Integer id;

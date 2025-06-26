@@ -60,6 +60,15 @@
 
     <!-- 修改区域信息 -->
     <update id="updateArea" parameterType="Area">
-        update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark}, update_by = #{updateBy} where id = #{id}
+        update area
+        <set>
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="areaName != null">area_name = #{areaName},</if>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </set>
+        where id = #{id}
+        <!-- update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark}, update_by = #{updateBy} where id = #{id} -->
     </update>
 </mapper>

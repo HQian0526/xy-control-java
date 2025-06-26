@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter implements Filter {
         response.setStatus(code);
         response.setContentType("application/json");
         response.getWriter().write(
-                String.format("{\"code\":%d,\"message\":\"%s\"}", code, message)
+                String.format("{\"code\":%d,\"msg\":\"%s\"}", code, message)
         );
     }
 }

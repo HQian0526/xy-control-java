@@ -39,7 +39,7 @@ public class EquController {
     @PutMapping("/updateEqu")
     @ResponseBody
     @ApiOperation(value = "修改设备信息", notes = "根据id更新设备信息")
-    public Response updateEqu(Equ equ){
+    public Response updateEqu(@RequestBody Equ equ){
         return equService.updateEqu(equ);
     }
 

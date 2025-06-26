@@ -38,7 +38,7 @@ public class CardBuyLogController {
     @PutMapping("/updateCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "修改套餐购买记录信息", notes = "根据id更新套餐购买记录信息")
-    public Response updateCardBuyLog(CardBuyLog cardBuyLog){
+    public Response updateCardBuyLog(@RequestBody CardBuyLog cardBuyLog){
         return cardBuyLogService.updateCardBuyLog(cardBuyLog);
     }
 

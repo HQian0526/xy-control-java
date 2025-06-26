@@ -39,7 +39,7 @@ public class RoleController {
     @PutMapping("/updateRole")
     @ResponseBody
     @ApiOperation(value = "修改角色信息", notes = "根据id更新角色信息")
-    public Response updateRole(Role role){
+    public Response updateRole(@RequestBody Role role){
         return roleService.updateRole(role);
     }
 

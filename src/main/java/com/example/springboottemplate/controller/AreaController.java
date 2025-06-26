@@ -39,7 +39,7 @@ public class AreaController {
     @PutMapping("/updateArea")
     @ResponseBody
     @ApiOperation(value = "修改区域信息", notes = "根据id更新区域信息")
-    public Response updateArea(Area area){
+    public Response updateArea(@RequestBody Area area){
         return areaService.updateArea(area);
     }
 

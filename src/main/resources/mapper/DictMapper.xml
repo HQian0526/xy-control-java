@@ -57,6 +57,15 @@
 
     <!-- 修改字典信息 -->
     <update id="updateDict" parameterType="Dict">
-        update dict set code = #{code}, dict_name = #{dictName}, remark = #{remark}, dict_json = #{dictJson}, update_by = #{updateBy} where id = #{id}
+        update dict
+        <set>
+            <if test="code != null">code = #{code},</if>
+            <if test="dictName != null">dict_name = #{dictName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="dictJson != null">dict_json = #{dictJson},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+        </set>
+        where id = #{id}
+        <!-- update dict set code = #{code}, dict_name = #{dictName}, remark = #{remark}, dict_json = #{dictJson}, update_by = #{updateBy} where id = #{id} -->
     </update>
 </mapper>

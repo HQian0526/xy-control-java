@@ -23,7 +23,7 @@ public class Card {
     private Integer cardId;
 
     @ApiModelProperty(value = "套餐名", required = true)
-    private String name;
+    private String cardName;
 
     @ApiModelProperty(value = "套餐价格", required = true)
     private String price;
@@ -32,7 +32,7 @@ public class Card {
     private String intro;
 
     @ApiModelProperty(value = "套餐类型 1小时卡 2次卡 3天卡 4周卡 5月卡 6季卡 7半年卡 8年卡 9其他", required = false)
-    private Integer type;
+    private Integer cardType;
 
     @ApiModelProperty(value = "套餐创建时间", required = false)
     private Date createdTime;
