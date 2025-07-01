@@ -8,6 +8,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.mapper.system.MenuMapper;
 import com.example.springboottemplate.service.system.MenuService;
+import com.example.springboottemplate.utils.ValidateUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -49,10 +50,10 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
 
     private MenuTreeDto convertToTreeDto(Menu menu, List<Menu> menus) {
         MenuTreeDto dto = new MenuTreeDto();
-        dto.setId(menu.getId());
+        dto.setId(String.valueOf(menu.getId()));
         dto.setMenuName(menu.getMenuName());
         dto.setMenuCode(menu.getMenuCode());
-        dto.setParentId(menu.getParentId());
+        dto.setParentId(String.valueOf(menu.getParentId()));
         dto.setMenuType(menu.getMenuType());
         dto.setIconUrl(menu.getIconUrl());
         dto.setSort(menu.getSort());
@@ -154,32 +155,59 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
     }
 
     @Override
-    public boolean addMenu(Menu menu) {
+    public Response addMenu(Menu menu) {
         // 设置path和level
         if (menu.getParentId() == null || menu.getParentId() == 0) {
             menu.setLevel(1);
-            menu.setPath("0,");
+//            menu.setPath("0,");
         } else {
             Menu parent = baseMapper.selectById(menu.getParentId());
             if (parent != null) {
                 menu.setLevel(parent.getLevel() + 1);
-                menu.setPath(parent.getPath() + parent.getId() + ",");
+//                menu.setPath(parent.getPath() + parent.getId() + ",");
             }
         }
-
-        return baseMapper.insert(menu) > 0;
+        if (baseMapper.insert(menu) > 0) {
+            return Response.success();
+        } else {
+            return Response.fail("添加失败");
+        }
     }
 
     @Override
-    public boolean updateMenu(Menu menu) {
-        return baseMapper.updateById(menu) > 0;
+    public Response updateMenu(Menu menu) {
+        if (baseMapper.updateById(menu) > 0) {
+            return Response.success();
+        } else {
+            return Response.fail("修改失败");
+        }
     }
 
     @Override
-    public boolean deleteMenu(Long id) {
-        Menu menu = new Menu();
-        menu.setId(id);
-        menu.setDeleted(1);
-        return baseMapper.updateById(menu) > 0;
+    public Response deleteMenu(List<String> idList) {
+        try {
+            if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
+                return Response.fail("删除失败,id不能为空");
+            }
+            // 使用 Stream 转换
+            List<Long> longList = idList.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
+            int affectedRows = baseMapper.deleteBatchIds(longList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+            if (affectedRows > 0) {
+                return new Response(200, null, "操作成功");
+            } else {
+                return new Response(400, null, "操作失败，未找到需要删除的记录");
+            }
+//            Menu menu = new Menu();
+//            menu.setId(Long.parseLong(id));
+//            menu.setDeleted(1);
+//            if (baseMapper.updateById(menu) > 0) {
+//                return Response.success();
+//            } else {
+//                return Response.fail("删除失败");
+//            }
+        } catch(Exception e) {
+            return Response.fail("删除失败");
+        }
+
     }
 }

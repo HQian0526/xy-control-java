@@ -5,10 +5,10 @@ import java.util.List;
 
 @Data
 public class MenuTreeDto {
-    private Long id;
+    private String id;
     private String menuName;
     private String menuCode;
-    private Long parentId;
+    private String parentId;
     private Integer menuType;
     private String iconUrl;
     private Integer sort;

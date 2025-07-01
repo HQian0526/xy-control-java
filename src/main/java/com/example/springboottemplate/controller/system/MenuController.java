@@ -8,6 +8,8 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/menu")
 @Api(tags = "菜单管理", description = "菜单管理相关接口")
@@ -35,21 +37,21 @@ public class MenuController {
     @PostMapping("/addMenu")
     @ResponseBody
     @ApiOperation(value = "添加菜单", notes = "添加菜单")
-    public boolean addMenu(@RequestBody Menu menu) {
+    public Response addMenu(@RequestBody Menu menu) {
         return menuService.addMenu(menu);
     }
 
     @PutMapping("/updateMenu")
     @ResponseBody
     @ApiOperation(value = "更新菜单", notes = "更新菜单")
-    public boolean updateMenu(@RequestBody Menu menu) {
+    public Response updateMenu(@RequestBody Menu menu) {
         return menuService.updateMenu(menu);
     }
 
     @DeleteMapping("/deleteMenu")
     @ResponseBody
     @ApiOperation(value = "删除菜单", notes = "删除菜单")
-    public boolean deleteMenu(@PathVariable Long id) {
-        return menuService.deleteMenu(id);
+    public Response deleteMenu(@RequestBody List<String> idList) {
+        return menuService.deleteMenu(idList);
     }
 }
