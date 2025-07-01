@@ -1,8 +1,8 @@
-package com.example.springboottemplate.controller;
+package com.example.springboottemplate.controller.system;
 
-import com.example.springboottemplate.entity.Dict;
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.service.DictService;
+import com.example.springboottemplate.entity.system.Dict;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.service.system.DictService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import jakarta.servlet.http.HttpServletRequest;

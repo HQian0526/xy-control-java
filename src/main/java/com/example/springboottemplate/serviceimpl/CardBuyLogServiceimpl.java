@@ -1,7 +1,7 @@
 package com.example.springboottemplate.serviceimpl;
 
 import com.example.springboottemplate.entity.CardBuyLog;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.CardBuyLogMapper;
 import com.example.springboottemplate.service.CardBuyLogService;
 import com.example.springboottemplate.utils.ValidateUtil;

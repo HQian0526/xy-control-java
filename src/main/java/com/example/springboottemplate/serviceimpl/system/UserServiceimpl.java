@@ -1,10 +1,9 @@
-package com.example.springboottemplate.serviceimpl;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+package com.example.springboottemplate.serviceimpl.system;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.User;
-import com.example.springboottemplate.mapper.UserMapper;
-import com.example.springboottemplate.service.UserService;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.mapper.system.UserMapper;
+import com.example.springboottemplate.service.system.UserService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -12,11 +11,9 @@ import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.springboottemplate.utils.ValidateUtil;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.HashMap;

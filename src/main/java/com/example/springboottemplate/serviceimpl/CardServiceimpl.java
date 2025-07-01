@@ -1,7 +1,7 @@
 package com.example.springboottemplate.serviceimpl;
 
 import com.example.springboottemplate.entity.Card;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.CardMapper;
 import com.example.springboottemplate.service.CardService;
 import com.example.springboottemplate.utils.JwtUtil;

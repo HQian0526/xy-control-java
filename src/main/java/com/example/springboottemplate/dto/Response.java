@@ -1,4 +1,4 @@
-package com.example.springboottemplate.entity;
+package com.example.springboottemplate.dto;
 
 public class Response {
     private Integer code; //返回状态码

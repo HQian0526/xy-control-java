@@ -1,7 +1,7 @@
 package com.example.springboottemplate.service;
 
 import com.example.springboottemplate.entity.EquUseLog;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 
 import java.util.List;
 

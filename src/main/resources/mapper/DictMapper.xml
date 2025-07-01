@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.example.springboottemplate.mapper.DictMapper">
+<mapper namespace="com.example.springboottemplate.mapper.system.DictMapper">
     <!-- 定义结果映射 -->
     <resultMap id="dictResultMap" type="Dict">
         <id property="id" column="id"/> <!-- 主键字段 -->

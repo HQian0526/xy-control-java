@@ -1,9 +1,9 @@
-package com.example.springboottemplate.serviceimpl;
+package com.example.springboottemplate.serviceimpl.system;
 
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.Role;
-import com.example.springboottemplate.mapper.RoleMapper;
-import com.example.springboottemplate.service.RoleService;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.Role;
+import com.example.springboottemplate.mapper.system.RoleMapper;
+import com.example.springboottemplate.service.system.RoleService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;

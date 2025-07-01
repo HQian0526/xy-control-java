@@ -1,7 +1,7 @@
 package com.example.springboottemplate.serviceimpl;
 
 import com.example.springboottemplate.entity.EquUseLog;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.EquUseLogMapper;
 import com.example.springboottemplate.service.EquUseLogService;
 import com.example.springboottemplate.utils.ValidateUtil;

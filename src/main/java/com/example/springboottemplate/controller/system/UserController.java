@@ -1,8 +1,8 @@
-package com.example.springboottemplate.controller;
+package com.example.springboottemplate.controller.system;
 
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.User;
-import com.example.springboottemplate.service.UserService;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.service.system.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

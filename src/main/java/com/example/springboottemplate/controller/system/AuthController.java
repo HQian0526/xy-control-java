@@ -1,12 +1,11 @@
-package com.example.springboottemplate.controller;
+package com.example.springboottemplate.controller.system;
 
-import com.example.springboottemplate.entity.RefreshToken;
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.User;
-import com.example.springboottemplate.service.AuthService;
+import com.example.springboottemplate.dto.RefreshToken;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.service.system.AuthService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;

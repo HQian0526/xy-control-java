@@ -1,7 +1,7 @@
 package com.example.springboottemplate.controller;
 
 import com.example.springboottemplate.entity.EquUseLog;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.EquUseLogService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

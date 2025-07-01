@@ -1,4 +1,4 @@
-package com.example.springboottemplate.entity;
+package com.example.springboottemplate.entity.system;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.annotations.ApiModel;

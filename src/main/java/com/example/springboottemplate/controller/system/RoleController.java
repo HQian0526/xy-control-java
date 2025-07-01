@@ -1,8 +1,8 @@
-package com.example.springboottemplate.controller;
+package com.example.springboottemplate.controller.system;
 
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.Role;
-import com.example.springboottemplate.service.RoleService;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.Role;
+import com.example.springboottemplate.service.system.RoleService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import jakarta.servlet.http.HttpServletRequest;

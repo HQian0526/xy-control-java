@@ -1,7 +1,7 @@
-package com.example.springboottemplate.mapper;
+package com.example.springboottemplate.mapper.system;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.springboottemplate.entity.User;
+import com.example.springboottemplate.entity.system.User;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;

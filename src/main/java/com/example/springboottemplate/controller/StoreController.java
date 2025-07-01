@@ -1,6 +1,6 @@
 package com.example.springboottemplate.controller;
 
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.service.StoreService;
 import io.swagger.annotations.Api;

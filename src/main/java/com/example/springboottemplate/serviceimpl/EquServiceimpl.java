@@ -1,6 +1,6 @@
 package com.example.springboottemplate.serviceimpl;
 import com.example.springboottemplate.entity.Equ;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.EquMapper;
 import com.example.springboottemplate.service.EquService;
 import com.example.springboottemplate.utils.JwtUtil;

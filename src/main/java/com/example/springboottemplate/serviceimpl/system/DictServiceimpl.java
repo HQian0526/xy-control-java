@@ -1,9 +1,9 @@
-package com.example.springboottemplate.serviceimpl;
+package com.example.springboottemplate.serviceimpl.system;
 
-import com.example.springboottemplate.entity.Dict;
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.mapper.DictMapper;
-import com.example.springboottemplate.service.DictService;
+import com.example.springboottemplate.entity.system.Dict;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.mapper.system.DictMapper;
+import com.example.springboottemplate.service.system.DictService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;

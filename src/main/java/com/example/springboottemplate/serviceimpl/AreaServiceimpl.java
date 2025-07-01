@@ -1,6 +1,6 @@
 package com.example.springboottemplate.serviceimpl;
 import com.example.springboottemplate.entity.Area;
-import com.example.springboottemplate.entity.Response;
+import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.AreaMapper;
 import com.example.springboottemplate.service.AreaService;
 import com.example.springboottemplate.utils.JwtUtil;

@@ -1,16 +1,15 @@
-package com.example.springboottemplate.serviceimpl;
+package com.example.springboottemplate.serviceimpl.system;
 
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.User;
-import com.example.springboottemplate.mapper.UserMapper;
-import com.example.springboottemplate.service.AuthService;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.mapper.system.UserMapper;
+import com.example.springboottemplate.service.system.AuthService;
 import com.example.springboottemplate.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

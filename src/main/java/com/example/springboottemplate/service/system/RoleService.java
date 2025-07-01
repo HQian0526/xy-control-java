@@ -1,7 +1,7 @@
-package com.example.springboottemplate.service;
+package com.example.springboottemplate.service.system;
 
-import com.example.springboottemplate.entity.Response;
-import com.example.springboottemplate.entity.Role;
+import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.system.Role;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
