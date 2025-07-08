@@ -23,8 +23,8 @@ public class MenuController {
     @GetMapping("/findMenu")
     @ResponseBody
     @ApiOperation(value = "获取菜单树", notes = "获取菜单树")
-    public Response getMenuTree() {
-        return menuService.getMenuTree();
+    public Response getMenuTree(@RequestParam(required = false) Long roleId) {
+        return menuService.getMenuTree(roleId);
     }
 
     @GetMapping("/getMenuRoute")

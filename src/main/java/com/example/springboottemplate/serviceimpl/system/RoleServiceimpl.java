@@ -1,8 +1,17 @@
 package com.example.springboottemplate.serviceimpl.system;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.RoleMenuDto;
+import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.entity.system.Role;
+import com.example.springboottemplate.entity.system.SysRoleMenu;
+import com.example.springboottemplate.mapper.system.MenuMapper;
 import com.example.springboottemplate.mapper.system.RoleMapper;
+import com.example.springboottemplate.mapper.system.SysRoleMenuMapper;
+import com.example.springboottemplate.service.system.MenuService;
 import com.example.springboottemplate.service.system.RoleService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -13,19 +22,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class RoleServiceimpl implements RoleService {
+public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
     @Autowired
     private RoleMapper roleMapper;
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
+    @Autowired
+    private SysRoleMenuMapper sysRoleMenuMapper;
+    @Autowired
+    private MenuMapper menuMapper;
+    @Autowired
+    private MenuService menuService; // 注入MenuService
 
     @Override
     public Response addRole(Role role, HttpServletRequest request) {
@@ -76,5 +90,47 @@ public class RoleServiceimpl implements RoleService {
         } else {
             return new Response(400, null, "操作失败，未找到需要删除的记录");
         }
+    }
+
+    @Override
+    public List<MenuTreeDto> getRoleMenuTree(Long roleId) {
+        // 查询所有菜单
+        List<Menu> menus = menuMapper.selectList(new QueryWrapper<Menu>()
+                .orderByAsc("sort"));
+
+        // 查询角色已有菜单ID
+        List<Long> checkedKeys = Collections.emptyList();
+        if (roleId != null) {
+            checkedKeys = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
+        }
+
+        // 构建菜单树
+        return menuService.buildMenuTree(menus, checkedKeys);
+    }
+
+    @Override
+    public Response assignMenus(RoleMenuDto roleMenuDTO) {
+        Long roleId = roleMenuDTO.getRoleId();
+
+        // 删除原有权限
+        sysRoleMenuMapper.delete(new QueryWrapper<SysRoleMenu>()
+                .eq("role_id", roleId));
+
+        if (!CollectionUtils.isEmpty(roleMenuDTO.getMenuIds())) {
+            // 构建关联关系
+            List<SysRoleMenu> roleMenus = roleMenuDTO.getMenuIds().stream()
+                    .map(menuId -> {
+                        SysRoleMenu roleMenu = new SysRoleMenu();
+                        roleMenu.setRoleId(roleId);
+                        roleMenu.setMenuId(Long.valueOf(menuId));
+                        return roleMenu;
+                    })
+                    .collect(Collectors.toList());
+
+            // 批量插入
+            sysRoleMenuMapper.assignMenus(roleMenus);
+        }
+
+        return Response.success();
     }
 }

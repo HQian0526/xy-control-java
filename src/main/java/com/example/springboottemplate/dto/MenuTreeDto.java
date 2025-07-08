@@ -15,5 +15,6 @@ public class MenuTreeDto {
     private Integer level;
     private String path;
     private String componentPath;
+    private Boolean checked;
     private List<MenuTreeDto> children;
 }

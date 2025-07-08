@@ -1,14 +1,17 @@
 package com.example.springboottemplate.serviceimpl.system;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.dto.MenuRouteDto;
 import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.mapper.system.MenuMapper;
+import com.example.springboottemplate.mapper.system.SysRoleMenuMapper;
 import com.example.springboottemplate.service.system.MenuService;
 import com.example.springboottemplate.utils.ValidateUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -21,16 +24,26 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements MenuService {
+    @Autowired
+    private SysRoleMenuMapper sysRoleMenuMapper;
+    @Autowired
+    private MenuMapper menuMapper;
+
     @Override
-    public Response getMenuTree() {
-        LambdaQueryWrapper<Menu> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Menu::getDeleted, 0)
-                .orderByAsc(Menu::getSort);
-        List<Menu> menus = baseMapper.selectList(wrapper);
-        return Response.success(buildMenuTree(menus));
+    public Response getMenuTree(Long roleId) {
+        // 查询所有菜单
+        List<Menu> menus = menuMapper.selectList(new QueryWrapper<Menu>()
+                .orderByAsc("sort"));
+        // 如果传入了roleId，查询该角色已有的菜单权限
+        List<Long> checkedMenuIds = Collections.emptyList();
+        if (roleId != null) {
+            checkedMenuIds = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
+        }
+        // 构建菜单树并标记选中状态
+        return Response.success(buildMenuTree(menus, checkedMenuIds));
     }
 
-    private List<MenuTreeDto> buildMenuTree(List<Menu> menus) {
+    public List<MenuTreeDto> buildMenuTree(List<Menu> menus, List<Long> checkedMenuIds) {
         if (CollectionUtils.isEmpty(menus)) {
             return Collections.emptyList();
         }
@@ -41,14 +54,14 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
                 .collect(Collectors.toList());
 
         List<MenuTreeDto> menuTree = rootMenus.stream()
-                .map(menu -> convertToTreeDto(menu, menus))
+                .map(menu -> convertToTreeDto(menu, menus, checkedMenuIds))
                 .sorted(Comparator.comparingInt(MenuTreeDto::getSort))
                 .collect(Collectors.toList());
 
         return menuTree;
     }
 
-    private MenuTreeDto convertToTreeDto(Menu menu, List<Menu> menus) {
+    private MenuTreeDto convertToTreeDto(Menu menu, List<Menu> menus, List<Long> checkedMenuIds) {
         MenuTreeDto dto = new MenuTreeDto();
         dto.setId(String.valueOf(menu.getId()));
         dto.setMenuName(menu.getMenuName());
@@ -60,7 +73,8 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
         dto.setComponentPath(menu.getComponentPath());
         dto.setLevel(menu.getLevel());
         dto.setPath(menu.getPath());
-
+        // 设置是否选中状态
+        dto.setChecked(checkedMenuIds.contains(menu.getId()));
         // 查找子菜单
         List<Menu> children = menus.stream()
                 .filter(m -> menu.getId().equals(m.getParentId()))
@@ -68,7 +82,7 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
 
         if (!CollectionUtils.isEmpty(children)) {
             List<MenuTreeDto> childDtos = children.stream()
-                    .map(m -> convertToTreeDto(m, menus))
+                    .map(m -> convertToTreeDto(m, menus, checkedMenuIds))
                     .sorted(Comparator.comparingInt(MenuTreeDto::getSort))
                     .collect(Collectors.toList());
             dto.setChildren(childDtos);

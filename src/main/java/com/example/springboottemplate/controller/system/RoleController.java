@@ -1,6 +1,8 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.RoleMenuDto;
 import com.example.springboottemplate.entity.system.Role;
 import com.example.springboottemplate.service.system.RoleService;
 import io.swagger.annotations.Api;
@@ -49,5 +51,22 @@ public class RoleController {
     @ApiOperation(value = "删除角色", notes = "根据id删除角色")
     public Response deleteRole(@RequestBody List<Integer> idList){
         return roleService.deleteRole(idList);
+    }
+
+    //获取角色权限树
+    @GetMapping("/menu-tree/{roleId}")
+    @ResponseBody
+    @ApiOperation(value = "获取角色权限树", notes = "获取某个角色的权限菜单树")
+    public Response getRoleMenuTree(@PathVariable Long roleId) {
+        List<MenuTreeDto> menuTree = roleService.getRoleMenuTree(roleId);
+        return Response.success(menuTree);
+    }
+
+    //角色授权菜单
+    @PostMapping("/assignPerms")
+    @ResponseBody
+    @ApiOperation(value = "角色授权", notes = "给某个角色授予特定菜单权限")
+    public Response assignMenus(@RequestBody RoleMenuDto roleMenuDto) {
+        return roleService.assignMenus(roleMenuDto);
     }
 }
