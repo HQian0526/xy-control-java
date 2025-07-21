@@ -8,9 +8,15 @@ import com.example.springboottemplate.entity.system.Menu;
 import java.util.List;
 
 public interface MenuService extends IService<Menu> {
-    Response getMenuTree(Long roleId);
+
+    Response getMenuTree();
+
+    Response getMenuTreeByRoles(List<Long> roleIds);
 
     Response getMenuRoutes();
+
+    // 新增支持多角色的方法
+    Response getMenuRoutesByRoles(List<Long> roleIds);
 
     Response addMenu(Menu menu);
 

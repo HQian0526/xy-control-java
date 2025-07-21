@@ -16,9 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,17 +28,60 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
     private MenuMapper menuMapper;
 
     @Override
-    public Response getMenuTree(Long roleId) {
+    public Response getMenuTree() {
         // 查询所有菜单
         List<Menu> menus = menuMapper.selectList(new QueryWrapper<Menu>()
                 .orderByAsc("sort"));
         // 如果传入了roleId，查询该角色已有的菜单权限
         List<Long> checkedMenuIds = Collections.emptyList();
-        if (roleId != null) {
-            checkedMenuIds = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
-        }
         // 构建菜单树并标记选中状态
         return Response.success(buildMenuTree(menus, checkedMenuIds));
+    }
+
+    @Override
+    public Response getMenuTreeByRoles(List<Long> roleIds) {
+        // 查询所有菜单
+        List<Menu> menus = menuMapper.selectList(new QueryWrapper<Menu>()
+                .orderByAsc("sort"));
+        // 如果传入了roleIds，查询这些角色已有的菜单权限(去重)
+        Set<Long> checkedMenuIds = new HashSet<>();
+        if (roleIds != null && !roleIds.isEmpty()) {
+            for (Long roleId : roleIds) {
+                List<Long> menuIds = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
+                if (menuIds != null) {
+                    checkedMenuIds.addAll(menuIds);
+                }
+            }
+        }
+        // 构建菜单树并标记选中状态
+        return Response.success(buildMenuTree(menus, new ArrayList<>(checkedMenuIds)));
+    }
+
+    @Override
+    public Response getMenuRoutesByRoles(List<Long> roleIds) {
+        if (CollectionUtils.isEmpty(roleIds)) {
+            return getMenuRoutes(); // 如果没有角色ID，返回所有菜单
+        }
+
+        // 1. 获取这些角色拥有的所有菜单ID(去重)
+        Set<Long> menuIds = new HashSet<>();
+        for (Long roleId : roleIds) {
+            List<Long> ids = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
+            if (!CollectionUtils.isEmpty(ids)) {
+                menuIds.addAll(ids);
+            }
+        }
+
+        // 2. 如果没有权限，返回空列表
+        if (menuIds.isEmpty()) {
+            return Response.success(Collections.emptyList());
+        }
+
+        // 3. 查询这些菜单及所有必要的父级菜单
+        List<Menu> menus = getFullMenuListByIds(new ArrayList<>(menuIds));
+
+        // 4. 使用原有的转换逻辑
+        return Response.success(convertToRoutes(menus));
     }
 
     public List<MenuTreeDto> buildMenuTree(List<Menu> menus, List<Long> checkedMenuIds) {
@@ -211,17 +252,51 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
             } else {
                 return new Response(400, null, "操作失败，未找到需要删除的记录");
             }
-//            Menu menu = new Menu();
-//            menu.setId(Long.parseLong(id));
-//            menu.setDeleted(1);
-//            if (baseMapper.updateById(menu) > 0) {
-//                return Response.success();
-//            } else {
-//                return Response.fail("删除失败");
-//            }
         } catch(Exception e) {
             return Response.fail("删除失败");
         }
 
+    }
+
+    /**
+     * 根据菜单ID列表获取完整的菜单树（包括所有必要的父级菜单）
+     */
+    private List<Menu> getFullMenuListByIds(List<Long> menuIds) {
+        // 查询所有未删除的菜单
+        LambdaQueryWrapper<Menu> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Menu::getDeleted, 0)
+                .orderByAsc(Menu::getSort);
+        List<Menu> allMenus = baseMapper.selectList(wrapper);
+
+        // 获取直接拥有的菜单
+        List<Menu> result = allMenus.stream()
+                .filter(menu -> menuIds.contains(menu.getId()))
+                .collect(Collectors.toList());
+
+        // 递归获取所有必要的父级菜单
+        Set<Long> parentIds = result.stream()
+                .map(Menu::getParentId)
+                .filter(pid -> pid != null && pid != 0)
+                .collect(Collectors.toSet());
+
+        while (!parentIds.isEmpty()) {
+            Set<Long> newParentIds = new HashSet<>();
+            for (Long pid : parentIds) {
+                allMenus.stream()
+                        .filter(menu -> menu.getId().equals(pid))
+                        .findFirst()
+                        .ifPresent(menu -> {
+                            if (!result.contains(menu)) {
+                                result.add(menu);
+                                if (menu.getParentId() != null && menu.getParentId() != 0) {
+                                    newParentIds.add(menu.getParentId());
+                                }
+                            }
+                        });
+            }
+            parentIds = newParentIds;
+        }
+
+        return result;
     }
 }

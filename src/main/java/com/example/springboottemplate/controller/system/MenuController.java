@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -23,15 +24,21 @@ public class MenuController {
     @GetMapping("/findMenu")
     @ResponseBody
     @ApiOperation(value = "获取菜单树", notes = "获取菜单树")
-    public Response getMenuTree(@RequestParam(required = false) Long roleId) {
-        return menuService.getMenuTree(roleId);
+    public Response getMenuTree(@RequestParam(value = "roleIds", required = false) Long[] roleIds) {
+        if (roleIds == null || roleIds.length == 0) {
+            return menuService.getMenuTree();
+        }
+        return menuService.getMenuTreeByRoles(Arrays.asList(roleIds));
     }
 
     @GetMapping("/getMenuRoute")
     @ResponseBody
     @ApiOperation(value = "获取菜单路由", notes = "获取菜单路由")
-    public Response getMenuRoutes() {
-        return menuService.getMenuRoutes();
+    public Response getMenuRoutes(@RequestParam(value = "roleIds", required = false) Long[] roleIds) {
+        if (roleIds == null || roleIds.length == 0) {
+            return menuService.getMenuRoutes();
+        }
+        return menuService.getMenuRoutesByRoles(Arrays.asList(roleIds));
     }
 
     @PostMapping("/addMenu")
