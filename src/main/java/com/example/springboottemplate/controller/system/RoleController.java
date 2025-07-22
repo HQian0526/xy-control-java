@@ -3,6 +3,7 @@ package com.example.springboottemplate.controller.system;
 import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.RoleMenuDto;
+import com.example.springboottemplate.dto.UserRoleDto;
 import com.example.springboottemplate.entity.system.Role;
 import com.example.springboottemplate.service.system.RoleService;
 import io.swagger.annotations.Api;
@@ -68,5 +69,21 @@ public class RoleController {
     @ApiOperation(value = "角色授权", notes = "给某个角色授予特定菜单权限")
     public Response assignMenus(@RequestBody RoleMenuDto roleMenuDto) {
         return roleService.assignMenus(roleMenuDto);
+    }
+
+    //用户授予角色
+    @PostMapping("/assignRoles")
+    @ResponseBody
+    @ApiOperation(value = "用户授予角色", notes = "给某个用户授予特定角色")
+    public Response assignRoles(@RequestBody UserRoleDto userRoleDto) {
+        return roleService.assignRoles(userRoleDto);
+    }
+
+    //获取用户角色列表
+    @GetMapping("/getRoleList/{userId}")
+    @ResponseBody
+    @ApiOperation(value = "获取用户角色列表", notes = "获取某个用户的角色列表")
+    public Response getRoleList(@PathVariable Long userId) {
+        return roleService.getRoleList(userId);
     }
 }

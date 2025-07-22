@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.RoleMenuDto;
+import com.example.springboottemplate.dto.UserRoleDto;
 import com.example.springboottemplate.entity.system.Role;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -26,4 +27,14 @@ public interface RoleService extends IService<Role> {
      * 分配权限
      */
     Response assignMenus(RoleMenuDto roleMenuDto);
+
+    /**
+     * 分配角色
+     */
+    Response assignRoles(UserRoleDto userRoleDto);
+
+    /**
+     * 根据用户id获取角色列表
+     */
+    Response getRoleList(Long userId);
 }

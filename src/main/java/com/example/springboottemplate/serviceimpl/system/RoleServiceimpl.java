@@ -5,12 +5,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.RoleMenuDto;
+import com.example.springboottemplate.dto.UserRoleDto;
 import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.entity.system.Role;
 import com.example.springboottemplate.entity.system.SysRoleMenu;
+import com.example.springboottemplate.entity.system.SysUserRole;
 import com.example.springboottemplate.mapper.system.MenuMapper;
 import com.example.springboottemplate.mapper.system.RoleMapper;
 import com.example.springboottemplate.mapper.system.SysRoleMenuMapper;
+import com.example.springboottemplate.mapper.system.SysUserRoleMapper;
 import com.example.springboottemplate.service.system.MenuService;
 import com.example.springboottemplate.service.system.RoleService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -36,6 +39,8 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Autowired
     private SysRoleMenuMapper sysRoleMenuMapper;
+    @Autowired
+    private SysUserRoleMapper sysUserRoleMapper;
     @Autowired
     private MenuMapper menuMapper;
     @Autowired
@@ -132,5 +137,38 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
         }
 
         return Response.success();
+    }
+
+    @Override
+    public Response assignRoles(UserRoleDto userRoleDTO) {
+        Long userId = userRoleDTO.getUserId();
+
+        // 删除原有权限
+        sysUserRoleMapper.delete(new QueryWrapper<SysUserRole>()
+                .eq("user_id", userId));
+
+        if (!CollectionUtils.isEmpty(userRoleDTO.getRoleIds())) {
+            // 构建关联关系
+            List<SysUserRole> userRoles = userRoleDTO.getRoleIds().stream()
+                    .map(roleId -> {
+                        SysUserRole userRole = new SysUserRole();
+                        userRole.setRoleId(userId);
+                        userRole.setRoleId(Long.valueOf(roleId));
+                        return userRole;
+                    })
+                    .collect(Collectors.toList());
+
+            // 批量插入
+            sysUserRoleMapper.assignRoles(userRoles);
+        }
+
+        return Response.success();
+    }
+
+    @Override
+    public Response getRoleList(Long userId) {
+        // 获取角色列表
+        List<Long> list = sysUserRoleMapper.selectRoleIdsByUserId(userId);
+        return Response.success(list);
     }
 }
