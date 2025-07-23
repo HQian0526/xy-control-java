@@ -86,4 +86,13 @@ public class RoleController {
     public Response getRoleList(@PathVariable Long userId) {
         return roleService.getRoleList(userId);
     }
+
+    //根据角色id获取对应用户列表
+    @GetMapping("/getUsersList/{roleId}")
+    @ResponseBody
+    @ApiOperation(value = "根据角色id获取对应用户列表", notes = "根据角色id获取对应用户列表")
+    public Response getUsersByRoleId(@PathVariable Long roleId) {
+        return roleService.getUsersByRoleId(roleId);
+    }
+
 }

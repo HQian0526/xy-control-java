@@ -37,4 +37,10 @@ public interface RoleService extends IService<Role> {
      * 根据用户id获取角色列表
      */
     Response getRoleList(Long userId);
+
+    /**
+     * 根据用户id获取角色列表
+     */
+    Response getUsersByRoleId(Long roleId);
+
 }

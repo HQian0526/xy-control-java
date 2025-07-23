@@ -8,5 +8,9 @@ import java.util.List;
 public class UserRoleDto {
     private Long userId;
 
+    private Long roleId;
+
     private List<Long> roleIds;
+
+    private List<Long> userIds;
 }

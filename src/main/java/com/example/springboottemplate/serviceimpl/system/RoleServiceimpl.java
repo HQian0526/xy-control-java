@@ -6,14 +6,8 @@ import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.RoleMenuDto;
 import com.example.springboottemplate.dto.UserRoleDto;
-import com.example.springboottemplate.entity.system.Menu;
-import com.example.springboottemplate.entity.system.Role;
-import com.example.springboottemplate.entity.system.SysRoleMenu;
-import com.example.springboottemplate.entity.system.SysUserRole;
-import com.example.springboottemplate.mapper.system.MenuMapper;
-import com.example.springboottemplate.mapper.system.RoleMapper;
-import com.example.springboottemplate.mapper.system.SysRoleMenuMapper;
-import com.example.springboottemplate.mapper.system.SysUserRoleMapper;
+import com.example.springboottemplate.entity.system.*;
+import com.example.springboottemplate.mapper.system.*;
 import com.example.springboottemplate.service.system.MenuService;
 import com.example.springboottemplate.service.system.RoleService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -45,6 +39,8 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
     private MenuMapper menuMapper;
     @Autowired
     private MenuService menuService; // 注入MenuService
+    @Autowired
+    private UserMapper userMapper; // 注入userMapper
 
     @Override
     public Response addRole(Role role, HttpServletRequest request) {
@@ -141,18 +137,18 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
     @Override
     public Response assignRoles(UserRoleDto userRoleDTO) {
-        Long userId = userRoleDTO.getUserId();
+        Long roleId = userRoleDTO.getRoleId();
 
-        // 删除原有权限
+        // 删除原有用户
         sysUserRoleMapper.delete(new QueryWrapper<SysUserRole>()
-                .eq("user_id", userId));
+                .eq("role_id", roleId));
 
-        if (!CollectionUtils.isEmpty(userRoleDTO.getRoleIds())) {
+        if (!CollectionUtils.isEmpty(userRoleDTO.getUserIds())) {
             // 构建关联关系
-            List<SysUserRole> userRoles = userRoleDTO.getRoleIds().stream()
-                    .map(roleId -> {
+            List<SysUserRole> userRoles = userRoleDTO.getUserIds().stream()
+                    .map(uId -> {
                         SysUserRole userRole = new SysUserRole();
-                        userRole.setRoleId(userId);
+                        userRole.setUserId(uId);
                         userRole.setRoleId(Long.valueOf(roleId));
                         return userRole;
                     })
@@ -170,5 +166,30 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
         // 获取角色列表
         List<Long> list = sysUserRoleMapper.selectRoleIdsByUserId(userId);
         return Response.success(list);
+    }
+
+    @Override
+    public Response getUsersByRoleId(Long roleId) {
+        // 根据角色id获取对应用户列表
+        List<Long> userIds = sysUserRoleMapper.selectUserIdsByRoleId(roleId);
+        // 1. 若userIds列表为空则返回空数组
+        if (CollectionUtils.isEmpty(userIds)) {
+            return Response.success(Collections.emptyList());
+        }
+        // 2. 使用 MyBatis-Plus 的 selectBatchIds 批量查询用户信息
+        List<User> users = userMapper.selectBatchIds(userIds);
+
+        // 3. 转换为需要的格式（只返回 userId, userName, realName）
+        List<Map<String, Object>> result = users.stream()
+                .map(user -> {
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("userId", user.getId());
+                    userInfo.put("userName", user.getUserName());
+                    userInfo.put("realName", user.getRealName());
+                    return userInfo;
+                })
+                .collect(Collectors.toList());
+
+        return Response.success(result);
     }
 }

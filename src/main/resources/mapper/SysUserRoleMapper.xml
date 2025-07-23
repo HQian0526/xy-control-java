@@ -22,4 +22,9 @@
     <select id="selectRoleIdsByUserId" resultType="java.lang.Long">
         select role_id from sys_user_role where user_id = #{userId}
     </select>
+
+    <!-- 查询某个角色对应的所有用户-->
+    <select id="selectUserIdsByRoleId" resultType="java.lang.Long">
+        select user_id from sys_user_role where role_id = #{roleId}
+    </select>
 </mapper>
