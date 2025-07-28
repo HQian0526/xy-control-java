@@ -45,7 +45,7 @@ public class StoreServiceimpl implements StoreService {
         // 开启分页
         PageHelper.startPage(pageNum, pageSize);
         // 查询数据
-        List<Store> list = storeMapper.findStore(store);
+        List list = storeMapper.findStore(store);
         // 封装分页结果
         PageInfo<Store> pageInfo = new PageInfo<>(list);
         // 构造返回数据

@@ -46,6 +46,9 @@ public class Store {
     @ApiModelProperty(value = "工商主体名称", required = true)
     private String identityCompanyName;
 
+    @ApiModelProperty(value = "营业执照", required = false)
+    private String businessLicense;
+
     @ApiModelProperty(value = "法人身份证号", required = true)
     private String identityNo;
 

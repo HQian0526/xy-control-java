@@ -15,6 +15,11 @@ spring:
     url: jdbc:mysql://localhost:3306/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
     username: root
     password: hq963497073
+  # 系统文件上传大小限制
+  servlet:
+    multipart:
+      max-file-size: 20MB #单文件最大20MB
+      max-request-size: 20MB #单次请求最大20MB
 
 # Mybatis配置
 mybatis-plus:
@@ -40,3 +45,9 @@ jwt:
   secret-key: "y7a9fLp9Xy2A/sB1nOq6r4tJwYz8Cv0EeKcHj3mNl+Q="  # Base64编码的256位密钥
   access-token-expire: 3600000      #1小时 访问令牌过期时间（毫秒）
   refresh-token-expire: 604800000   #7天 刷新令牌过期时间（毫秒）
+
+# 文件上传（关于文件大小限制在上面的spring-servlet-multipart中）
+upload:
+  dir: ${user.home}/xy_uploads/ #文件上传存储路径
+#  dir: C:/用户/96349/xy_uploads/  # 末尾必须加斜杠
+  public-path: /upload-images/** #对外暴露的url路径
