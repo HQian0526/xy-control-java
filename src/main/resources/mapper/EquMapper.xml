@@ -56,12 +56,14 @@
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == null || deleted == '' || deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -77,6 +79,7 @@
             <if test="equStatus != null">equ_status = #{bindDeskId},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
         <!-- update equ set equ_name = #{equName}, equ_type = #{equType}, bind_desk_id = #{bindDeskId}, bind_store_id = #{bindStoreId}, equ_code = #{equCode}, equ_status = #{equStatus}, update_by = #{updateBy}, remark = #{remark} where id = #{id} -->

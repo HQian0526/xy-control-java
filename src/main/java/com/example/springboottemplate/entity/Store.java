@@ -23,13 +23,13 @@ public class Store {
     private Integer storeId;
 
     @ApiModelProperty(value = "商户名", required = true)
-    private String name;
+    private String storeName;
 
     @ApiModelProperty(value = "商户地址", required = true)
     private String address;
 
-    @ApiModelProperty(value = "关联的userId", required = true)
-    private Integer userId;
+    @ApiModelProperty(value = "关联的用户Id", required = true)
+    private Long userId;
 
     @ApiModelProperty(value = "商户类型 1永久 2租用", required = true)
     private Integer storeType;
@@ -75,6 +75,12 @@ public class Store {
 
     @ApiModelProperty(value = "店铺信息更新人", required = false)
     private String updateBy;
+
+    @ApiModelProperty(value = "用户名", required = false)
+    private String userName;
+
+    @ApiModelProperty(value = "真实姓名", required = false)
+    private String realName;
 
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic

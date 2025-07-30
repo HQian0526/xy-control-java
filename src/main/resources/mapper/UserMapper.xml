@@ -67,12 +67,14 @@
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -90,7 +92,13 @@
             <if test="email != null">email = #{email},</if>
             <if test="identityType != null">identity_type = #{identityType},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
     </update>
+
+    <!-- 根据用户id查询用户信息-->
+    <select id="selectById" parameterType="java.lang.Long" resultType="User">
+        select * from user where id = #{id}
+    </select>
 </mapper>

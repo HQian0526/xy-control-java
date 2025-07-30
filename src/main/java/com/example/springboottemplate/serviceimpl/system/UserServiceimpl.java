@@ -107,4 +107,9 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
             return new Response(200, list.get(0), "操作成功");
         }
     }
+
+    @Override
+    public Response getUserById(Long id) {
+        return Response.success(userMapper.selectById(id));
+    }
 }

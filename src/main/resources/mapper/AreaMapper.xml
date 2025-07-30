@@ -49,12 +49,14 @@
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == null || deleted == '' || deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -67,6 +69,7 @@
             <if test="storeId != null">store_id = #{storeId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
         <!-- update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark}, update_by = #{updateBy} where id = #{id} -->

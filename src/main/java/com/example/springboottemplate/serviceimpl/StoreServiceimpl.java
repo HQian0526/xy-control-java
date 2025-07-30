@@ -2,7 +2,9 @@ package com.example.springboottemplate.serviceimpl;
 
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
+import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.mapper.StoreMapper;
+import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -10,6 +12,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -26,6 +30,9 @@ public class StoreServiceimpl implements StoreService {
     private StoreMapper storeMapper;
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
+    @Autowired
+    private UserMapper userMapper;
+
     @Override
     public Response addStore(Store store, HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
@@ -45,12 +52,18 @@ public class StoreServiceimpl implements StoreService {
         // 开启分页
         PageHelper.startPage(pageNum, pageSize);
         // 查询数据
-        List list = storeMapper.findStore(store);
+        List<Store> list = storeMapper.findStore(store);
+        // 添加自定义userName和realName字段
+        list.forEach(item -> {
+            User user = userMapper.selectById(item.getUserId());
+            item.setUserName(user != null ? user.getUserName() : null);
+            item.setRealName(user != null ? user.getRealName() : null);
+        });
         // 封装分页结果
         PageInfo<Store> pageInfo = new PageInfo<>(list);
         // 构造返回数据
         Map<String, Object> data = new HashMap<>();
-        data.put("list", pageInfo.getList());  // 当前页数据
+        data.put("list", list);  // 当前页数据
         data.put("total", pageInfo.getTotal()); // 总记录数
         data.put("pages", pageInfo.getPages()); // 总页数
         data.put("pageNum", pageInfo.getPageNum()); // 当前页码

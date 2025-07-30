@@ -7,7 +7,7 @@
         <id property="id" column="id"/> <!-- 主键字段 -->
         <result property="storeId" column="store_id"/>
         <result property="realName" column="real_name"/>
-        <result property="name" column="name"/>
+        <result property="storeName" column="store_name"/>
         <result property="address" column="address"/>
         <result property="userId" column="user_id"/>
         <result property="storeType" column="store_type"/>
@@ -29,7 +29,7 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (store_id, name, address, user_id, store_type, store_time, status, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{name}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{status}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into store (store_id, store_name, address, user_id, store_type, store_time, status, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{status}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -42,8 +42,8 @@
             <if test="storeId != null and storeId != ''">
                 and store_id like CONCAT('%', #{storeId}, '%')
             </if>
-            <if test="name != null and name != ''">
-                and name like CONCAT('%', #{name}, '%')
+            <if test="storeName != null and storeName != ''">
+                and store_name like CONCAT('%', #{storeName}, '%')
             </if>
             <if test="storeType != null and storeType != ''">
                 and store_type = #{storeType}
@@ -64,13 +64,13 @@
                 and identity_company_name like CONCAT('%', #{identityCompanyName}, '%')
             </if>
             <if test="identityNo != null and identityNo != ''">
-                and identity_no = like CONCAT('%', #{identityNo}, '%')
+                and identity_no like CONCAT('%', #{identityNo}, '%')
             </if>
             <if test="identityPhone != null and identityPhone != ''">
-                and identity_phone = like CONCAT('%', #{identityPhone}, '%')
+                and identity_phone like CONCAT('%', #{identityPhone}, '%')
             </if>
             <if test="identityEmail != null and identityEmail != ''">
-                and identity_email = like CONCAT('%', #{identityEmail}, '%')
+                and identity_email like CONCAT('%', #{identityEmail}, '%')
             </if>
             <if test="createdTime != null and createdTime != ''">
                 and created_time = #{createdTime}
@@ -78,12 +78,14 @@
             <if test="updateTime != null and updateTime != ''">
                 and update_time = #{updateTime}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == null || deleted == '' || deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -91,7 +93,8 @@
     <update id="updateStore" parameterType="Store">
         update store
         <set>
-            <if test="name != null">name = #{name},</if>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="storeName != null">store_name = #{storeName},</if>
             <if test="address != null">address = #{address},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="storeType != null">store_type = #{storeType},</if>
@@ -105,6 +108,8 @@
             <if test="identityPhone != null">identity_phone = #{identityPhone},</if>
             <if test="identityEmail != null">identity_email = #{identityEmail},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
     </update>

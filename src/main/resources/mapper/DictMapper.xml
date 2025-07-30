@@ -46,12 +46,14 @@
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == null || deleted == '' || deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -64,6 +66,7 @@
             <if test="remark != null">remark = #{remark},</if>
             <if test="dictJson != null">dict_json = #{dictJson},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
         <!-- update dict set code = #{code}, dict_name = #{dictName}, remark = #{remark}, dict_json = #{dictJson}, update_by = #{updateBy} where id = #{id} -->

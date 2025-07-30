@@ -61,12 +61,14 @@
             <if test="endTime != null and endTime != ''">
                 and end_time = #{endTime}
             </if>
-            <if test="deleted != null and deleted != ''">
-                and deleted = #{deleted}
-            </if>
-            <if test="deleted == null || deleted == '' || deleted == 0">
-                and deleted = 0
-            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+<!--                <otherwise>-->
+<!--                    and deleted = 0-->
+<!--                </otherwise>-->
+            </choose>
         </where>
     </select>
 
@@ -84,6 +86,7 @@
             <if test="endTime != null">end_time = #{endTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
         <!-- update card set card_name = #{cardName}, price = #{price}, intro = #{intro}, card_type = #{cardType}, status = #{status}, effect_day = #{effectDay}, start_time = #{startTime}, end_time = #{endTime}, remark = #{remark}, update_by = #{updateBy} where id = #{id} -->
