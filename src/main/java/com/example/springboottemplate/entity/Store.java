@@ -52,11 +52,8 @@ public class Store {
     @ApiModelProperty(value = "法人身份证号", required = true)
     private String identityNo;
 
-    @ApiModelProperty(value = "法人身份证正面base64", required = false)
-    private String identityFontImg;
-
-    @ApiModelProperty(value = "法人身份证反面base64", required = false)
-    private String identityBackImg;
+    @ApiModelProperty(value = "法人身份证照片", required = false)
+    private String identityPhoto;
 
     @ApiModelProperty(value = "法人手机号", required = false)
     private String identityPhone;

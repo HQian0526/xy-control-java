@@ -17,8 +17,7 @@
         <result property="identityCompanyName" column="identity_company_name"/>
         <result property="businessLicense" column="business_license" />
         <result property="identityNo" column="identity_no"/>
-        <result property="identityFontImg" column="identity_font_img"/>
-        <result property="identityBackImg" column="identity_back_img"/>
+        <result property="identityPhoto" column="identity_photo"/>
         <result property="identityPhone" column="identity_phone"/>
         <result property="identityEmail" column="identity_email"/>
         <result property="createdTime" column="created_time"/>
@@ -30,7 +29,7 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (name, address, user_id, store_type, store_time, status, identity_name, identity_company_name, business_license, identity_no, identity_font_img, identity_back_img, identity_phone, identity_email, created_time, created_by) value (#{name}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{status}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityFontImg}, #{identityBackImg}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy})
+        INSERT into store (store_id, name, address, user_id, store_type, store_time, status, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{name}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{status}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -102,13 +101,11 @@
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
             <if test="businessLicense != null">business_license = #{businessLicense},</if>
             <if test="identityNo != null">identity_no = #{identityNo},</if>
-            <if test="identityFontImg != null">identity_font_img = #{identityFontImg},</if>
-            <if test="identityBackImg != null">identity_back_img = #{identityBackImg},</if>
+            <if test="identityPhoto != null">identity_photo = #{identityPhoto},</if>
             <if test="identityPhone != null">identity_phone = #{identityPhone},</if>
             <if test="identityEmail != null">identity_email = #{identityEmail},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
         </set>
         where id = #{id}
---         update store set name = #{name}, address = #{address}, user_id = #{userId}, store_type = #{storeType}, store_time = #{storeTime}, status = #{status}, identity_name = #{identityName}, identity_company_name = #{identityCompanyName}, business_license = #{businessLicense}, identity_no = #{identityNo}, identity_font_img = #{identityFontImg}, identity_back_img = #{identityBackImg}, identity_phone = #{identityPhone}, identity_email = #{identityEmail}, update_by = #{updateBy} where id = #{id}
     </update>
 </mapper>
