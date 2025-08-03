@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.contract.ContractItemMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="contractItemResultMap" type="ContractItem">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="contractId" column="contract_id"/>
+        <result property="itemName" column="item_name"/>
+        <result property="itemType" column="item_type"/>
+        <result property="quantity" column="quantity"/>
+        <result property="unitPrice" column="unit_price"/>
+        <result property="totalPrice" column="total_price"/>
+        <result property="specification" column="specification"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <!-- 新增区域 -->
+    <insert id="insertBatchSomeColumn" parameterType="ContractItem">
+        INSERT into contract_item (contract_id, item_name, item_type, quantity, unit_price, total_price, specification, remark) value (#{contractId}, #{itemName}, #{itemType}, #{quantity}, #{unitPrice}, #{totalPrice}, #{specification}, #{remark})
+    </insert>
+</mapper>

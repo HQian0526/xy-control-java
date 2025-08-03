@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.contract.ContractMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="contractResultMap" type="Contract">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="contractNo" column="contract_no"/>
+        <result property="contractName" column="contract_name"/>
+        <result property="contractType" column="contract_type"/>
+        <result property="lessorType" column="lessor_type"/>
+        <result property="lessorId" column="lessor_id"/>
+        <result property="lesseeType" column="lessee_type"/>
+        <result property="lesseeId" column="lessee_id"/>
+        <result property="lesseeName" column="lessee_name"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="totalAmount" column="total_amount"/>
+        <result property="paymentCircle" column="payment_circle"/>
+        <result property="contractStatus" column="contract_status"/>
+        <result property="signDate" column="sign_date"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!-- 新增合同 -->
+    <insert id="addContract" parameterType="Contract">
+        INSERT into contract (
+            contract_no,
+            contract_name,
+            contract_type,
+            lessor_type,
+            lessor_id,
+            lessee_type,
+            lessee_id,
+            lessee_name,
+            start_date,
+            end_date,
+            total_amount,
+            payment_circle,
+            contract_status,
+            sign_date,
+            created_time,
+            created_by,
+            remark
+        ) value (
+            #{contractNo},
+            #{contractName},
+            #{contractType},
+            #{lessorType},
+            #{lessorId},
+            #{lesseeType},
+            #{lesseeId},
+            #{lesseeName},
+            #{startDate},
+            #{endDate},
+            #{totalAmount},
+            #{paymentCircle},
+            #{contractStatus},
+            #{signDate},
+            #{createdTime},
+            #{createdBy},
+            #{remark}
+        )
+    </insert>
+
+    <!-- 查询所有合同信息（模糊查询）-->
+    <select id="findContract" parameterType="Contract" resultMap="contractResultMap">
+        select * from contract
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="contractNo != null and contractNo != ''">
+                and contract_no like CONCAT('%', #{contractNo}, '%')
+            </if>
+            <if test="contractName != null and contractName != ''">
+                and contract_name like CONCAT('%', #{contractName}, '%')
+            </if>
+            <if test="contractType != null and contractType != ''">
+                and contract_type = #{contractType}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+                <!--                <otherwise>-->
+                <!--                    and deleted = 0-->
+                <!--                </otherwise>-->
+            </choose>
+        </where>
+    </select>
+
+    <!-- 修改合同信息 -->
+    <update id="updateContract" parameterType="Contract">
+        update contract
+        <set>
+            <if test="contractNo != null">contract_no = #{contractNo},</if>
+            <if test="contractName != null">contract_name = #{contractName},</if>
+            <if test="contractType != null">contract_type = #{contractType},</if>
+            <if test="lessorType != null">lessor_type = #{lessorType},</if>
+            <if test="lessorId != null">lessor_id = #{lessorId},</if>
+            <if test="lesseeType != null">lessee_type = #{lesseeType},</if>
+            <if test="lesseeId != null">lessee_id = #{lesseeId},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="paymentCircle != null">payment_circle = #{paymentCircle},</if>
+            <if test="contractStatus != null">contract_status = #{contractStatus},</if>
+            <if test="signDate != null">sign_date = #{signDate},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 根据合同编号查询合同信息-->
+    <select id="selectByContractNo" parameterType="java.lang.String" resultType="Contract">
+        select * from contract where contract_no = #{contractNo}
+    </select>
+</mapper>

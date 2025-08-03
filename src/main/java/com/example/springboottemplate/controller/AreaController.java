@@ -19,7 +19,7 @@ public class AreaController {
     @Autowired
     private AreaService areaService;
 
-    // 新增用户
+    // 新增区域
     @PostMapping("/addArea")
     @ResponseBody
     @ApiOperation(value = "添加区域", notes = "传入区域各项信息进行添加区域")
