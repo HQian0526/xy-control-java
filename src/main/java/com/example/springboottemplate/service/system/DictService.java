@@ -11,7 +11,7 @@ public interface DictService {
 
     Response findDict(Dict dict, Integer pageNum, Integer pageSize);
 
-    Response updateDict(Dict dict);
+    Response updateDict(Dict dict, HttpServletRequest request);
 
     Response deleteDict(List<Integer> idList);
 }

@@ -71,7 +71,13 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Response updateUser(User user) {
+    public Response updateUser(User user, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        user.setUpdateBy(username);
         userMapper.updateUser(user);
         return new Response(200, null, "操作成功");
     }

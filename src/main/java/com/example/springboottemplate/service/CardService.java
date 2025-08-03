@@ -11,7 +11,7 @@ public interface CardService {
 
     Response findCard(Card card, Integer pageNum, Integer pageSize);
 
-    Response updateCard(Card card);
+    Response updateCard(Card card, HttpServletRequest request);
 
     Response deleteCard(List<Integer> idList);
 }

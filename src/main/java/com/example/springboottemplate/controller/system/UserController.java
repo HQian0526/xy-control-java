@@ -39,8 +39,8 @@ public class UserController {
     @PutMapping("/updateUser")
     @ResponseBody
     @ApiOperation(value = "修改用户信息", notes = "根据id更新用户信息")
-    public Response updateUser(@RequestBody User user){
-        return userService.updateUser(user);
+    public Response updateUser(@RequestBody User user, HttpServletRequest request){
+        return userService.updateUser(user, request);
     }
 
     //删除用户信息

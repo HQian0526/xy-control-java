@@ -1,7 +1,9 @@
 package com.example.springboottemplate.serviceimpl;
 import com.example.springboottemplate.entity.Area;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.mapper.AreaMapper;
+import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.service.AreaService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.github.pagehelper.PageHelper;
@@ -25,6 +27,8 @@ public class AreaServiceimpl implements AreaService {
     @Autowired
     private AreaMapper areaMapper;
     @Autowired
+    private StoreMapper storeMapper;
+    @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
 
     @Override
@@ -36,7 +40,6 @@ public class AreaServiceimpl implements AreaService {
         String username = claims.getSubject();
         area.setCreatedTime(new Date());
         area.setCreatedBy(username);
-
         areaMapper.addArea(area);
         return new Response(200, null, "操作成功");
     }
@@ -47,6 +50,11 @@ public class AreaServiceimpl implements AreaService {
         PageHelper.startPage(pageNum, pageSize);
         // 查询数据
         List<Area> list = areaMapper.findArea(area);
+        // 添加自定义storeName字段
+        list.forEach(item -> {
+            Store store = storeMapper.selectByStoreId(item.getStoreId());
+            item.setStoreName(store != null ? store.getStoreName() : null);
+        });
         // 封装分页结果
         PageInfo<Area> pageInfo = new PageInfo<>(list);
         // 构造返回数据
@@ -60,7 +68,13 @@ public class AreaServiceimpl implements AreaService {
     }
 
     @Override
-    public Response updateArea(Area area) {
+    public Response updateArea(Area area, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        area.setUpdateBy(username);
         areaMapper.updateArea(area);
         return new Response(200, null, "操作成功");
     }

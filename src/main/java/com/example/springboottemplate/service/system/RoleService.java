@@ -15,7 +15,7 @@ public interface RoleService extends IService<Role> {
 
     Response findRole(Role role, Integer pageNum, Integer pageSize);
 
-    Response updateRole(Role role);
+    Response updateRole(Role role, HttpServletRequest request);
 
     Response deleteRole(List<Integer> idList);
     /**

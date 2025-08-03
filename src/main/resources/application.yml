@@ -43,7 +43,7 @@ pagehelper:
 # 登录令牌配置
 jwt:
   secret-key: "y7a9fLp9Xy2A/sB1nOq6r4tJwYz8Cv0EeKcHj3mNl+Q="  # Base64编码的256位密钥
-  access-token-expire: 3600000      #1小时 访问令牌过期时间（毫秒）
+  access-token-expire: 3600000     #1小时 访问令牌过期时间（毫秒）
   refresh-token-expire: 604800000   #7天 刷新令牌过期时间（毫秒）
 
 # 文件上传（关于文件大小限制在上面的spring-servlet-multipart中）

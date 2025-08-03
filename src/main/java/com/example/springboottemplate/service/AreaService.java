@@ -11,7 +11,7 @@ public interface AreaService {
 
     Response findArea(Area area, Integer pageNum, Integer pageSize);
 
-    Response updateArea(Area area);
+    Response updateArea(Area area, HttpServletRequest request);
 
     Response deleteArea(List<Integer> idList);
 }

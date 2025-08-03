@@ -39,8 +39,8 @@ public class DictController {
     @PutMapping("/updateDict")
     @ResponseBody
     @ApiOperation(value = "修改字典信息", notes = "根据id更新字典信息")
-    public Response updateDict(@RequestBody Dict dict){
-        return dictService.updateDict(dict);
+    public Response updateDict(@RequestBody Dict dict, HttpServletRequest request){
+        return dictService.updateDict(dict, request);
     }
 
     //删除字典信息

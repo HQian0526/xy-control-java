@@ -12,13 +12,14 @@
         <result property="createdBy" column="created_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="areaPhoto" column="area_photo"/>
         <result property="remark" column="remark"/>
         <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增区域 -->
     <insert id="addArea" parameterType="Area">
-        INSERT into area (area_id, area_name, store_id, created_time, created_by, remark) value (#{areaId}, #{areaName}, #{storeId}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into area (area_id, area_name, store_id, created_time, created_by, remark, area_photo) value (#{areaId}, #{areaName}, #{storeId}, #{createdTime}, #{createdBy}, #{remark}, #{areaPhoto})
     </insert>
 
     <!-- 查询所有区域信息（模糊查询）-->
@@ -70,6 +71,7 @@
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="areaPhoto != null">area_photo = #{areaPhoto},</if>
         </set>
         where id = #{id}
         <!-- update area set area_id = #{areaId}, area_name = #{areaName}, store_id = #{storeId}, remark = #{remark}, update_by = #{updateBy} where id = #{id} -->

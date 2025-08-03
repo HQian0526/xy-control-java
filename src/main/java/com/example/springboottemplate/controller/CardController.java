@@ -39,8 +39,8 @@ public class CardController {
     @PutMapping("/updateCard")
     @ResponseBody
     @ApiOperation(value = "修改卡信息", notes = "根据id更新卡信息")
-    public Response updateCard(@RequestBody Card card){
-        return cardService.updateCard(card);
+    public Response updateCard(@RequestBody Card card, HttpServletRequest request){
+        return cardService.updateCard(card, request);
     }
 
     //删除卡信息

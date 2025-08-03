@@ -28,12 +28,6 @@ public class Role {
     @ApiModelProperty(value = "角色备注", required = false)
     private String remark;
 
-    @ApiModelProperty(value = "角色对应的用户组", required = false)
-    private String userList;
-
-    @ApiModelProperty(value = "角色对应的权限菜单", required = false)
-    private String authList;
-
     @ApiModelProperty(value = "角色创建时间", required = false)
     private Date createdTime;
 

@@ -39,8 +39,8 @@ public class StoreController {
     @PutMapping("/updateStore")
     @ResponseBody
     @ApiOperation(value = "修改商户信息", notes = "根据id更新商户信息")
-    public Response updateStore(@RequestBody Store store){
-        return storeService.updateStore(store);
+    public Response updateStore(@RequestBody Store store, HttpServletRequest request){
+        return storeService.updateStore(store, request);
     }
 
     //删除商户信息（慎用）

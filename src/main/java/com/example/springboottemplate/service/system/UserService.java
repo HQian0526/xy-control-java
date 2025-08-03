@@ -17,7 +17,7 @@ public interface UserService {
     Response getUserById(Long id);
 
     // 更新用户信息
-    Response updateUser(User user);
+    Response updateUser(User user, HttpServletRequest request);
 
     // 逻辑删除用户
     Response deleteUser(List<Integer> idList);

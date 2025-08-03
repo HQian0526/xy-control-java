@@ -60,7 +60,13 @@ public class CardServiceimpl implements CardService {
     }
 
     @Override
-    public Response updateCard(Card card) {
+    public Response updateCard(Card card, HttpServletRequest request) {
+        // 1. 从请求头中获取JWT令牌
+        String token = request.getHeader("Authorization").substring(7);
+        // 2. 解析令牌获取用户名
+        Claims claims = jwtUtil.parseToken(token);
+        String username = claims.getSubject();
+        card.setUpdateBy(username);
         cardMapper.updateCard(card);
         return new Response(200, null, "操作成功");
     }

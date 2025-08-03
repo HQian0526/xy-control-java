@@ -39,8 +39,8 @@ public class EquController {
     @PutMapping("/updateEqu")
     @ResponseBody
     @ApiOperation(value = "修改设备信息", notes = "根据id更新设备信息")
-    public Response updateEqu(@RequestBody Equ equ){
-        return equService.updateEqu(equ);
+    public Response updateEqu(@RequestBody Equ equ, HttpServletRequest request){
+        return equService.updateEqu(equ, request);
     }
 
     //删除设备信息（慎用）

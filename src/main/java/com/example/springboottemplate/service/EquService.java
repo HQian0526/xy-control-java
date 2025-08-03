@@ -11,7 +11,7 @@ public interface EquService {
 
     Response findEqu(Equ equ, Integer pageNum, Integer pageSize);
 
-    Response updateEqu(Equ equ);
+    Response updateEqu(Equ equ, HttpServletRequest request);
 
     Response deleteEqu(List<Integer> idList);
 }

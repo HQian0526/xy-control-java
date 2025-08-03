@@ -12,7 +12,6 @@
         <result property="userId" column="user_id"/>
         <result property="storeType" column="store_type"/>
         <result property="storeTime" column="store_time"/>
-        <result property="status" column="status"/>
         <result property="identityName" column="identity_name"/>
         <result property="identityCompanyName" column="identity_company_name"/>
         <result property="businessLicense" column="business_license" />
@@ -29,7 +28,7 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (store_id, store_name, address, user_id, store_type, store_time, status, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{status}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into store (store_id, store_name, address, user_id, store_type, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -50,9 +49,6 @@
             </if>
             <if test="storeTime != null and storeTime != ''">
                 and store_time = #{storeTime}
-            </if>
-            <if test="status != null and status != ''">
-                and status = #{status}
             </if>
             <if test="address != null and address != ''">
                 and address like CONCAT('%', #{address}, '%')
@@ -99,7 +95,6 @@
             <if test="userId != null">user_id = #{userId},</if>
             <if test="storeType != null">store_type = #{storeType},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
-            <if test="status != null">status = #{status},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
             <if test="businessLicense != null">business_license = #{businessLicense},</if>
@@ -113,4 +108,9 @@
         </set>
         where id = #{id}
     </update>
+
+    <!-- 根据用户id查询商户信息-->
+    <select id="selectByStoreId" parameterType="java.lang.Long" resultType="Store">
+        select * from store where store_id = #{storeId}
+    </select>
 </mapper>

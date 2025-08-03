@@ -17,16 +17,19 @@ import java.util.Date;
 @ApiModel(description = "区域信息")
 public class Area {
     @ApiModelProperty(value = "id", required = true)
-    private Integer id;
+    private Long id;
 
     @ApiModelProperty(value = "区域id", required = true)
-    private Integer areaId;
+    private Long areaId;
 
     @ApiModelProperty(value = "区域名", required = true)
     private String areaName;
 
     @ApiModelProperty(value = "所属店铺id", required = true)
-    private Integer storeId;
+    private Long storeId;
+
+    @ApiModelProperty(value = "所属店铺名", required = false)
+    private String storeName;
 
     @ApiModelProperty(value = "区域创建时间", required = false)
     private Date createdTime;
@@ -39,6 +42,9 @@ public class Area {
 
     @ApiModelProperty(value = "区域更新人", required = false)
     private String updateBy;
+
+    @ApiModelProperty(value = "区域照片", required = false)
+    private String areaPhoto;
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;

@@ -11,7 +11,7 @@ public interface StoreService {
 
     Response findStore(Store store, Integer pageNum, Integer pageSize);
 
-    Response updateStore(Store store);
+    Response updateStore(Store store, HttpServletRequest request);
 
     Response deleteStore(List<Integer> idList);
 }

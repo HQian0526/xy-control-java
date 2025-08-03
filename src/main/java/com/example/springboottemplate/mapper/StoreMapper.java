@@ -13,4 +13,6 @@ public interface StoreMapper extends BaseMapper<Store> {
     List findStore(Store store); //查找所有商户
 
     void updateStore(Store store); //修改商户信息
+
+    Store selectByStoreId (Long storeId); //根据商户id查询商户
 }
