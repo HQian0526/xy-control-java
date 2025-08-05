@@ -28,26 +28,18 @@ public class Contract {
     private String contractName;
 
     @ApiModelProperty(value = "合同类型(1:租赁合同,2:销售合同...)", required = true)
-    private int contractType;
+    private Integer contractType;
 
     @ApiModelProperty(value = "出租方类型", required = true)
-    private int lessorType;
+    private Integer lessorType;
 
-    @ApiModelProperty(value = "出租方ID", required = true)
-    private Long lessorId;
-
-    @TableField(exist = false) // 表示该字段不在数据库中
-    @ApiModelProperty(value = "出租方名称", required = false)
+    @ApiModelProperty(value = "出租方名称", required = true)
     private String lessorName;
 
     @ApiModelProperty(value = "承租方类型", required = true)
-    private int lesseeType;
+    private Integer lesseeType;
 
-    @ApiModelProperty(value = "承租方ID", required = true)
-    private Long lesseeId;
-
-    @TableField(exist = false) // 表示该字段不在数据库中
-    @ApiModelProperty(value = "承租方名称", required = false)
+    @ApiModelProperty(value = "承租方名称", required = true)
     private String lesseeName;
 
     @ApiModelProperty(value = "开始时间", required = false)
@@ -60,10 +52,10 @@ public class Contract {
     private BigDecimal totalAmount;
 
     @ApiModelProperty(value = "付款周期(1一次性付清;2月付;3年付;4其他)", required = false)
-    private int paymentCircle;
+    private Integer paymentCycle;
 
-    @ApiModelProperty(value = "合同状态(1未签署;2已签署)", required = false)
-    private int contractStatus;
+    @ApiModelProperty(value = "合同状态(1未签署;2已签署生效中;3已完结;4已终止)", required = false)
+    private Integer contractStatus;
 
     @ApiModelProperty(value = "签署日期", required = false)
     private Date signDate;

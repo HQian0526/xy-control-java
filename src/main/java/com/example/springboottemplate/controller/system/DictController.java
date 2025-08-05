@@ -35,6 +35,14 @@ public class DictController {
         return dictService.findDict(dict, pageNum, pageSize);
     }
 
+    //根据编码查询字典
+    @GetMapping("/findDictByCode/{code}")
+    @ResponseBody
+    @ApiOperation(value = "查询所有字典", notes = "查询字典表中所有字典")
+    public Response findDictByCode(@PathVariable String code){
+        return dictService.findDictByCode(code);
+    }
+
     //修改字典信息
     @PutMapping("/updateDict")
     @ResponseBody

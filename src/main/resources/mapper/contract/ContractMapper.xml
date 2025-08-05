@@ -9,14 +9,13 @@
         <result property="contractName" column="contract_name"/>
         <result property="contractType" column="contract_type"/>
         <result property="lessorType" column="lessor_type"/>
-        <result property="lessorId" column="lessor_id"/>
+        <result property="lessorName" column="lessor_name"/>
         <result property="lesseeType" column="lessee_type"/>
-        <result property="lesseeId" column="lessee_id"/>
         <result property="lesseeName" column="lessee_name"/>
         <result property="startDate" column="start_date"/>
         <result property="endDate" column="end_date"/>
         <result property="totalAmount" column="total_amount"/>
-        <result property="paymentCircle" column="payment_circle"/>
+        <result property="paymentCycle" column="payment_cycle"/>
         <result property="contractStatus" column="contract_status"/>
         <result property="signDate" column="sign_date"/>
         <result property="createdTime" column="created_time"/>
@@ -29,43 +28,7 @@
 
     <!-- 新增合同 -->
     <insert id="addContract" parameterType="Contract">
-        INSERT into contract (
-            contract_no,
-            contract_name,
-            contract_type,
-            lessor_type,
-            lessor_id,
-            lessee_type,
-            lessee_id,
-            lessee_name,
-            start_date,
-            end_date,
-            total_amount,
-            payment_circle,
-            contract_status,
-            sign_date,
-            created_time,
-            created_by,
-            remark
-        ) value (
-            #{contractNo},
-            #{contractName},
-            #{contractType},
-            #{lessorType},
-            #{lessorId},
-            #{lesseeType},
-            #{lesseeId},
-            #{lesseeName},
-            #{startDate},
-            #{endDate},
-            #{totalAmount},
-            #{paymentCircle},
-            #{contractStatus},
-            #{signDate},
-            #{createdTime},
-            #{createdBy},
-            #{remark}
-        )
+        INSERT into contract (contract_no, contract_name, contract_type, lessor_type, lessor_name, lessee_type, lessee_name, start_date, end_date, total_amount, payment_cycle, contract_status, sign_date, created_time, created_by, remark) value (#{contractNo}, #{contractName}, #{contractType}, #{lessorType}, #{lessorName}, #{lesseeType}, #{lesseeName}, #{startDate}, #{endDate}, #{totalAmount}, #{paymentCycle}, #{contractStatus}, #{signDate}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有合同信息（模糊查询）-->
@@ -115,13 +78,13 @@
             <if test="contractName != null">contract_name = #{contractName},</if>
             <if test="contractType != null">contract_type = #{contractType},</if>
             <if test="lessorType != null">lessor_type = #{lessorType},</if>
-            <if test="lessorId != null">lessor_id = #{lessorId},</if>
+            <if test="lessorName != null">lessor_name = #{lessorName},</if>
             <if test="lesseeType != null">lessee_type = #{lesseeType},</if>
-            <if test="lesseeId != null">lessee_id = #{lesseeId},</if>
+            <if test="lesseeName != null">lessee_name = #{lesseeName},</if>
             <if test="startDate != null">start_date = #{startDate},</if>
             <if test="endDate != null">end_date = #{endDate},</if>
             <if test="totalAmount != null">total_amount = #{totalAmount},</if>
-            <if test="paymentCircle != null">payment_circle = #{paymentCircle},</if>
+            <if test="paymentCycle != null">payment_cycle = #{paymentCycle},</if>
             <if test="contractStatus != null">contract_status = #{contractStatus},</if>
             <if test="signDate != null">sign_date = #{signDate},</if>
             <if test="remark != null">remark = #{remark},</if>

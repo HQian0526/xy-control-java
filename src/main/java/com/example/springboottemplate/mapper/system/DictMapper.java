@@ -10,5 +10,7 @@ public interface DictMapper extends BaseMapper<Dict> {
 
     List<Dict> findDict(Dict dict); //查找所有字典
 
+    Dict findDictByCode(String code);
+
     void updateDict(Dict dict); //修改字典信息
 }

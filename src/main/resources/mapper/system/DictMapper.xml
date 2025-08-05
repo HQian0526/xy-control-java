@@ -57,6 +57,11 @@
         </where>
     </select>
 
+    <!-- 根据编码查询字典信息-->
+    <select id="findDictByCode" parameterType="java.lang.String" resultType="Dict">
+        select * from dict where code = #{code}
+    </select>
+
     <!-- 修改字典信息 -->
     <update id="updateDict" parameterType="Dict">
         update dict

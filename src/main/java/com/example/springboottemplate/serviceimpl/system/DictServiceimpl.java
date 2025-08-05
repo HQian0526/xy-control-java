@@ -60,6 +60,12 @@ public class DictServiceimpl implements DictService {
     }
 
     @Override
+    public Response findDictByCode(String code) {
+        Dict dict = dictMapper.findDictByCode(code);
+        return new Response(200, dict, "操作成功");
+    }
+
+    @Override
     public Response updateDict(Dict dict, HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
         String token = request.getHeader("Authorization").substring(7);

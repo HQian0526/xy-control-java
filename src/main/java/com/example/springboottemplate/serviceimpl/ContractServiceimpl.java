@@ -62,6 +62,11 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         String username = claims.getSubject();
         contract.setCreatedTime(new Date());
         contract.setCreatedBy(username);
+        contract.setContractNo(generateContractNo());
+        // 仅当 contractStatus 为 null 时才设置为 1（待签署）
+        if (contract.getContractStatus() == null) {
+            contract.setContractStatus(1);
+        }
         contractMapper.addContract(contract);
         return new Response(200, null, "操作成功");
     }
@@ -73,24 +78,24 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         // 查询数据
         List<Contract> list = contractMapper.findContract(contract);
         // 添加自定义字段
-        list.forEach(item -> {
-            //LessorType出租方类型 1商户 2个人
-            if (item.getLessorType() == 1) {
-                Store store = storeMapper.selectByStoreId(item.getLessorId());
-                item.setLessorName(store != null ? store.getStoreName() : null);
-            } else {
-                User user = userMapper.selectById(item.getLessorId());
-                item.setLessorName(user != null ? user.getRealName() : null);
-            }
-            //lesseeType承租方类型 1商户 2个人
-            if (item.getLesseeType() == 1) {
-                Store store = storeMapper.selectByStoreId(item.getLesseeId());
-                item.setLesseeName(store != null ? store.getStoreName() : null);
-            } else {
-                User user = userMapper.selectById(item.getLesseeId());
-                item.setLesseeName(user != null ? user.getRealName() : null);
-            }
-        });
+//        list.forEach(item -> {
+//            //LessorType出租方类型 1商户 2个人
+//            if (item.getLessorType() == 1) {
+//                Store store = storeMapper.selectByStoreId(item.getLessorId());
+//                item.setLessorName(store != null ? store.getStoreName() : null);
+//            } else {
+//                User user = userMapper.selectById(item.getLessorId());
+//                item.setLessorName(user != null ? user.getRealName() : null);
+//            }
+//            //lesseeType承租方类型 1商户 2个人
+//            if (item.getLesseeType() == 1) {
+//                Store store = storeMapper.selectByStoreId(item.getLesseeId());
+//                item.setLesseeName(store != null ? store.getStoreName() : null);
+//            } else {
+//                User user = userMapper.selectById(item.getLesseeId());
+//                item.setLesseeName(user != null ? user.getRealName() : null);
+//            }
+//        });
         // 封装分页结果
         PageInfo<Contract> pageInfo = new PageInfo<>(list);
         // 构造返回数据
