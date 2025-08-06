@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public class ContractItemDTO {
     private Long id;
     private String itemName;
-    private String itemType;
+    private Integer itemType;
     private Integer quantity;
     private BigDecimal unitPrice;
     private String specification;

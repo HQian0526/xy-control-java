@@ -24,8 +24,8 @@ public class ContractItem {
     @ApiModelProperty(value = "合同项名称", required = false)
     private String itemName;
 
-    @ApiModelProperty(value = "合同项类型", required = true)
-    private String itemType;
+    @ApiModelProperty(value = "合同项类型", required = false)
+    private Integer itemType;
 
     @ApiModelProperty(value = "数量", required = false)
     private Integer quantity;

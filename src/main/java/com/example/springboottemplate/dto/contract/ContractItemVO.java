@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 public class ContractItemVO {
     private Long id;
     private String itemName;       // 物品名称
-    private String itemType;       // 物品类型
+    private Integer itemType;       // 物品类型
     private Integer quantity;      // 数量
     private BigDecimal unitPrice;  // 单价
     private BigDecimal totalPrice; // 总价

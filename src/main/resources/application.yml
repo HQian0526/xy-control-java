@@ -1,6 +1,6 @@
 # 服务端口配置
 server:
-  port: 8080
+  port: 8081
   #端口号
   servlet:
     context-path: /api   #项目根路径（前面必须加/）
