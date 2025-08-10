@@ -114,6 +114,7 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
         dto.setComponentPath(menu.getComponentPath());
         dto.setLevel(menu.getLevel());
         dto.setPath(menu.getPath());
+        dto.setIsShow(menu.getIsShow());
         // 设置是否选中状态
         dto.setChecked(checkedMenuIds.contains(menu.getId()));
         // 查找子菜单
@@ -183,7 +184,7 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
         MenuRouteDto.Meta meta = new MenuRouteDto.Meta();
         meta.setTitle(menu.getMenuName());
         meta.setIcon(menu.getIconUrl());
-        meta.setHideMenu(false);
+        meta.setHideMenu(menu.getIsShow() == 0);
         meta.setHideBreadcrumb(false);
         meta.setHideTab(false);
         meta.setIgnoreKeepAlive(false);

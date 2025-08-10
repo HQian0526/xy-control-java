@@ -44,6 +44,9 @@ public class Menu {
     @ApiModelProperty(value = "前端组件路径", required = false)
     private String componentPath;
 
+    @ApiModelProperty(value = "是否展示", required = false)
+    private Integer isShow = 1;
+
     @ApiModelProperty(value = "逻辑删除标识", required = false)
     @TableLogic
     private Integer deleted;
