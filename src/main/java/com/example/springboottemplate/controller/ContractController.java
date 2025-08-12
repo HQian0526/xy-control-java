@@ -59,19 +59,21 @@ public class ContractController {
         return Response.success(contractService.queryContractPage(queryDTO));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{no}")
     @ApiOperation("获取合同详情")
-    public Response getContractDetail(@PathVariable Long id) {
-        return Response.success(contractService.getContractDetail(id));
+    public Response getContractDetail(@PathVariable String no) {
+        return Response.success(contractService.getContractDetail(no));
     }
 
-    @PostMapping
-    @ApiOperation("保存合同")
-    public Response saveContract(@RequestBody ContractDTO contractDTO) {
-        return Response.success(contractService.saveContract(contractDTO));
+    @PostMapping("/saveContractItems")
+    @ResponseBody
+    @ApiOperation("保存合同细则")
+    public Response saveContract(@RequestBody ContractDTO contractDTO, HttpServletRequest request) {
+        return Response.success(contractService.saveContract(contractDTO, request));
     }
 
     @PostMapping("/terminate/{id}")
+    @ResponseBody
     @ApiOperation("终止合同")
     public Response terminateContract(@PathVariable Long id, @RequestParam String reason) {
         return Response.success(contractService.terminateContract(id, reason));

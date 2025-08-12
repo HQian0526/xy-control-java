@@ -21,7 +21,7 @@ public interface ContractService extends IService<Contract> {
     Response deleteContract(List<Integer> idList);
 
     Page<Contract> queryContractPage(ContractQueryDTO queryDTO);
-    ContractDetailVO getContractDetail(Long id);
-    boolean saveContract(ContractDTO contractDTO);
+    ContractDetailVO getContractDetail(String no);
+    boolean saveContract(ContractDTO contractDTO, HttpServletRequest request);
     boolean terminateContract(Long id, String reason);
 }

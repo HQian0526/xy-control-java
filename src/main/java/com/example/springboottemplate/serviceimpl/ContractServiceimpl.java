@@ -68,7 +68,7 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
             contract.setContractStatus(1);
         }
         contractMapper.addContract(contract);
-        return new Response(200, null, "操作成功");
+        return new Response(200, contract, "操作成功");
     }
 
     @Override
@@ -77,25 +77,6 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         PageHelper.startPage(pageNum, pageSize);
         // 查询数据
         List<Contract> list = contractMapper.findContract(contract);
-        // 添加自定义字段
-//        list.forEach(item -> {
-//            //LessorType出租方类型 1商户 2个人
-//            if (item.getLessorType() == 1) {
-//                Store store = storeMapper.selectByStoreId(item.getLessorId());
-//                item.setLessorName(store != null ? store.getStoreName() : null);
-//            } else {
-//                User user = userMapper.selectById(item.getLessorId());
-//                item.setLessorName(user != null ? user.getRealName() : null);
-//            }
-//            //lesseeType承租方类型 1商户 2个人
-//            if (item.getLesseeType() == 1) {
-//                Store store = storeMapper.selectByStoreId(item.getLesseeId());
-//                item.setLesseeName(store != null ? store.getStoreName() : null);
-//            } else {
-//                User user = userMapper.selectById(item.getLesseeId());
-//                item.setLesseeName(user != null ? user.getRealName() : null);
-//            }
-//        });
         // 封装分页结果
         PageInfo<Contract> pageInfo = new PageInfo<>(list);
         // 构造返回数据
@@ -144,8 +125,8 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
     }
 
     @Override
-    public ContractDetailVO getContractDetail(Long id) {
-        Contract contract = getById(id);
+    public ContractDetailVO getContractDetail(String no) {
+        Contract contract = getById(no);
         if (contract == null) {
             throw new BusinessException("合同不存在");
         }
@@ -156,7 +137,7 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         // 查询合同明细
         List<ContractItem> items = contractItemMapper.selectList(
                 new LambdaQueryWrapper<ContractItem>()
-                        .eq(ContractItem::getContractId, id)
+                        .eq(ContractItem::getContractNo, no)
         );
         // 转换为VO列表
         List<ContractItemVO> itemVOs = items.stream()
@@ -171,7 +152,7 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         // 查询付款记录
         List<PayRecord> payRecords = payRecordMapper.selectList(
                 new LambdaQueryWrapper<PayRecord>()
-                        .eq(PayRecord::getContractId, id)
+                        .eq(PayRecord::getContractNo, no)
                         .orderByDesc(PayRecord::getPaymentDate)
         );
         List<PayRecordVO> paymentRecordVOs = payRecords.stream()
@@ -188,23 +169,29 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
 
     @Override
     @Transactional
-    public boolean saveContract(ContractDTO contractDTO) {
+    public boolean saveContract(ContractDTO contractDTO, HttpServletRequest request) {
         Contract contract = new Contract();
         BeanUtils.copyProperties(contractDTO, contract);
-
         // 保存合同基本信息
-        if (contract.getId() == null) {
+        if (contract.getContractNo() == null) {
+            // 1. 从请求头中获取JWT令牌
+            String token = request.getHeader("Authorization").substring(7);
+            // 2. 解析令牌获取用户名
+            Claims claims = jwtUtil.parseToken(token);
+            String username = claims.getSubject();
+            contract.setCreatedTime(new Date());
+            contract.setCreatedBy(username);
             contract.setContractNo(generateContractNo());
             contract.setContractStatus(1); // 待签署
             save(contract);
         } else {
-            updateById(contract);
+//            updateById(contract);
         }
 
         // 先删除原有明细
         contractItemMapper.delete(
                 new LambdaQueryWrapper<ContractItem>()
-                        .eq(ContractItem::getContractId, contract.getId())
+                        .eq(ContractItem::getContractNo, contract.getContractNo())
         );
 
         // 保存合同明细
@@ -213,7 +200,7 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
                     .map(itemDTO -> {
                         ContractItem item = new ContractItem();
                         BeanUtils.copyProperties(itemDTO, item);
-                        item.setContractId(contract.getId());
+                        item.setContractNo(contract.getContractNo());
                         return item;
                     }).collect(Collectors.toList());
 

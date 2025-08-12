@@ -10,10 +10,11 @@ import java.util.List;
 public class ContractDTO {
     // 基础信息
     private Long id;
+    private String contractNo;
     private String contractName;
     private Integer contractType; // 1:租赁合同 2:销售合同...
-    private Long lessorId;       // 出租方ID
-    private Long lesseeId;      // 承租方ID
+    private String lessorName;       // 出租方
+    private String lesseeName;      // 承租方
     private LocalDate startDate;
     private LocalDate endDate;
     private BigDecimal totalAmount;

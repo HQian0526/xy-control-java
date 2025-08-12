@@ -18,8 +18,8 @@ public class ContractItem {
     @ApiModelProperty(value = "id", required = true)
     private Long id;
 
-    @ApiModelProperty(value = "合同id", required = true)
-    private Long contractId;
+    @ApiModelProperty(value = "合同号", required = true)
+    private String contractNo;
 
     @ApiModelProperty(value = "合同项名称", required = false)
     private String itemName;

@@ -5,7 +5,7 @@
     <!-- 定义结果映射 -->
     <resultMap id="contractItemResultMap" type="ContractItem">
         <id property="id" column="id"/> <!-- 主键字段 -->
-        <result property="contractId" column="contract_id"/>
+        <result property="contractNo" column="contract_no"/>
         <result property="itemName" column="item_name"/>
         <result property="itemType" column="item_type"/>
         <result property="quantity" column="quantity"/>
@@ -15,8 +15,22 @@
         <result property="remark" column="remark"/>
     </resultMap>
 
-    <!-- 新增区域 -->
-    <insert id="insertBatchSomeColumn" parameterType="ContractItem">
-        INSERT into contract_item (contract_id, item_name, item_type, quantity, unit_price, total_price, specification, remark) value (#{contractId}, #{itemName}, #{itemType}, #{quantity}, #{unitPrice}, #{totalPrice}, #{specification}, #{remark})
+    <!-- 新增合同项 -->
+    <insert id="insertBatchSomeColumn" parameterType="java.util.List">
+        INSERT INTO contract_item
+        (contract_no, item_name, item_type, quantity, unit_price, total_price, specification, remark)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.contractNo},
+            #{item.itemName},
+            #{item.itemType},
+            #{item.quantity},
+            #{item.unitPrice},
+            #{item.totalPrice},
+            #{item.specification},
+            #{item.remark}
+            )
+        </foreach>
     </insert>
 </mapper>

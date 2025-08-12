@@ -11,5 +11,6 @@ public class ContractItemDTO {
     private Integer quantity;
     private BigDecimal unitPrice;
     private String specification;
+    private BigDecimal totalPrice;
     private String remark;
 }
