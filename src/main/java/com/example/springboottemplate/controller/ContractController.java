@@ -65,6 +65,13 @@ public class ContractController {
         return Response.success(contractService.getContractDetail(no));
     }
 
+    @GetMapping("getContractItem/{no}")
+    @ResponseBody
+    @ApiOperation("根据合同id获取合同细则")
+    public Response getContractItem(@PathVariable String no) {
+        return contractService.getContractItem(no);
+    }
+
     @PostMapping("/saveContractItems")
     @ResponseBody
     @ApiOperation("保存合同细则")

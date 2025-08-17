@@ -22,6 +22,7 @@ public interface ContractService extends IService<Contract> {
 
     Page<Contract> queryContractPage(ContractQueryDTO queryDTO);
     ContractDetailVO getContractDetail(String no);
+    Response getContractItem(String no);
     boolean saveContract(ContractDTO contractDTO, HttpServletRequest request);
     boolean terminateContract(Long id, String reason);
 }

@@ -1,6 +1,7 @@
 package com.example.springboottemplate.serviceimpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -11,6 +12,7 @@ import com.example.springboottemplate.entity.contract.Contract;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.contract.ContractItem;
 import com.example.springboottemplate.entity.contract.PayRecord;
+import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.enums.ContractStatus;
 import com.example.springboottemplate.exception.BusinessException;
@@ -237,5 +239,16 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
         updateById(contract);
 
         return true;
+    }
+
+    @Override
+    @Transactional
+    public Response getContractItem(String no) {
+        // 使用 MyBatis-Plus 的 方法查询合同细则列表
+        List<ContractItem> contractItems = contractItemMapper.selectList(
+                new LambdaQueryWrapper<ContractItem>()
+                        .eq(ContractItem::getContractNo, no)
+        );
+        return Response.success(contractItems);
     }
 }
