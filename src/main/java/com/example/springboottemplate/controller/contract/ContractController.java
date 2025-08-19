@@ -1,4 +1,4 @@
-package com.example.springboottemplate.controller;
+package com.example.springboottemplate.controller.contract;
 
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.contract.ContractDTO;

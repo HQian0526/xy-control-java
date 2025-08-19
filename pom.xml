@@ -125,6 +125,31 @@
 			<version>6.0.0</version>
 			<scope>provided</scope>
 		</dependency>
+		<!-- JAXB -->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>4.0.4</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- docx4j -->
+		<dependency>
+			<groupId>org.docx4j</groupId>
+			<artifactId>docx4j-JAXB-ReferenceImpl</artifactId>
+			<version>11.4.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>2.0.34</version>
+		</dependency>
     </dependencies>
 
 	<build>
@@ -143,5 +168,34 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- 不用阿里云镜像无法安装docx4j -->
+	<repositories>
+		<repository>
+			<id>aliyunmaven</id>
+			<name>阿里云公共仓库</name>
+			<url>https://maven.aliyun.com/repository/public</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>aliyunmaven</id>
+			<name>阿里云公共仓库</name>
+			<url>https://maven.aliyun.com/repository/public</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 
 </project>

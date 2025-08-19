@@ -20,7 +20,7 @@ public class ContractDetailVO {
     private LocalDate endDate;
     private BigDecimal totalAmount;
     private Integer paymentCycle;   // 付款周期
-    private Integer status;
+    private Integer contractStatus;
     private LocalDate signDate;
     private String remark;
     private LocalDateTime createTime;

@@ -54,3 +54,7 @@ upload:
   dir: ${user.home}/xy_uploads/ #文件上传存储路径
 #  dir: C:/用户/96349/xy_uploads/  # 末尾必须加斜杠
   public-path: /upload-images/** #对外暴露的url路径
+
+# 合同模板存储路径
+template:
+  upload-path: /path/to/templates/  # 本地模板存储路径
