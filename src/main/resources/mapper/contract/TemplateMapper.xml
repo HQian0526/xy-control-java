@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.contract.TemplateMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="contractTemplateResultMap" type="ContractTemplate">
+        <id property="id" column="id"/> <!-- 主键字段 -->
+        <result property="templateNo" column="template_no"/>
+        <result property="templateName" column="template_name"/>
+        <result property="templateType" column="template_type"/>
+        <result property="fileId" column="file_id"/>
+        <result property="fileName" column="file_name"/>
+        <result property="filePath" column="file_path"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="variablesConfig" column="variables_config"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!-- 查询所有合同模板信息（模糊查询）-->
+    <select id="findContractTemp" parameterType="ContractTemplate" resultMap="contractTemplateResultMap">
+        select * from contract_template
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="templateNo != null and templateNo != ''">
+                and template_no like CONCAT('%', #{templateNo}, '%')
+            </if>
+            <if test="templateName != null and templateName != ''">
+                and template_name like CONCAT('%', #{templateName}, '%')
+            </if>
+            <if test="templateType != null and templateType != ''">
+                and template_type = #{templateType}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+                <otherwise>
+                    and deleted = 0
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+</mapper>

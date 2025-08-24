@@ -14,9 +14,7 @@ import com.example.springboottemplate.enums.ContractStatus;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.contract.ContractItemMapper;
 import com.example.springboottemplate.mapper.contract.ContractMapper;
-import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.contract.PayRecordMapper;
-import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.contract.ContractService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -37,11 +35,6 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> implements ContractService {
-
-    @Autowired
-    private UserMapper userMapper;
-    @Autowired
-    private StoreMapper storeMapper;
     @Autowired
     private ContractMapper contractMapper;
     @Autowired
