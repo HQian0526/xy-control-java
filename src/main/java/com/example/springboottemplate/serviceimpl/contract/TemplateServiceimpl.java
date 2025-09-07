@@ -14,9 +14,7 @@ import com.example.springboottemplate.mapper.contract.TemplateMapper;
 import com.example.springboottemplate.service.contract.TemplateService;
 import com.alibaba.fastjson.JSON;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +25,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import com.example.springboottemplate.utils.FileUtil;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -38,6 +37,7 @@ import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 import org.docx4j.openpackaging.parts.WordprocessingML.MainDocumentPart;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.ContentDisposition;
@@ -57,6 +57,8 @@ public class TemplateServiceimpl extends ServiceImpl<TemplateMapper, ContractTem
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Value("${upload.dir}")
     private String templateUploadPath;
+    @Autowired
+    private FileUtil fileUtil;
 
     @Override
     public Response addContractTemp(ContractTemplate contractTemplate, HttpServletRequest request) {
@@ -212,33 +214,32 @@ public class TemplateServiceimpl extends ServiceImpl<TemplateMapper, ContractTem
             if (!Files.exists(path)) {
                 throw new BusinessException("模板文件不存在");
             }
+            // 2. 获取Word文件
+            File wordFile = new File(templateUploadPath + template.getFilePath());
+            InputStream wordStream = new FileInputStream(wordFile);
 
-            // 4. 创建Resource对象
-            Resource resource = new UrlResource(path.toUri());
+            // 3. 转换为PDF
+            byte[] pdfBytes = fileUtil.convertToPdf(wordStream);
 
-            // 处理文件名编码
-            String encodedFileName = URLEncoder.encode(template.getFileName(), StandardCharsets.UTF_8)
-                    .replaceAll("\\+", "%20");
+            // 3. 准备响应头 - 使用URL编码文件名
+            String safeFilename = URLEncoder.encode(template.getFileName(), "UTF-8")
+                    .replaceAll("\\+", "%20"); // 替换空格编码
 
-            // 5. 确定内容类型
-            String contentType = Files.probeContentType(path);
-            if (contentType == null) {
-                contentType = "application/octet-stream";
-            }
-
-            // 6. 构建响应
+            // 4. 准备返回响应
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
+            headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDisposition(
                     ContentDisposition.builder("inline")
-                            .filename(encodedFileName, StandardCharsets.UTF_8)
+                            .filename(safeFilename, StandardCharsets.UTF_8) // 使用RFC 5987编码
                             .build());
 
             return ResponseEntity.ok()
                     .headers(headers)
-                    .body(resource);
+                    .body(new InputStreamResource(new ByteArrayInputStream(pdfBytes)));
         } catch (IOException e) {
             throw new BusinessException("预览模板失败: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

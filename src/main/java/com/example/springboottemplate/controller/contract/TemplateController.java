@@ -1,12 +1,11 @@
 package com.example.springboottemplate.controller.contract;
 
 import com.example.springboottemplate.dto.Response;
-import com.example.springboottemplate.dto.contract.ContractDTO;
 import com.example.springboottemplate.dto.contract.ContractDetailVO;
-import com.example.springboottemplate.entity.contract.Contract;
 import com.example.springboottemplate.entity.contract.ContractTemplate;
 import com.example.springboottemplate.service.contract.ContractService;
 import com.example.springboottemplate.service.contract.TemplateService;
+import com.example.springboottemplate.utils.FileUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import jakarta.servlet.http.HttpServletRequest;
