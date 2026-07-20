@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.CatagoryMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="catagoryResultMap" type="Catagory">
+        <id property="id" column="id"/>
+        <result property="catagoryId" column="catagory_id"/>
+        <result property="catagoryName" column="catagory_name"/>
+        <result property="storeId" column="store_id"/>
+        <result property="catagoryStatu" column="catagory_statu"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!-- 新增商品分类 -->
+    <insert id="addCatagory" parameterType="Catagory">
+        INSERT into catagory (catagory_id, catagory_name, store_id, catagory_statu, created_by, created_time, remark)
+        value (#{catagoryId}, #{catagoryName}, #{storeId}, #{catagoryStatu}, #{createdBy}, #{createdTime}, #{remark})
+    </insert>
+
+    <!-- 查询所有商品分类信息（模糊查询）-->
+    <select id="findCatagory" parameterType="Catagory" resultMap="catagoryResultMap">
+        select * from catagory
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="catagoryId != null and catagoryId != ''">
+                and catagory_id like CONCAT('%', #{catagoryId}, '%')
+            </if>
+            <if test="catagoryName != null and catagoryName != ''">
+                and catagory_name like CONCAT('%', #{catagoryName}, '%')
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and store_id = #{storeId}
+            </if>
+            <if test="catagoryStatu != null">
+                and catagory_statu = #{catagoryStatu}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+            </choose>
+        </where>
+    </select>
+
+    <!-- 修改商品分类信息 -->
+    <update id="updateCatagory" parameterType="Catagory">
+        update catagory
+        <set>
+            <if test="catagoryId != null">catagory_id = #{catagoryId},</if>
+            <if test="catagoryName != null">catagory_name = #{catagoryName},</if>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="catagoryStatu != null">catagory_statu = #{catagoryStatu},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        where id = #{id}
+    </update>
+</mapper>
