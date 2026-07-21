@@ -1,15 +1,14 @@
-# 使用官方OpenJDK 11作为基础镜像
+# 镜像
 FROM openjdk:21-slim
 
-# 设置工作目录（容器内的目录）
+# 工作目录（容器内的目录）
 WORKDIR /app
 
-# 将本地打包好的jar包复制到容器内，并重命名为app.jar
-# 注意：这里的demo-0.0.1.jar需要改成你实际打包后的文件名
-COPY target/springboot-template-0.0.1-SNAPSHOT.jar app.jar
+# app.jar不用动，改前面的打完后的jar包名
+COPY springboot-template-0.0.1-SNAPSHOT.jar app.jar
 
-# 暴露端口（改成你的SpringBoot应用端口，默认8080）
-EXPOSE 9999
+# 暴露端口（和项目yml中的端口一致即可）
+EXPOSE 8080
 
 # 启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -14,7 +14,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
     username: root
-    password: hq963497073
+    password: xy20240709
+    # password: hq963497073
   # 系统文件上传大小限制
   servlet:
     multipart:
