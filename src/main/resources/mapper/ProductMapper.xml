@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.ProductMapper">
+    <!-- 定义结果映射 -->
+    <resultMap id="productResultMap" type="Product">
+        <id property="id" column="id"/>
+        <result property="productId" column="product_id"/>
+        <result property="catagoryId" column="catagory_id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="productName" column="product_name"/>
+        <result property="productImg" column="product_img"/>
+        <result property="price" column="price"/>
+        <result property="productNum" column="product_num"/>
+        <result property="saleNum" column="sale_num"/>
+        <result property="remark" column="remark"/>
+        <result property="productStatus" column="product_status"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!-- 新增商品 -->
+    <insert id="addProduct" parameterType="Product">
+        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, product_num, sale_num, remark, product_status, created_by, created_time)
+        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime})
+    </insert>
+
+    <!-- 查询所有商品信息（模糊查询）-->
+    <select id="findProduct" parameterType="Product" resultMap="productResultMap">
+        select * from product
+        <where>
+            <if test="id != null and id != ''">
+                and id LIKE CONCAT('%', #{id}, '%')
+            </if>
+            <if test="productId != null and productId != ''">
+                and product_id like CONCAT('%', #{productId}, '%')
+            </if>
+            <if test="catagoryId != null and catagoryId != ''">
+                and catagory_id = #{catagoryId}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and store_id = #{storeId}
+            </if>
+            <if test="productName != null and productName != ''">
+                and product_name like CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="productStatus != null">
+                and product_status = #{productStatus}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+            </choose>
+        </where>
+    </select>
+
+    <!-- 修改商品信息 -->
+    <update id="updateProduct" parameterType="Product">
+        update product
+        <set>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="catagoryId != null">catagory_id = #{catagoryId},</if>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="productImg != null">product_img = #{productImg},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="productNum != null">product_num = #{productNum},</if>
+            <if test="saleNum != null">sale_num = #{saleNum},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="productStatus != null">product_status = #{productStatus},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        where id = #{id}
+    </update>
+</mapper>

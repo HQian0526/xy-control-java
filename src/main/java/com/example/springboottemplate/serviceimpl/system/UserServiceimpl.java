@@ -54,8 +54,10 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response findUser(User user, Integer pageNum, Integer pageSize) {
-        // 开启分页
-        PageHelper.startPage(pageNum, pageSize);
+        // 传了分页参数才开启分页，否则返回全部数据
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
         // 查询数据
         List<User> list = userMapper.findUser(user);
         // 封装分页结果
@@ -99,19 +101,19 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     public Response getUserInfo(HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
         String token = request.getHeader("Authorization").substring(7);
-        // 2. 解析令牌获取用户名
-        Claims claims = jwtUtil.parseToken(token);
-        String username = claims.getSubject();
-
-        // 3. 查询数据库获取用户详细信息
-        User user = new User();
-        user.setUserName(username);
-        List<User> list = userMapper.findUser(user);
-        if (list.isEmpty()) {
-            return new Response(200, null, "操作成功");
-        } else {
-            return new Response(200, list.get(0), "操作成功");
+        // 2. 安全解析userId（兼容 Integer/Long）
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null) {
+            return new Response(401, null, "无效的登录信息");
         }
+
+        // 3. 按用户id查询当前登录用户详细信息
+        User user = userMapper.selectById(userId.longValue());
+        if (user == null) {
+            return new Response(200, null, "操作成功");
+        }
+        user.setPassword(null); // 不返回密码
+        return new Response(200, user, "操作成功");
     }
 
     @Override

@@ -97,8 +97,8 @@
         where id = #{id}
     </update>
 
-    <!-- 根据用户id查询用户信息-->
-    <select id="selectById" parameterType="java.lang.Long" resultType="User">
-        select * from user where id = #{id}
+    <!-- 根据用户名精确查询用户信息-->
+    <select id="selectByUserName" parameterType="java.lang.String" resultMap="userResultMap">
+        select * from user where user_name = #{userName} and deleted = 0 limit 1
     </select>
 </mapper>

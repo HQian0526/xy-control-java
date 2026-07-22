@@ -46,8 +46,10 @@ public class AreaServiceimpl implements AreaService {
 
     @Override
     public Response findArea(Area area, Integer pageNum, Integer pageSize) {
-        // 开启分页
-        PageHelper.startPage(pageNum, pageSize);
+        // 传了分页参数才开启分页，否则返回全部数据
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
         // 查询数据
         List<Area> list = areaMapper.findArea(area);
         // 添加自定义storeName字段

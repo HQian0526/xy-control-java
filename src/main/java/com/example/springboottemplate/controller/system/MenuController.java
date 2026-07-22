@@ -9,7 +9,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/menu")
@@ -35,10 +38,17 @@ public class MenuController {
     @ResponseBody
     @ApiOperation(value = "获取菜单路由", notes = "获取菜单路由")
     public Response getMenuRoutes(@RequestParam(value = "roleIds", required = false) Long[] roleIds) {
+        // roleIds 为空或全无效时，不返回任何菜单权限
         if (roleIds == null || roleIds.length == 0) {
-            return menuService.getMenuRoutes();
+            return Response.success(Collections.emptyList());
         }
-        return menuService.getMenuRoutesByRoles(Arrays.asList(roleIds));
+        List<Long> validRoleIds = Arrays.stream(roleIds)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (validRoleIds.isEmpty()) {
+            return Response.success(Collections.emptyList());
+        }
+        return menuService.getMenuRoutesByRoles(validRoleIds);
     }
 
     @PostMapping("/addMenu")

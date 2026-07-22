@@ -20,6 +20,7 @@ public class User {
     private Integer id;
 
     @ApiModelProperty(value = "用户名", required = true)
+    @com.fasterxml.jackson.annotation.JsonAlias({"username"})
     private String userName;
 
     @ApiModelProperty(value = "密码", required = false)
@@ -55,7 +56,7 @@ public class User {
     @ApiModelProperty(value = "邮箱", required = false)
     private String email;
 
-    @ApiModelProperty(value = "会员等级 1基础用户 2vip会员 3管理员", required = false)
+    @ApiModelProperty(value = "身份类型 1普通用户 2商户用户 3管理员", required = false)
     private Integer identityType;
 
     @ApiModelProperty(value = "备注", required = false)

@@ -48,8 +48,10 @@ public class StoreServiceimpl implements StoreService {
 
     @Override
     public Response findStore(Store store, Integer pageNum, Integer pageSize) {
-        // 开启分页
-        PageHelper.startPage(pageNum, pageSize);
+        // 传了分页参数才开启分页，否则返回全部数据
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
         // 查询数据
         List<Store> list = storeMapper.findStore(store);
         // 添加自定义userName和realName字段

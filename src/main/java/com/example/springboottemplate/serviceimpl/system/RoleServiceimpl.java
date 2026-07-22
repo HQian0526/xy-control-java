@@ -58,8 +58,10 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
     @Override
     public Response findRole(Role role, Integer pageNum, Integer pageSize) {
-        // 开启分页
-        PageHelper.startPage(pageNum, pageSize);
+        // 传了分页参数才开启分页，否则返回全部数据
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
         // 查询数据
         List<Role> list = roleMapper.findRole(role);
         // 封装分页结果

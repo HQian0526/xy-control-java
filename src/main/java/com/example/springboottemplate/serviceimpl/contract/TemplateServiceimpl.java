@@ -76,8 +76,10 @@ public class TemplateServiceimpl extends ServiceImpl<TemplateMapper, ContractTem
 
     @Override
     public Response findContractTemp(ContractTemplate contractTemplate, Integer pageNum, Integer pageSize) {
-        // 开启分页
-        PageHelper.startPage(pageNum, pageSize);
+        // 传了分页参数才开启分页，否则返回全部数据
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
         // 查询数据
         List<ContractTemplate> list = templateMapper.findContractTemp(contractTemplate);
         // 封装分页结果

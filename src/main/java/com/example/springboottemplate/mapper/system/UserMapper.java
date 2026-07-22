@@ -13,5 +13,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     List<User> findUser(User user); //查找所有用户
 
+    User selectByUserName(String userName); //根据用户名精确查询
+
     void updateUser(User user); //修改用户信息
 }

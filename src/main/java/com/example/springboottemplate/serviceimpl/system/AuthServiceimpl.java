@@ -9,9 +9,9 @@ import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -20,18 +20,18 @@ public class AuthServiceimpl implements AuthService {
     @Autowired
     private UserMapper userMapper;
     @Autowired
-    private JwtUtil jwtUtil;  // 注入 JwtUtil
+    private JwtUtil jwtUtil;
 
     @Override
     public Response login(String username, String password) {
-        User user = new User();
-        user.setUserName(username);
-        // 1. 查询用户
-        List<User> list = userMapper.findUser(user);
-        if (list.isEmpty()) {
+        if (!StringUtils.hasText(username)) {
+            throw new RuntimeException("用户名不能为空");
+        }
+        // 1. 精确查询用户（避免 findUser 的 LIKE 误匹配）
+        User user = userMapper.selectByUserName(username.trim());
+        if (user == null) {
             throw new RuntimeException("用户不存在");
         }
-        user = list.get(0); // 获取查询到的用户对象
 
         // 2. 验证密码 先注释后续用aes解密
 //        if (!PasswordUtil.verifyPassword(password, user.getSalt(), user.getPassword())) {
@@ -58,14 +58,16 @@ public class AuthServiceimpl implements AuthService {
     public Response refreshToken(String refreshToken) {
         // 1. 验证refreshToken
         if (!jwtUtil.validateToken(refreshToken)) {
-//            throw new RuntimeException("无效的refreshToken");
             return new Response(401, null, "无效的 refreshToken");
         }
 
         // 2. 解析token获取用户信息
         Claims claims = jwtUtil.parseToken(refreshToken);
-        Integer userId = claims.get("userId", Integer.class);
+        Integer userId = jwtUtil.getUserId(claims);
         String username = claims.getSubject();
+        if (userId == null) {
+            return new Response(401, null, "无效的 refreshToken");
+        }
 
         // 3. 生成新的accessToken
         String newAccessToken = jwtUtil.generateAccessToken(userId, username);

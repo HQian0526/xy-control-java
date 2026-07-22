@@ -46,7 +46,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         // 5. 解析token并将用户信息存入request
         Claims claims = jwtUtil.parseToken(token);
-        Long userId = claims.get("userId", Long.class);
+        Integer userId = jwtUtil.getUserId(claims);
         String username = claims.getSubject();
 
         request.setAttribute("userId", userId);

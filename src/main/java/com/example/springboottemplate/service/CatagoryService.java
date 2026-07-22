@@ -9,7 +9,7 @@ import java.util.List;
 public interface CatagoryService {
     Response addCatagory(Catagory catagory, HttpServletRequest request);
 
-    Response findCatagory(Catagory catagory, Integer pageNum, Integer pageSize);
+    Response findCatagory(Catagory catagory, Integer pageNum, Integer pageSize, HttpServletRequest request);
 
     Response updateCatagory(Catagory catagory, HttpServletRequest request);
 

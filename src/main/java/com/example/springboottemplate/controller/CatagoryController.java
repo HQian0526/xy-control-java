@@ -30,9 +30,9 @@ public class CatagoryController {
     //查询所有商品分类
     @GetMapping("/findCatagory")
     @ResponseBody
-    @ApiOperation(value = "查询所有商品分类", notes = "查询分类表中所有分类")
-    public Response findCatagory(Catagory catagory, Integer pageNum, Integer pageSize){
-        return catagoryService.findCatagory(catagory, pageNum, pageSize);
+    @ApiOperation(value = "查询所有商品分类", notes = "按当前用户身份返回分类：普通用户空、商户仅本店、管理员全部")
+    public Response findCatagory(Catagory catagory, Integer pageNum, Integer pageSize, HttpServletRequest request){
+        return catagoryService.findCatagory(catagory, pageNum, pageSize, request);
     }
 
     //修改商品分类信息

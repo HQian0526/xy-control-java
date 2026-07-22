@@ -41,6 +41,9 @@
             <if test="storeId != null and storeId != ''">
                 and store_id like CONCAT('%', #{storeId}, '%')
             </if>
+            <if test="userId != null and userId != ''">
+                and user_id = #{userId}
+            </if>
             <if test="storeName != null and storeName != ''">
                 and store_name like CONCAT('%', #{storeName}, '%')
             </if>

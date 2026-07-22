@@ -65,4 +65,29 @@ public class JwtUtil {
                 .getBody()
                 .getSubject();
     }
+
+    /**
+     * 安全获取userId（兼容 Integer / Long / Number / 字符串）
+     */
+    public Integer getUserId(Claims claims) {
+        Object raw = claims.get("userId");
+        if (raw == null) {
+            return null;
+        }
+        if (raw instanceof Integer) {
+            return (Integer) raw;
+        }
+        if (raw instanceof Number) {
+            return ((Number) raw).intValue();
+        }
+        try {
+            return Integer.valueOf(raw.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public Integer getUserIdFromToken(String token) {
+        return getUserId(parseToken(token));
+    }
 }

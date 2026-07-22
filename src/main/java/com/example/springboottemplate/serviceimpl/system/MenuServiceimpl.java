@@ -59,13 +59,22 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
 
     @Override
     public Response getMenuRoutesByRoles(List<Long> roleIds) {
+        // 没有角色ID时返回空，避免越权拿到全部菜单
         if (CollectionUtils.isEmpty(roleIds)) {
-            return getMenuRoutes(); // 如果没有角色ID，返回所有菜单
+            return Response.success(Collections.emptyList());
+        }
+
+        // 过滤无效角色ID
+        List<Long> validRoleIds = roleIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (validRoleIds.isEmpty()) {
+            return Response.success(Collections.emptyList());
         }
 
         // 1. 获取这些角色拥有的所有菜单ID(去重)
         Set<Long> menuIds = new HashSet<>();
-        for (Long roleId : roleIds) {
+        for (Long roleId : validRoleIds) {
             List<Long> ids = sysRoleMenuMapper.selectMenuIdsByRoleId(roleId);
             if (!CollectionUtils.isEmpty(ids)) {
                 menuIds.addAll(ids);
