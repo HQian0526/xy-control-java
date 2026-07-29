@@ -3,6 +3,8 @@ package com.example.springboottemplate.entity.contract;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.Date;
 @ApiModel(description = "合同模板管理")
 public class ContractTemplate {
     @TableId(type = IdType.AUTO)
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "模板ID", required = true)
     private Integer id;
 

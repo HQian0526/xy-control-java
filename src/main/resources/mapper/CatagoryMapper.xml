@@ -9,6 +9,7 @@
         <result property="catagoryName" column="catagory_name"/>
         <result property="storeId" column="store_id"/>
         <result property="catagoryStatus" column="catagory_status"/>
+        <result property="orderNum" column="order_num"/>
         <result property="createdBy" column="created_by"/>
         <result property="createdTime" column="created_time"/>
         <result property="updateBy" column="update_by"/>
@@ -19,8 +20,8 @@
 
     <!-- 新增商品分类 -->
     <insert id="addCatagory" parameterType="Catagory">
-        INSERT into product_catagory (catagory_id, catagory_name, store_id, catagory_status, created_by, created_time, remark)
-        value (#{catagoryId}, #{catagoryName}, #{storeId}, #{catagoryStatus}, #{createdBy}, #{createdTime}, #{remark})
+        INSERT into product_catagory (catagory_id, catagory_name, store_id, catagory_status, order_num, created_by, created_time, remark, deleted)
+        value (#{catagoryId}, #{catagoryName}, #{storeId}, #{catagoryStatus}, #{orderNum}, #{createdBy}, #{createdTime}, #{remark}, #{deleted})
     </insert>
 
     <!-- 查询所有商品分类信息（模糊查询）-->
@@ -42,6 +43,9 @@
             <if test="catagoryStatus != null">
                 and catagory_status = #{catagoryStatus}
             </if>
+            <if test="orderNum != null">
+                and order_num = #{orderNum}
+            </if>
             <if test="createdTime != null and createdTime != ''">
                 and created_time = #{createdTime}
             </if>
@@ -58,8 +62,12 @@
                 <when test="deleted != null">
                     and deleted = #{deleted}
                 </when>
+                <otherwise>
+                    and deleted = 0
+                </otherwise>
             </choose>
         </where>
+        order by order_num asc, id asc
     </select>
 
     <!-- 修改商品分类信息 -->
@@ -70,6 +78,7 @@
             <if test="catagoryName != null">catagory_name = #{catagoryName},</if>
             <if test="storeId != null">store_id = #{storeId},</if>
             <if test="catagoryStatus != null">catagory_status = #{catagoryStatus},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>

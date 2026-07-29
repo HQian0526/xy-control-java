@@ -60,8 +60,12 @@ public class CatagoryServiceimpl implements CatagoryService {
         if (store.getStoreId() != null) {
             catagory.setStoreId(String.valueOf(store.getStoreId()));
         }
-        // 5. 雪花算法自动生成分类id
+        // 5. 雪花算法自动生成分类id，排序号默认1
         catagory.setCatagoryId(IdWorker.getId());
+        if (catagory.getOrderNum() == null) {
+            catagory.setOrderNum(1);
+        }
+        catagory.setDeleted(0);
         catagory.setCreatedTime(new Date());
         catagory.setCreatedBy(username);
         catagoryMapper.addCatagory(catagory);
@@ -139,7 +143,7 @@ public class CatagoryServiceimpl implements CatagoryService {
     }
 
     @Override
-    public Response deleteCatagory(List<Integer> idList) {
+    public Response deleteCatagory(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }

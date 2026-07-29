@@ -9,9 +9,9 @@ import java.util.List;
 public interface ProductService {
     Response addProduct(Product product, HttpServletRequest request);
 
-    Response findProduct(Product product, Integer pageNum, Integer pageSize);
+    Response findProduct(Product product, Integer pageNum, Integer pageSize, HttpServletRequest request);
 
     Response updateProduct(Product product, HttpServletRequest request);
 
-    Response deleteProduct(List<Integer> idList);
+    Response deleteProduct(List<Long> idList);
 }

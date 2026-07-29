@@ -22,9 +22,9 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 2. 放行白名单（如登录接口）
+        // 2. 放行白名单（如登录接口、图片预览）
         String uri = request.getRequestURI();
-        if (uri.startsWith("/api/auth/")) {
+        if (uri.startsWith("/api/auth/") || uri.contains("/upload-images/")) {
             return true;
         }
 

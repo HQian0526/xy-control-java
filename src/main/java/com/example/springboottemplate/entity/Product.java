@@ -1,8 +1,12 @@
 package com.example.springboottemplate.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -20,12 +24,15 @@ import java.util.Date;
 @TableName("product")
 @ApiModel(description = "商品信息")
 public class Product {
+    @TableId(type = IdType.AUTO)
     @ApiModelProperty(value = "主键id", required = true)
     private Long id;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "商品id（后端自动生成）", required = false)
     private Long productId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "分类id", required = false)
     private Long catagoryId;
 

@@ -30,9 +30,9 @@ public class ProductController {
     //查询所有商品
     @GetMapping("/findProduct")
     @ResponseBody
-    @ApiOperation(value = "查询所有商品", notes = "查询商品表中所有商品")
-    public Response findProduct(Product product, Integer pageNum, Integer pageSize){
-        return productService.findProduct(product, pageNum, pageSize);
+    @ApiOperation(value = "查询所有商品", notes = "按当前用户身份返回商品：普通用户空、商户仅本店、管理员全部")
+    public Response findProduct(Product product, Integer pageNum, Integer pageSize, HttpServletRequest request){
+        return productService.findProduct(product, pageNum, pageSize, request);
     }
 
     //修改商品信息
@@ -47,7 +47,7 @@ public class ProductController {
     @DeleteMapping("/deleteProduct")
     @ResponseBody
     @ApiOperation(value = "删除商品", notes = "根据id删除商品")
-    public Response deleteProduct(@RequestBody List<Integer> idList){
+    public Response deleteProduct(@RequestBody List<Long> idList){
         return productService.deleteProduct(idList);
     }
 }

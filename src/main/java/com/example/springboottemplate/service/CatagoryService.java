@@ -13,5 +13,5 @@ public interface CatagoryService {
 
     Response updateCatagory(Catagory catagory, HttpServletRequest request);
 
-    Response deleteCatagory(List<Integer> idList);
+    Response deleteCatagory(List<Long> idList);
 }

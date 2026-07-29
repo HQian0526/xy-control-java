@@ -1,6 +1,8 @@
 package com.example.springboottemplate.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -16,9 +18,11 @@ import java.util.Date;
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "设备信息")
 public class Equ {
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "id", required = true)
     private Integer id; //自增id
 
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "设备id", required = true)
     private Integer equId;
 
@@ -28,9 +32,11 @@ public class Equ {
     @ApiModelProperty(value = "设备类型 1照明 2门禁 3其他", required = true)
     private Integer equType;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "绑定的桌台", required = true)
     private Integer bindDeskId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "绑定的店铺", required = true)
     private Integer bindStoreId;
 

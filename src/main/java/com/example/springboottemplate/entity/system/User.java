@@ -1,6 +1,8 @@
 package com.example.springboottemplate.entity.system;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.Date;
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "用户信息")
 public class User {
+    @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "用户ID", required = true)
     private Integer id;
 

@@ -47,7 +47,7 @@ public class CatagoryController {
     @DeleteMapping("/deleteCatagory")
     @ResponseBody
     @ApiOperation(value = "删除商品分类", notes = "根据id删除分类")
-    public Response deleteCatagory(@RequestBody List<Integer> idList){
+    public Response deleteCatagory(@RequestBody List<Long> idList){
         return catagoryService.deleteCatagory(idList);
     }
 }

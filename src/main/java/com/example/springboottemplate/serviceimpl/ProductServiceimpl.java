@@ -5,10 +5,12 @@ import com.example.springboottemplate.entity.Catagory;
 import com.example.springboottemplate.entity.Product;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
+import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.CatagoryMapper;
 import com.example.springboottemplate.mapper.ProductMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
+import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.ProductService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +38,8 @@ public class ProductServiceimpl implements ProductService {
     private StoreMapper storeMapper;
     @Autowired
     private CatagoryMapper catagoryMapper;
+    @Autowired
+    private UserMapper userMapper;
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -70,6 +75,7 @@ public class ProductServiceimpl implements ProductService {
         if (product.getSaleNum() == null) {
             product.setSaleNum(0);
         }
+        product.setDeleted(0);
         product.setCreatedTime(new Date());
         product.setCreatedBy(username);
         productMapper.addProduct(product);
@@ -77,12 +83,36 @@ public class ProductServiceimpl implements ProductService {
     }
 
     @Override
-    public Response findProduct(Product product, Integer pageNum, Integer pageSize) {
+    public Response findProduct(Product product, Integer pageNum, Integer pageSize, HttpServletRequest request) {
+        // 1. 解析JWT获取当前用户
+        String token = request.getHeader("Authorization").substring(7);
+        Claims claims = jwtUtil.parseToken(token);
+        Integer userId = jwtUtil.getUserId(claims);
+        // 2. 查询用户身份：1普通用户 2商户用户 3管理员
+        User user = userId == null ? null : userMapper.selectById(userId.longValue());
+        Integer identityType = user == null ? null : user.getIdentityType();
+
+        // 普通用户或身份未知：返回空数据
+        if (identityType == null || identityType == 1) {
+            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+        }
+        // 商户用户：仅返回本账号绑定商户下的商品
+        if (identityType == 2) {
+            Store storeQuery = new Store();
+            storeQuery.setUserId(Long.valueOf(userId));
+            storeQuery.setDeleted(0);
+            List<Store> storeList = storeMapper.findStore(storeQuery);
+            if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
+                return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            }
+            product.setStoreId(String.valueOf(storeList.get(0).getStoreId()));
+        }
+        // 管理员(3)：不额外过滤，返回全部
+
         // 传了分页参数才开启分页，否则返回全部数据
         if (pageNum != null && pageSize != null) {
             PageHelper.startPage(pageNum, pageSize);
         }
-        // 查询数据
         List<Product> list = productMapper.findProduct(product);
         // 添加自定义storeName、catagoryName字段
         list.forEach(item -> {
@@ -104,15 +134,17 @@ public class ProductServiceimpl implements ProductService {
                 }
             }
         });
-        // 封装分页结果
+        return buildPageResponse(list, pageNum, pageSize);
+    }
+
+    private Response buildPageResponse(List<Product> list, Integer pageNum, Integer pageSize) {
         PageInfo<Product> pageInfo = new PageInfo<>(list);
-        // 构造返回数据
         Map<String, Object> data = new HashMap<>();
-        data.put("list", pageInfo.getList());  // 当前页数据
-        data.put("total", pageInfo.getTotal()); // 总记录数
-        data.put("pages", pageInfo.getPages()); // 总页数
-        data.put("pageNum", pageInfo.getPageNum()); // 当前页码
-        data.put("pageSize", pageInfo.getPageSize()); // 每页数量
+        data.put("list", pageInfo.getList());
+        data.put("total", pageInfo.getTotal());
+        data.put("pages", pageInfo.getPages());
+        data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
+        data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getTotal());
         return new Response(200, data, "操作成功");
     }
 
@@ -130,7 +162,7 @@ public class ProductServiceimpl implements ProductService {
     }
 
     @Override
-    public Response deleteProduct(List<Integer> idList) {
+    public Response deleteProduct(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }

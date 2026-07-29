@@ -12,6 +12,9 @@ spring:
   # Mysql配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # 线上环境
+    #   url: jdbc:mysql://mysql/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
+    # 本地调试
     url: jdbc:mysql://localhost:3306/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
     username: root
     password: xy20240709
@@ -52,6 +55,16 @@ jwt:
 
 # 文件上传（关于文件大小限制在上面的spring-servlet-multipart中）
 upload:
-  dir: ${user.home}/xy_uploads/ #文件上传存储路径
-#  dir: C:/用户/96349/xy_uploads/  # 末尾必须加斜杠
+  dir: ${user.home}/xy_uploads/ # 本地上传路径（已改MinIO后可保留作备用）
   public-path: /upload-images/** #对外暴露的url路径
+
+# MinIO 对象存储配置（按实际环境修改）
+minio:
+  endpoint: http://106.55.6.194:9000
+  access-key: minio_445b7f
+  secret-key: minio_dXYirT
+  bucket: xy-community
+  # 浏览器可访问的地址；若与 endpoint 相同可直接复用
+  public-url: http://106.55.6.194:9000
+  # true=返回MinIO完整URL；false=返回 xy-community/xxx
+  return-full-url: false

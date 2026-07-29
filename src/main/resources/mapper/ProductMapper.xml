@@ -24,8 +24,8 @@
 
     <!-- 新增商品 -->
     <insert id="addProduct" parameterType="Product">
-        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, product_num, sale_num, remark, product_status, created_by, created_time)
-        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime})
+        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, product_num, sale_num, remark, product_status, created_by, created_time, deleted)
+        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime}, #{deleted})
     </insert>
 
     <!-- 查询所有商品信息（模糊查询）-->
@@ -66,6 +66,9 @@
                 <when test="deleted != null">
                     and deleted = #{deleted}
                 </when>
+                <otherwise>
+                    and deleted = 0
+                </otherwise>
             </choose>
         </where>
     </select>

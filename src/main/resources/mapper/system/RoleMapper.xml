@@ -12,14 +12,13 @@
         <result property="updateTime" column="update_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
-        <result property="userList" column="user_list"/>
-        <result property="authList" column="auth_list"/>
         <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增角色 -->
     <insert id="addRole" parameterType="Role">
-        INSERT into role (role_id, role_name, created_time, created_by, user_list, auth_list, remark) value (#{roleId}, #{roleName}, #{createdTime}, #{createdBy}, #{userList}, #{authList}, #{remark})
+        INSERT into role (role_id, role_name, created_time, created_by, remark)
+        value (#{roleId}, #{roleName}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有角色信息（模糊查询）-->
@@ -51,9 +50,6 @@
                 <when test="deleted != null">
                     and deleted = #{deleted}
                 </when>
-<!--                <otherwise>-->
-<!--                    and deleted = 0-->
-<!--                </otherwise>-->
             </choose>
         </where>
     </select>
@@ -66,8 +62,6 @@
             <if test="roleName != null">role_name = #{roleName},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
-            <if test="userList != null">user_list = #{userList},</if>
-            <if test="authList != null">auth_list = #{authList},</if>
             <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
