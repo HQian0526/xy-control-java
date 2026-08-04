@@ -1,6 +1,7 @@
 package com.example.springboottemplate.filter;
 
 import com.example.springboottemplate.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.*;
@@ -26,8 +27,9 @@ public class JwtAuthenticationFilter implements Filter {
             String token = extractToken(httpRequest);
 
             if (token != null && jwtUtil.validateToken(token)) {
-                String username = jwtUtil.getUsernameFromToken(token);
-                httpRequest.setAttribute("username", username);
+                Claims claims = jwtUtil.parseToken(token);
+                httpRequest.setAttribute("username", claims.getSubject());
+                httpRequest.setAttribute("userId", jwtUtil.getUserId(claims));
             }
 
             chain.doFilter(request, response);

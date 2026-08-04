@@ -26,6 +26,9 @@ public class Store {
     @ApiModelProperty(value = "商户名", required = true)
     private String storeName;
 
+    @ApiModelProperty(value = "店铺头像", required = false)
+    private String avatar;
+
     @ApiModelProperty(value = "商户地址", required = true)
     private String address;
 

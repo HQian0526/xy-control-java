@@ -15,5 +15,12 @@ public interface UserMapper extends BaseMapper<User> {
 
     User selectByUserName(String userName); //根据用户名精确查询
 
+    User selectByOpenid(String openid); //根据微信 openid 精确查询
+
+    User selectByPhone(String phone); //根据手机号精确查询
+
     void updateUser(User user); //修改用户信息
+
+    /** 解除微信身份并逻辑删除（合并账号时清理临时 wx 用户） */
+    void detachWxAndSoftDelete(Integer id);
 }

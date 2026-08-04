@@ -13,7 +13,7 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     # 线上环境
-    #   url: jdbc:mysql://mysql/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
+    # url: jdbc:mysql://mysql/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
     # 本地调试
     url: jdbc:mysql://localhost:3306/autoroom?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=true&serverTimezone=Asia/Shanghai
     username: root
@@ -52,6 +52,12 @@ jwt:
   secret-key: "y7a9fLp9Xy2A/sB1nOq6r4tJwYz8Cv0EeKcHj3mNl+Q="  # Base64编码的256位密钥
   access-token-expire: 3600000     #1小时 访问令牌过期时间（毫秒）
   refresh-token-expire: 604800000   #7天 刷新令牌过期时间（毫秒）
+
+# 微信小程序配置（在微信公众平台获取后填入）
+wechat:
+  miniapp:
+    app-id: wxc3259a872d7605fd
+    app-secret: 248557188f759bc31e1107a3a0f45fb7
 
 # 文件上传（关于文件大小限制在上面的spring-servlet-multipart中）
 upload:

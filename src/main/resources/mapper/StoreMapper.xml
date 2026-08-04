@@ -8,6 +8,7 @@
         <result property="storeId" column="store_id"/>
         <result property="realName" column="real_name"/>
         <result property="storeName" column="store_name"/>
+        <result property="avatar" column="avatar"/>
         <result property="address" column="address"/>
         <result property="userId" column="user_id"/>
         <result property="storeType" column="store_type"/>
@@ -28,7 +29,7 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (store_id, store_name, address, user_id, store_type, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into store (store_id, store_name, avatar, address, user_id, store_type, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -94,6 +95,7 @@
         <set>
             <if test="storeId != null">store_id = #{storeId},</if>
             <if test="storeName != null">store_name = #{storeName},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
             <if test="address != null">address = #{address},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="storeType != null">store_type = #{storeType},</if>

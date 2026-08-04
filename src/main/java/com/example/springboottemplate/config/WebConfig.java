@@ -14,12 +14,16 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/api/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/api/auth/**",
                         "/auth/**",
+                        "/api/auth/**",
+                        // 仅放行微信登录；绑定手机号 /wx/bindPhone 需要 JWT
+                        "/wx/login",
+                        "/api/wx/login",
+                        "/upload-images/**",
                         "/api/upload-images/**",
-                        "/upload-images/**" // 图片预览放行，便于 img 标签直接访问
+                        "/error"
                 );
     }
 }

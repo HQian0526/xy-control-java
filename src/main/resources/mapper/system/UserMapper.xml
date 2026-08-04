@@ -9,6 +9,7 @@
         <result property="realName" column="real_name"/>
         <result property="sex" column="sex"/>
         <result property="phone" column="phone"/>
+        <result property="avatar" column="avatar"/>
         <result property="address" column="address"/>
         <result property="birthday" column="birthday"/>
         <result property="updateTime" column="update_time"/>
@@ -17,14 +18,17 @@
         <result property="createdBy" column="created_by"/>
         <result property="email" column="email"/>
         <result property="identityType" column="identity_type"/>
+        <result property="openid" column="openid"/>
+        <result property="unionid" column="unionid"/>
         <result property="password" column="password"/>
         <result property="remark" column="remark"/>
         <result property="deleted" column="deleted"/>
     </resultMap>
 
     <!-- 新增用户 -->
-    <insert id="addUser" parameterType="User">
-        INSERT into user (user_name, password, real_name, sex, phone, address, birthday, email, identity_type, created_time, created_by, remark) value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{address}, #{birthday}, #{email}, #{identityType}, #{createdTime}, #{createdBy}, #{remark})
+    <insert id="addUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        INSERT into user (user_name, password, real_name, sex, phone, avatar, address, birthday, email, identity_type, openid, unionid, created_time, created_by, remark)
+        value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{openid}, #{unionid}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -87,18 +91,40 @@
             <if test="realName != null">real_name = #{realName},</if>
             <if test="sex != null">sex = #{sex},</if>
             <if test="phone != null">phone = #{phone},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
             <if test="address != null">address = #{address},</if>
             <if test="birthday != null">birthday = #{birthday},</if>
             <if test="email != null">email = #{email},</if>
             <if test="identityType != null">identity_type = #{identityType},</if>
+            <if test="openid != null">openid = #{openid},</if>
+            <if test="unionid != null">unionid = #{unionid},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="deleted != null">deleted = #{deleted},</if>
         </set>
         where id = #{id}
     </update>
 
+    <!-- 解除微信身份并逻辑删除（先清空 openid，避免唯一索引冲突） -->
+    <update id="detachWxAndSoftDelete" parameterType="java.lang.Integer">
+        update user
+        set openid = null,
+            unionid = null,
+            deleted = 1
+        where id = #{id}
+    </update>
+
     <!-- 根据用户名精确查询用户信息-->
     <select id="selectByUserName" parameterType="java.lang.String" resultMap="userResultMap">
         select * from user where user_name = #{userName} and deleted = 0 limit 1
+    </select>
+
+    <!-- 根据微信 openid 精确查询用户信息-->
+    <select id="selectByOpenid" parameterType="java.lang.String" resultMap="userResultMap">
+        select * from user where openid = #{openid} and deleted = 0 limit 1
+    </select>
+
+    <!-- 根据手机号精确查询用户信息-->
+    <select id="selectByPhone" parameterType="java.lang.String" resultMap="userResultMap">
+        select * from user where phone = #{phone} and deleted = 0 limit 1
     </select>
 </mapper>

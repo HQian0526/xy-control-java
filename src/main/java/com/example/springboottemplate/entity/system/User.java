@@ -38,6 +38,9 @@ public class User {
     @ApiModelProperty(value = "手机号码", required = true)
     private String phone;
 
+    @ApiModelProperty(value = "头像地址", required = false)
+    private String avatar;
+
     @ApiModelProperty(value = "收货地址", required = false)
     private String address;
 
@@ -61,6 +64,12 @@ public class User {
 
     @ApiModelProperty(value = "身份类型 1普通用户 2商户用户 3管理员", required = false)
     private Integer identityType;
+
+    @ApiModelProperty(value = "微信小程序 openid", required = false)
+    private String openid;
+
+    @ApiModelProperty(value = "微信 unionid（同一开放平台下打通多端）", required = false)
+    private String unionid;
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;

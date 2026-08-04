@@ -22,9 +22,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 2. 放行白名单（如登录接口、图片预览）
+        // 2. 放行白名单（如登录接口、图片预览）；/wx/bindPhone 需要鉴权
         String uri = request.getRequestURI();
-        if (uri.startsWith("/api/auth/") || uri.contains("/upload-images/")) {
+        if (uri.contains("/auth/")
+                || uri.endsWith("/wx/login")
+                || uri.contains("/upload-images/")) {
             return true;
         }
 
