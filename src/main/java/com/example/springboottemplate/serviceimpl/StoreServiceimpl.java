@@ -41,6 +41,9 @@ public class StoreServiceimpl implements StoreService {
         String username = claims.getSubject();
         store.setCreatedTime(new Date());
         store.setCreatedBy(username);
+        if (store.getStoreStatus() == null) {
+            store.setStoreStatus(0); // 默认正常
+        }
 
         storeMapper.addStore(store);
         return new Response(200, null, "操作成功");

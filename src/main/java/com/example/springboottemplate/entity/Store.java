@@ -38,6 +38,9 @@ public class Store {
     @ApiModelProperty(value = "商户类型 1永久 2租用", required = true)
     private Integer storeType;
 
+    @ApiModelProperty(value = "商户状态 0正常 1锁定", required = false)
+    private Integer storeStatus;
+
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;
 

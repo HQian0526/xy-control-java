@@ -12,6 +12,7 @@
         <result property="address" column="address"/>
         <result property="userId" column="user_id"/>
         <result property="storeType" column="store_type"/>
+        <result property="storeStatus" column="store_status"/>
         <result property="storeTime" column="store_time"/>
         <result property="identityName" column="identity_name"/>
         <result property="identityCompanyName" column="identity_company_name"/>
@@ -29,7 +30,7 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (store_id, store_name, avatar, address, user_id, store_type, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into store (store_id, store_name, avatar, address, user_id, store_type, store_status, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeStatus}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -50,6 +51,9 @@
             </if>
             <if test="storeType != null and storeType != ''">
                 and store_type = #{storeType}
+            </if>
+            <if test="storeStatus != null">
+                and store_status = #{storeStatus}
             </if>
             <if test="storeTime != null and storeTime != ''">
                 and store_time = #{storeTime}
@@ -99,6 +103,7 @@
             <if test="address != null">address = #{address},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="storeType != null">store_type = #{storeType},</if>
+            <if test="storeStatus != null">store_status = #{storeStatus},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
