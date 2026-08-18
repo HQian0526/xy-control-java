@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.VisitorMapper">
+    <resultMap id="visitorResultMap" type="Visitor">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="visitorName" column="visitor_name"/>
+        <result property="phone" column="phone"/>
+        <result property="remark" column="remark"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addVisitor" parameterType="Visitor">
+        INSERT into visitor (id, store_id, visitor_name, phone, remark, created_by, created_time, deleted)
+        value (#{id}, #{storeId}, #{visitorName}, #{phone}, #{remark}, #{createdBy}, #{createdTime}, #{deleted})
+    </insert>
+
+    <select id="findVisitor" parameterType="Visitor" resultMap="visitorResultMap">
+        select * from visitor
+        <where>
+            <if test="id != null and id != ''">
+                and id = #{id}
+            </if>
+            <if test="storeId != null and storeId != ''">
+                and store_id = #{storeId}
+            </if>
+            <if test="visitorName != null and visitorName != ''">
+                and visitor_name like CONCAT('%', #{visitorName}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                and remark like CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                and created_by = #{createdBy}
+            </if>
+            <if test="createdTime != null and createdTime != ''">
+                and created_time = #{createdTime}
+            </if>
+            <if test="updateBy != null and updateBy != ''">
+                and update_by = #{updateBy}
+            </if>
+            <if test="updateTime != null and updateTime != ''">
+                and update_time = #{updateTime}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and deleted = #{deleted}
+                </when>
+                <otherwise>
+                    and deleted = 0
+                </otherwise>
+            </choose>
+        </where>
+        order by created_time desc, id desc
+    </select>
+
+    <update id="updateVisitor" parameterType="Visitor">
+        update visitor
+        <set>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="visitorName != null">visitor_name = #{visitorName},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        where id = #{id}
+    </update>
+</mapper>
