@@ -28,9 +28,15 @@ public class OtherBusinessController {
 
     @GetMapping("/findOtherBusiness")
     @ResponseBody
-    @ApiOperation(value = "查询其他业务", notes = "按当前用户身份返回：普通用户空、商户仅本店、管理员全部")
-    public Response findOtherBusiness(OtherBusiness otherBusiness, Integer pageNum, Integer pageSize,
+    @ApiOperation(value = "查询其他业务", notes = "普通用户按 storeId（或用户 bindStoreId）查；商户仅本店；管理员可按 storeId 过滤")
+    public Response findOtherBusiness(OtherBusiness otherBusiness,
+                                      @RequestParam(required = false) Long storeId,
+                                      Integer pageNum, Integer pageSize,
                                       HttpServletRequest request) {
+        // 显式接收 query 的 storeId，避免仅依赖对象绑定时偶发丢失
+        if (storeId != null) {
+            otherBusiness.setStoreId(storeId);
+        }
         return otherBusinessService.findOtherBusiness(otherBusiness, pageNum, pageSize, request);
     }
 

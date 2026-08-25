@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.MallOrderItemMapper">
+    <resultMap id="mallOrderItemResultMap" type="MallOrderItem">
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="productId" column="product_id"/>
+        <result property="productName" column="product_name"/>
+        <result property="productImg" column="product_img"/>
+        <result property="price" column="price"/>
+        <result property="quantity" column="quantity"/>
+        <result property="amount" column="amount"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="batchAdd">
+        INSERT into mall_order_item (
+            id, order_id, order_no, product_id, product_name, product_img, price, quantity, amount, created_time, deleted
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.orderId}, #{item.orderNo}, #{item.productId}, #{item.productName}, #{item.productImg},
+             #{item.price}, #{item.quantity}, #{item.amount}, #{item.createdTime}, #{item.deleted})
+        </foreach>
+    </insert>
+
+    <select id="selectByOrderId" resultMap="mallOrderItemResultMap">
+        select * from mall_order_item where order_id = #{orderId} and deleted = 0 order by id asc
+    </select>
+</mapper>

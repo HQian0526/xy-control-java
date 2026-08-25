@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.MallOrderMapper">
+    <resultMap id="mallOrderResultMap" type="MallOrder">
+        <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="openid" column="openid"/>
+        <result property="contact" column="contact"/>
+        <result property="address" column="address"/>
+        <result property="remark" column="remark"/>
+        <result property="goodsAmount" column="goods_amount"/>
+        <result property="deliveryFee" column="delivery_fee"/>
+        <result property="payAmount" column="pay_amount"/>
+        <result property="payAmountFen" column="pay_amount_fen"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="prepayId" column="prepay_id"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="paidTime" column="paid_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addMallOrder" parameterType="MallOrder">
+        INSERT into mall_order (
+            id, order_no, store_id, user_id, openid, contact, address, remark,
+            goods_amount, delivery_fee, pay_amount, pay_amount_fen, pay_status,
+            prepay_id, created_by, created_time, deleted
+        ) value (
+            #{id}, #{orderNo}, #{storeId}, #{userId}, #{openid}, #{contact}, #{address}, #{remark},
+            #{goodsAmount}, #{deliveryFee}, #{payAmount}, #{payAmountFen}, #{payStatus},
+            #{prepayId}, #{createdBy}, #{createdTime}, #{deleted}
+        )
+    </insert>
+
+    <select id="selectByOrderNo" resultMap="mallOrderResultMap">
+        select * from mall_order where order_no = #{orderNo} and deleted = 0 limit 1
+    </select>
+
+    <select id="findMallOrder" parameterType="MallOrder" resultMap="mallOrderResultMap">
+        select * from mall_order
+        <where>
+            deleted = 0
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="storeId != null">
+                and store_id = #{storeId}
+            </if>
+            <if test="payStatus != null">
+                and pay_status = #{payStatus}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                and order_no = #{orderNo}
+            </if>
+        </where>
+        order by created_time desc, id desc
+    </select>
+
+    <update id="markPaid">
+        update mall_order
+        set pay_status = 1,
+            transaction_id = #{transactionId},
+            paid_time = #{paidTime},
+            update_time = #{paidTime}
+        where order_no = #{orderNo}
+          and pay_status = 0
+          and deleted = 0
+    </update>
+
+    <update id="updatePrepayId">
+        update mall_order
+        set prepay_id = #{prepayId},
+            update_time = now()
+        where order_no = #{orderNo}
+          and deleted = 0
+    </update>
+</mapper>

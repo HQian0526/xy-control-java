@@ -92,9 +92,11 @@ public class ProductServiceimpl implements ProductService {
         User user = userId == null ? null : userMapper.selectById(userId.longValue());
         Integer identityType = user == null ? null : user.getIdentityType();
 
-        // 普通用户或身份未知：返回空数据
+        // 普通用户：按请求传入的 storeId 查询对应店铺商品（未传则空）
         if (identityType == null || identityType == 1) {
-            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            if (product.getStoreId() == null || product.getStoreId().isEmpty()) {
+                return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            }
         }
         // 商户用户：仅返回本账号绑定商户下的商品
         if (identityType == 2) {

@@ -18,6 +18,7 @@
         <result property="createdBy" column="created_by"/>
         <result property="email" column="email"/>
         <result property="identityType" column="identity_type"/>
+        <result property="bindStoreId" column="bind_store_id"/>
         <result property="openid" column="openid"/>
         <result property="unionid" column="unionid"/>
         <result property="password" column="password"/>
@@ -27,8 +28,8 @@
 
     <!-- 新增用户 -->
     <insert id="addUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
-        INSERT into user (user_name, password, real_name, sex, phone, avatar, address, birthday, email, identity_type, openid, unionid, created_time, created_by, remark)
-        value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{openid}, #{unionid}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into user (user_name, password, real_name, sex, phone, avatar, address, birthday, email, identity_type, bind_store_id, openid, unionid, created_time, created_by, remark)
+        value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{bindStoreId}, #{openid}, #{unionid}, #{createdTime}, #{createdBy}, #{remark})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -58,6 +59,12 @@
             </if>
             <if test="email != null and email != ''">
                 and email like CONCAT('%', #{email}, '%')
+            </if>
+            <if test="identityType != null">
+                and identity_type = #{identityType}
+            </if>
+            <if test="bindStoreId != null">
+                and bind_store_id = #{bindStoreId}
             </if>
             <if test="createdTime != null and createdTime != ''">
                 and created_time = #{createdTime}
@@ -96,6 +103,7 @@
             <if test="birthday != null">birthday = #{birthday},</if>
             <if test="email != null">email = #{email},</if>
             <if test="identityType != null">identity_type = #{identityType},</if>
+            <if test="bindStoreId != null">bind_store_id = #{bindStoreId},</if>
             <if test="openid != null">openid = #{openid},</if>
             <if test="unionid != null">unionid = #{unionid},</if>
             <if test="remark != null">remark = #{remark},</if>

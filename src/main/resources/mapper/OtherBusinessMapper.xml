@@ -23,10 +23,10 @@
     <select id="findOtherBusiness" parameterType="OtherBusiness" resultMap="otherBusinessResultMap">
         select * from other_business
         <where>
-            <if test="id != null and id != ''">
+            <if test="id != null">
                 and id = #{id}
             </if>
-            <if test="storeId != null and storeId != ''">
+            <if test="storeId != null">
                 and store_id = #{storeId}
             </if>
             <if test="businessName != null and businessName != ''">

@@ -242,6 +242,7 @@ public class AuthServiceimpl implements AuthService {
         userInfo.put("phone", user.getPhone());
         userInfo.put("avatar", user.getAvatar());
         userInfo.put("identityType", user.getIdentityType());
+        userInfo.put("bindStoreId", user.getBindStoreId());
         userInfo.put("openid", user.getOpenid());
         userInfo.put("needBindPhone", !StringUtils.hasText(user.getPhone()));
 

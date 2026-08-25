@@ -82,9 +82,11 @@ public class CatagoryServiceimpl implements CatagoryService {
         User user = userId == null ? null : userMapper.selectById(userId.longValue());
         Integer identityType = user == null ? null : user.getIdentityType();
 
-        // 普通用户或身份未知：返回空数据
+        // 普通用户：按请求传入的 storeId 查询对应店铺分类（未传则空）
         if (identityType == null || identityType == 1) {
-            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            if (catagory.getStoreId() == null || catagory.getStoreId().isEmpty()) {
+                return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            }
         }
         // 商户用户：仅返回本账号绑定商户下的分类
         if (identityType == 2) {

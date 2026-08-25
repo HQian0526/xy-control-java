@@ -65,6 +65,10 @@ public class User {
     @ApiModelProperty(value = "身份类型 1普通用户 2商户用户 3管理员", required = false)
     private Integer identityType;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "默认绑定的店铺id", required = false)
+    private Long bindStoreId;
+
     @ApiModelProperty(value = "微信小程序 openid", required = false)
     private String openid;
 

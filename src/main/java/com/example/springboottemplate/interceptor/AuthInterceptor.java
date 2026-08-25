@@ -26,6 +26,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         String uri = request.getRequestURI();
         if (uri.contains("/auth/")
                 || uri.endsWith("/wx/login")
+                || uri.contains("/mallOrder/wxPayNotify")
                 || uri.contains("/upload-images/")) {
             return true;
         }

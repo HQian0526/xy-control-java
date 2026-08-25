@@ -76,12 +76,17 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
         User user = userId == null ? null : userMapper.selectById(userId.longValue());
         Integer identityType = user == null ? null : user.getIdentityType();
 
-        // 普通用户或身份未知：返回空数据
+        // 普通用户：优先用请求 storeId，未传则用用户 bindStoreId；仍没有则空
         if (identityType == null || identityType == 1) {
-            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            if (otherBusiness.getStoreId() == null && user != null) {
+                otherBusiness.setStoreId(user.getBindStoreId());
+            }
+            if (otherBusiness.getStoreId() == null) {
+                return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+            }
         }
         // 商户用户：仅返回本账号绑定商户下的业务
-        if (identityType == 2) {
+        if (identityType != null && identityType == 2) {
             Store storeQuery = new Store();
             storeQuery.setUserId(Long.valueOf(userId));
             storeQuery.setDeleted(0);
@@ -91,7 +96,7 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
             }
             otherBusiness.setStoreId(storeList.get(0).getStoreId());
         }
-        // 管理员(3)：不额外过滤，返回全部
+        // 管理员(3)：不额外过滤，可用入参 storeId 过滤
 
         if (pageNum != null && pageSize != null) {
             PageHelper.startPage(pageNum, pageSize);
