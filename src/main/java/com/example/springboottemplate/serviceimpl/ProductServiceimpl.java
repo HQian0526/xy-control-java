@@ -84,10 +84,8 @@ public class ProductServiceimpl implements ProductService {
 
     @Override
     public Response findProduct(Product product, Integer pageNum, Integer pageSize, HttpServletRequest request) {
-        // 1. 解析JWT获取当前用户
-        String token = request.getHeader("Authorization").substring(7);
-        Claims claims = jwtUtil.parseToken(token);
-        Integer userId = jwtUtil.getUserId(claims);
+        // 1. 解析JWT获取当前用户（游客无 token 时按普通用户 + 请求 storeId 查询）
+        Integer userId = jwtUtil.tryGetUserId(request);
         // 2. 查询用户身份：1普通用户 2商户用户 3管理员
         User user = userId == null ? null : userMapper.selectById(userId.longValue());
         Integer identityType = user == null ? null : user.getIdentityType();

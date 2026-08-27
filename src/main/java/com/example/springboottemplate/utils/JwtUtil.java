@@ -1,6 +1,7 @@
 package com.example.springboottemplate.utils;
 
 import io.jsonwebtoken.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -89,5 +90,23 @@ public class JwtUtil {
 
     public Integer getUserIdFromToken(String token) {
         return getUserId(parseToken(token));
+    }
+
+    /**
+     * 从请求头尝试解析 userId；无 token 或无效时返回 null（游客）
+     */
+    public Integer tryGetUserId(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ") || header.length() <= 7) {
+            return null;
+        }
+        try {
+            return getUserId(parseToken(header.substring(7)));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

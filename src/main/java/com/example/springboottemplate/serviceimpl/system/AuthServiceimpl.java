@@ -10,6 +10,7 @@ import com.example.springboottemplate.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
@@ -20,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -210,6 +212,14 @@ public class AuthServiceimpl implements AuthService {
         // user_name 字段较短，不能直接存完整 openid；用 md5 截断保证唯一且长度可控
         String userName = "wx_" + DigestUtils.md5DigestAsHex(openid.getBytes(StandardCharsets.UTF_8))
                 .substring(0, 12);
+
+        // 合并账号后临时用户会逻辑删除并清空 openid，但 user_name 仍占用唯一索引。
+        // 再次登录时按 openid 查不到，需要复用/恢复同名账号，避免 Duplicate entry user_name。
+        User existing = userMapper.selectByUserNameAny(userName);
+        if (existing != null) {
+            return reuseOrRestoreWxUser(existing, session);
+        }
+
         User user = User.builder()
                 .userName(userName)
                 .realName("微信用户")
@@ -220,7 +230,18 @@ public class AuthServiceimpl implements AuthService {
                 .createdBy("wx")
                 .deleted(0)
                 .build();
-        userMapper.addUser(user);
+        try {
+            userMapper.addUser(user);
+        } catch (DuplicateKeyException e) {
+            // 并发或历史脏数据兜底：再按用户名取一次
+            User conflict = userMapper.selectByUserNameAny(userName);
+            if (conflict != null) {
+                return reuseOrRestoreWxUser(conflict, session);
+            }
+            // user_name 仍冲突则换一个后缀再插一次
+            user.setUserName(userName + "_" + UUID.randomUUID().toString().substring(0, 4));
+            userMapper.addUser(user);
+        }
         if (user.getId() == null) {
             User saved = userMapper.selectByOpenid(openid);
             if (saved == null) {
@@ -229,6 +250,53 @@ public class AuthServiceimpl implements AuthService {
             return saved;
         }
         return user;
+    }
+
+    /**
+     * 复用已存在的 wx_ 用户名记录：恢复逻辑删除、重新绑定 openid
+     */
+    private User reuseOrRestoreWxUser(User existing, WxSessionResult session) {
+        String openid = session.getOpenid();
+        // 已是正常账号且 openid 属于别人：不应抢绑，换新用户名新建
+        if (existing.getDeleted() != null && existing.getDeleted() == 0
+                && StringUtils.hasText(existing.getOpenid())
+                && !openid.equals(existing.getOpenid())) {
+            String userName = existing.getUserName() + "_" + UUID.randomUUID().toString().substring(0, 4);
+            User user = User.builder()
+                    .userName(userName)
+                    .realName("微信用户")
+                    .identityType(1)
+                    .openid(openid)
+                    .unionid(session.getUnionid())
+                    .createdTime(new Date())
+                    .createdBy("wx")
+                    .deleted(0)
+                    .build();
+            userMapper.addUser(user);
+            if (user.getId() == null) {
+                User saved = userMapper.selectByOpenid(openid);
+                if (saved == null) {
+                    throw new RuntimeException("创建微信用户失败");
+                }
+                return saved;
+            }
+            return user;
+        }
+
+        existing.setOpenid(openid);
+        if (StringUtils.hasText(session.getUnionid())) {
+            existing.setUnionid(session.getUnionid());
+        }
+        existing.setDeleted(0);
+        if (!StringUtils.hasText(existing.getRealName())) {
+            existing.setRealName("微信用户");
+        }
+        if (existing.getIdentityType() == null) {
+            existing.setIdentityType(1);
+        }
+        userMapper.updateUser(existing);
+        User refreshed = userMapper.selectById(existing.getId().longValue());
+        return refreshed != null ? refreshed : existing;
     }
 
     private Response buildLoginResponse(User user, boolean merged) {

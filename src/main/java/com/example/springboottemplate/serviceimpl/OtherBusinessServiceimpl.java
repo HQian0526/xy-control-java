@@ -70,9 +70,7 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
     @Override
     public Response findOtherBusiness(OtherBusiness otherBusiness, Integer pageNum, Integer pageSize,
                                       HttpServletRequest request) {
-        String token = request.getHeader("Authorization").substring(7);
-        Claims claims = jwtUtil.parseToken(token);
-        Integer userId = jwtUtil.getUserId(claims);
+        Integer userId = jwtUtil.tryGetUserId(request);
         User user = userId == null ? null : userMapper.selectById(userId.longValue());
         Integer identityType = user == null ? null : user.getIdentityType();
 

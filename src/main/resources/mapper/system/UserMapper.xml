@@ -126,6 +126,11 @@
         select * from user where user_name = #{userName} and deleted = 0 limit 1
     </select>
 
+    <!-- 按用户名查询（含逻辑删除）-->
+    <select id="selectByUserNameAny" parameterType="java.lang.String" resultMap="userResultMap">
+        select * from user where user_name = #{userName} limit 1
+    </select>
+
     <!-- 根据微信 openid 精确查询用户信息-->
     <select id="selectByOpenid" parameterType="java.lang.String" resultMap="userResultMap">
         select * from user where openid = #{openid} and deleted = 0 limit 1

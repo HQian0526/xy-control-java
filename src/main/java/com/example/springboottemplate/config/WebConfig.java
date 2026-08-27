@@ -21,6 +21,15 @@ public class WebConfig implements WebMvcConfigurer {
                         // 仅放行微信登录；绑定手机号 /wx/bindPhone 需要 JWT
                         "/wx/login",
                         "/api/wx/login",
+                        // 游客可浏览店铺分类/商品/其他业务/店铺信息
+                        "/catagory/findCatagory",
+                        "/api/catagory/findCatagory",
+                        "/product/findProduct",
+                        "/api/product/findProduct",
+                        "/otherBusiness/findOtherBusiness",
+                        "/api/otherBusiness/findOtherBusiness",
+                        "/store/findStore",
+                        "/api/store/findStore",
                         // 微信支付异步通知（微信服务器直连，无 JWT）
                         "/mallOrder/wxPayNotify",
                         "/api/mallOrder/wxPayNotify",
