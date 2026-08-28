@@ -18,4 +18,14 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
                  @Param("paidTime") java.util.Date paidTime);
 
     int updatePrepayId(@Param("orderNo") String orderNo, @Param("prepayId") String prepayId);
+
+    int updateWxShippingSync(@Param("orderNo") String orderNo,
+                             @Param("status") Integer status,
+                             @Param("errcode") Integer errcode,
+                             @Param("errmsg") String errmsg,
+                             @Param("retry") Integer retry,
+                             @Param("shippingTime") java.util.Date shippingTime);
+
+    java.util.List<MallOrder> selectPendingWxShipping(@Param("maxRetry") int maxRetry,
+                                                      @Param("limit") int limit);
 }

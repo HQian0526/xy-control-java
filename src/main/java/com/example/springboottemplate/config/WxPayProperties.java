@@ -32,4 +32,23 @@ public class WxPayProperties {
     private String notifyUrl;
     /** 配送费（元） */
     private BigDecimal deliveryFee = BigDecimal.ZERO;
+    /** 支付成功后向微信发货信息管理报发货 */
+    private Shipping shipping = new Shipping();
+
+    @Data
+    public static class Shipping {
+        /** 是否在支付成功后自动报发货 */
+        private boolean enabled = true;
+        /**
+         * 物流模式：2同城配送 4用户自提。
+         * 社区实物不要填 3（虚拟/无需物流），也不要填 1（快递，需运单号）。
+         */
+        private int logisticsType = 2;
+        /** 失败最大重试次数 */
+        private int maxRetry = 8;
+        /** 定时扫描未同步订单的间隔（毫秒） */
+        private long retryIntervalMs = 120000L;
+        /** 每次扫描最多处理多少笔 */
+        private int retryBatchSize = 20;
+    }
 }

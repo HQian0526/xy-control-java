@@ -82,6 +82,22 @@ public class MallOrder {
     @ApiModelProperty(value = "支付成功时间")
     private Date paidTime;
 
+    /** 0未同步 1成功 2失败 */
+    @ApiModelProperty(value = "微信发货同步状态")
+    private Integer wxShippingStatus;
+
+    @ApiModelProperty(value = "微信发货错误码")
+    private Integer wxShippingErrcode;
+
+    @ApiModelProperty(value = "微信发货错误信息")
+    private String wxShippingErrmsg;
+
+    @ApiModelProperty(value = "微信发货重试次数")
+    private Integer wxShippingRetry;
+
+    @ApiModelProperty(value = "微信发货同步时间")
+    private Date wxShippingTime;
+
     @ApiModelProperty(value = "创建人")
     private String createdBy;
 

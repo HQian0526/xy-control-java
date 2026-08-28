@@ -144,6 +144,63 @@ public class WxApiService {
         }
     }
 
+    /**
+     * POST 微信 JSON 接口；access_token 失效时清缓存重试一次。
+     */
+    public JsonNode postWithAccessToken(String url, Object payload) {
+        ensureWxConfigured();
+        try {
+            JsonNode node = doPostJson(url, payload, getAccessToken(false));
+            int errcode = node.path("errcode").asInt(0);
+            if (errcode == 40001 || errcode == 42001) {
+                cachedAccessToken = null;
+                accessTokenExpireAtMs = 0;
+                return doPostJson(url, payload, getAccessToken(true));
+            }
+            return node;
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
+                cachedAccessToken = null;
+                accessTokenExpireAtMs = 0;
+                return doPostJson(url, payload, getAccessToken(true));
+            }
+            throw new RuntimeException("调用微信接口失败: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    private JsonNode doPostJson(String url, Object payload, String accessToken) {
+        try {
+            String requestUrl = UriComponentsBuilder.fromUriString(url)
+                    .queryParam("access_token", accessToken)
+                    .toUriString();
+            String jsonBody = objectMapper.writeValueAsString(payload);
+            byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setContentLength(bodyBytes.length);
+            HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+            String body = restTemplate.postForObject(requestUrl, entity, String.class);
+            if (!StringUtils.hasText(body)) {
+                throw new RuntimeException("微信接口无响应");
+            }
+            JsonNode node = objectMapper.readTree(body);
+            int errcode = node.path("errcode").asInt(0);
+            if (errcode == 40001 || errcode == 42001) {
+                cachedAccessToken = null;
+                accessTokenExpireAtMs = 0;
+            }
+            return node;
+        } catch (HttpClientErrorException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("调用微信接口失败: " + e.getMessage(), e);
+        }
+    }
+
     public String getAccessToken() {
         return getAccessToken(false);
     }

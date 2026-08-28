@@ -19,6 +19,11 @@
         <result property="prepayId" column="prepay_id"/>
         <result property="transactionId" column="transaction_id"/>
         <result property="paidTime" column="paid_time"/>
+        <result property="wxShippingStatus" column="wx_shipping_status"/>
+        <result property="wxShippingErrcode" column="wx_shipping_errcode"/>
+        <result property="wxShippingErrmsg" column="wx_shipping_errmsg"/>
+        <result property="wxShippingRetry" column="wx_shipping_retry"/>
+        <result property="wxShippingTime" column="wx_shipping_time"/>
         <result property="createdBy" column="created_by"/>
         <result property="createdTime" column="created_time"/>
         <result property="updateBy" column="update_by"/>
@@ -80,4 +85,26 @@
         where order_no = #{orderNo}
           and deleted = 0
     </update>
+
+    <update id="updateWxShippingSync">
+        update mall_order
+        set wx_shipping_status = #{status},
+            wx_shipping_errcode = #{errcode},
+            wx_shipping_errmsg = #{errmsg},
+            wx_shipping_retry = #{retry},
+            wx_shipping_time = #{shippingTime},
+            update_time = now()
+        where order_no = #{orderNo}
+          and deleted = 0
+    </update>
+
+    <select id="selectPendingWxShipping" resultMap="mallOrderResultMap">
+        select * from mall_order
+        where deleted = 0
+          and pay_status = 1
+          and (wx_shipping_status is null or wx_shipping_status in (0, 2))
+          and ifnull(wx_shipping_retry, 0) &lt; #{maxRetry}
+        order by paid_time asc, id asc
+        limit #{limit}
+    </select>
 </mapper>

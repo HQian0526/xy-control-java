@@ -20,6 +20,7 @@ import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.MallOrderService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
+import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -30,6 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -67,6 +70,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     private WxPayClientService wxPayClientService;
     @Autowired
     private WxPayProperties wxPayProperties;
+    @Autowired
+    private WxShippingService wxShippingService;
 
     @Override
     public Response checkoutAndPay(MallCheckoutRequest request, HttpServletRequest httpRequest) {
@@ -355,6 +360,21 @@ public class MallOrderServiceimpl implements MallOrderService {
             product.setUpdateTime(paidTime);
             productMapper.updateProduct(product);
         }
+        scheduleWxShippingAfterCommit(orderNo);
+    }
+
+    /** 事务提交后再报发货，避免挡住支付回调、也避免未提交订单被微信查不到 */
+    private void scheduleWxShippingAfterCommit(String orderNo) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            wxShippingService.uploadShippingAsync(orderNo);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                wxShippingService.uploadShippingAsync(orderNo);
+            }
+        });
     }
 
     private MallOrder requireOwnedOrder(String orderNo, HttpServletRequest httpRequest) {
