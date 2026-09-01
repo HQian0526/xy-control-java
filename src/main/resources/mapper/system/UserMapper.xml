@@ -26,10 +26,10 @@
         <result property="deleted" column="deleted"/>
     </resultMap>
 
-    <!-- 新增用户 -->
-    <insert id="addUser" parameterType="User" useGeneratedKeys="true" keyProperty="id">
-        INSERT into user (user_name, password, real_name, sex, phone, avatar, address, birthday, email, identity_type, bind_store_id, openid, unionid, created_time, created_by, remark)
-        value (#{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{bindStoreId}, #{openid}, #{unionid}, #{createdTime}, #{createdBy}, #{remark})
+    <!-- 新增用户（id 由业务层雪花算法生成） -->
+    <insert id="addUser" parameterType="User">
+        INSERT into user (id, user_name, password, real_name, sex, phone, avatar, address, birthday, email, identity_type, bind_store_id, openid, unionid, created_time, created_by, remark, deleted)
+        value (#{id}, #{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{bindStoreId}, #{openid}, #{unionid}, #{createdTime}, #{createdBy}, #{remark}, #{deleted})
     </insert>
 
     <!-- 查询所有用户信息（模糊查询）-->
@@ -113,7 +113,7 @@
     </update>
 
     <!-- 解除微信身份并逻辑删除（先清空 openid，避免唯一索引冲突） -->
-    <update id="detachWxAndSoftDelete" parameterType="java.lang.Integer">
+    <update id="detachWxAndSoftDelete" parameterType="java.lang.Long">
         update user
         set openid = null,
             unionid = null,

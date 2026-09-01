@@ -12,5 +12,5 @@ public interface CardBuyLogService {
 
     Response updateCardBuyLog(CardBuyLog cardBuyLog);
 
-    Response deleteCardBuyLog(List<Integer> idList);
+    Response deleteCardBuyLog(List<Long> idList);
 }

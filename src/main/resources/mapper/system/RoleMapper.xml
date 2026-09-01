@@ -25,11 +25,11 @@
     <select id="findRole" parameterType="Role" resultMap="roleResultMap">
         select * from role
         <where>
-            <if test="id != null and id != ''">
-                and id LIKE CONCAT('%', #{id}, '%')
+            <if test="id != null">
+                and id = #{id}
             </if>
-            <if test="roleId != null and roleId != ''">
-                and role_id like CONCAT('%', #{roleId}, '%')
+            <if test="roleId != null">
+                and role_id = #{roleId}
             </if>
             <if test="roleName != null and roleName != ''">
                 and role_name like CONCAT('%', #{roleName}, '%')
@@ -50,6 +50,9 @@
                 <when test="deleted != null">
                     and deleted = #{deleted}
                 </when>
+                <otherwise>
+                    and deleted = 0
+                </otherwise>
             </choose>
         </where>
     </select>

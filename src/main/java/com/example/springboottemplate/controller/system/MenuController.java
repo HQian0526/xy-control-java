@@ -68,7 +68,7 @@ public class MenuController {
     @DeleteMapping("/deleteMenu")
     @ResponseBody
     @ApiOperation(value = "删除菜单", notes = "删除菜单")
-    public Response deleteMenu(@RequestBody List<String> idList) {
+    public Response deleteMenu(@RequestBody List<Long> idList) {
         return menuService.deleteMenu(idList);
     }
 }

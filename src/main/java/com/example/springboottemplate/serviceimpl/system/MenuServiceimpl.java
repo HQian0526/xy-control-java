@@ -10,6 +10,7 @@ import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.mapper.system.MenuMapper;
 import com.example.springboottemplate.mapper.system.SysRoleMenuMapper;
 import com.example.springboottemplate.service.system.MenuService;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,8 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
     private SysRoleMenuMapper sysRoleMenuMapper;
     @Autowired
     private MenuMapper menuMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
 
     @Override
     public Response getMenuTree() {
@@ -249,23 +252,19 @@ public class MenuServiceimpl extends ServiceImpl<MenuMapper, Menu> implements Me
     }
 
     @Override
-    public Response deleteMenu(List<String> idList) {
+    public Response deleteMenu(List<Long> idList) {
         try {
-            if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
+            if (ValidateUtil.isEmpty(idList)) {
                 return Response.fail("删除失败,id不能为空");
             }
-            // 使用 Stream 转换
-            List<Long> longList = idList.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
-            int affectedRows = baseMapper.deleteBatchIds(longList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+            int affectedRows = logicDeleteHelper.deleteByIds("menu", idList);
             if (affectedRows > 0) {
                 return new Response(200, null, "操作成功");
-            } else {
-                return new Response(400, null, "操作失败，未找到需要删除的记录");
             }
-        } catch(Exception e) {
+            return new Response(400, null, "操作失败，未找到需要删除的记录");
+        } catch (Exception e) {
             return Response.fail("删除失败");
         }
-
     }
 
     /**

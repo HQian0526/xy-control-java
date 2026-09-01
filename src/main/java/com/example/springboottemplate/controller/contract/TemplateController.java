@@ -58,7 +58,7 @@ public class TemplateController {
     @DeleteMapping("/deleteContractTemp")
     @ResponseBody
     @ApiOperation(value = "删除合同模板", notes = "根据id删除合同模板")
-    public Response deleteContractTemp(@RequestBody List<Integer> idList){
+    public Response deleteContractTemp(@RequestBody List<Long> idList){
         return templateService.deleteContractTemp(idList);
     }
 

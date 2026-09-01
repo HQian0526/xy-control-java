@@ -47,7 +47,7 @@ public class EquController {
     @DeleteMapping("/deleteEqu")
     @ResponseBody
     @ApiOperation(value = "删除设备", notes = "根据id删除设备")
-    public Response deleteEqu(@RequestBody List<Integer> idList){
+    public Response deleteEqu(@RequestBody List<Long> idList){
         return equService.deleteEqu(idList);
     }
 }

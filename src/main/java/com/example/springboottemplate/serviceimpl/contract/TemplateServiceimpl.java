@@ -27,6 +27,7 @@ import java.util.*;
 
 import com.example.springboottemplate.utils.FileUtil;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -53,6 +54,9 @@ public class TemplateServiceimpl extends ServiceImpl<TemplateMapper, ContractTem
 
     @Autowired
     private TemplateMapper templateMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Value("${upload.dir}")
@@ -107,11 +111,11 @@ public class TemplateServiceimpl extends ServiceImpl<TemplateMapper, ContractTem
     }
 
     @Override
-    public Response deleteContractTemp(List<Integer> idList) {
+    public Response deleteContractTemp(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        Integer affectedRows = templateMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("contract_template", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

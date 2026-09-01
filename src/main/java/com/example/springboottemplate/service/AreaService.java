@@ -13,5 +13,5 @@ public interface AreaService {
 
     Response updateArea(Area area, HttpServletRequest request);
 
-    Response deleteArea(List<Integer> idList);
+    Response deleteArea(List<Long> idList);
 }

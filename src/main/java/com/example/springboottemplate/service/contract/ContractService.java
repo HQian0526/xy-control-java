@@ -18,7 +18,7 @@ public interface ContractService extends IService<Contract> {
 
     Response updateContract(Contract contract, HttpServletRequest request);
 
-    Response deleteContract(List<Integer> idList);
+    Response deleteContract(List<Long> idList);
 
     Page<Contract> queryContractPage(ContractQueryDTO queryDTO);
     ContractDetailVO getContractDetail(String no);

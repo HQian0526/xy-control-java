@@ -1,5 +1,7 @@
 package com.example.springboottemplate.entity.system;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -18,9 +20,10 @@ import java.util.Date;
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "用户信息")
 public class User {
+    @TableId(type = IdType.INPUT)
     @JsonSerialize(using = ToStringSerializer.class)
-    @ApiModelProperty(value = "用户ID", required = true)
-    private Integer id;
+    @ApiModelProperty(value = "用户ID（雪花算法，新增时无需传入）", required = false)
+    private Long id;
 
     @ApiModelProperty(value = "用户名", required = true)
     @com.fasterxml.jackson.annotation.JsonAlias({"username"})

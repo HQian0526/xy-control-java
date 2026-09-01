@@ -15,7 +15,7 @@ public interface TemplateService extends IService<ContractTemplate> {
     Response addContractTemp(ContractTemplate contractTemplate, HttpServletRequest request);
     Response findContractTemp(ContractTemplate contractTemplate, Integer pageNum, Integer pageSize);
     Response updateContractTemp(ContractTemplate contractTemplate, HttpServletRequest request);
-    Response deleteContractTemp(List<Integer> idList);
+    Response deleteContractTemp(List<Long> idList);
     // 根据合同类型获取模板
     ContractTemplate getTemplateByContractType(Integer contractType);
 

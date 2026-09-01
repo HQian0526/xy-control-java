@@ -1,5 +1,6 @@
 package com.example.springboottemplate.serviceimpl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
@@ -7,6 +8,7 @@ import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -20,13 +22,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class StoreServiceimpl implements StoreService {
     @Autowired
     private StoreMapper storeMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Autowired
@@ -39,10 +43,16 @@ public class StoreServiceimpl implements StoreService {
         // 2. 解析令牌获取用户名
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
+        // 3. 系统生成雪花 id / storeId，忽略前端传入
+        store.setId(IdWorker.getId());
+        store.setStoreId(IdWorker.getId());
         store.setCreatedTime(new Date());
         store.setCreatedBy(username);
         if (store.getStoreStatus() == null) {
-            store.setStoreStatus(0); // 默认正常
+            store.setStoreStatus(1); // 默认正常/营业
+        }
+        if (store.getDeleted() == null) {
+            store.setDeleted(0);
         }
 
         storeMapper.addStore(store);
@@ -59,7 +69,7 @@ public class StoreServiceimpl implements StoreService {
         List<Store> list = storeMapper.findStore(store);
         // 添加自定义userName和realName字段
         list.forEach(item -> {
-            User user = userMapper.selectById(item.getUserId());
+            User user = item.getUserId() == null ? null : userMapper.selectById(item.getUserId());
             item.setUserName(user != null ? user.getUserName() : null);
             item.setRealName(user != null ? user.getRealName() : null);
         });
@@ -88,11 +98,11 @@ public class StoreServiceimpl implements StoreService {
     }
 
     @Override
-    public Response deleteStore(List<Integer> idList) {
+    public Response deleteStore(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = storeMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("store", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

@@ -47,7 +47,7 @@ public class UserController {
     @DeleteMapping("/deleteUser")
     @ResponseBody
     @ApiOperation(value = "删除用户", notes = "根据id删除用户")
-    public Response deleteUser(@RequestBody List<Integer> idList){
+    public Response deleteUser(@RequestBody List<Long> idList){
         return userService.deleteUser(idList);
     }
 

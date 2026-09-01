@@ -55,7 +55,7 @@ public class EquUseLogServiceimpl implements EquUseLogService {
     }
 
     @Override
-    public Response deleteEquUseLog(List<Integer> idList) {
+    public Response deleteEquUseLog(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }

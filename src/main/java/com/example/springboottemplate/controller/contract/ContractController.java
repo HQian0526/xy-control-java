@@ -49,7 +49,7 @@ public class ContractController {
     @DeleteMapping("/deleteContract")
     @ResponseBody
     @ApiOperation(value = "删除合同", notes = "根据id删除合同")
-    public Response deleteContract(@RequestBody List<Integer> idList){
+    public Response deleteContract(@RequestBody List<Long> idList){
         return contractService.deleteContract(idList);
     }
 

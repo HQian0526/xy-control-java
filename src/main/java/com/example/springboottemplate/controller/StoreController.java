@@ -22,7 +22,7 @@ public class StoreController {
     //添加商户
     @PostMapping("/addStore")
     @ResponseBody
-    @ApiOperation(value = "添加商户", notes = "传入商户各项信息进行添加")
+    @ApiOperation(value = "添加商户", notes = "传入商户各项信息进行添加；id、storeId 由系统雪花算法生成，无需传入")
     public Response addStore(@RequestBody Store store, HttpServletRequest request){
         return storeService.addStore(store, request);
     }
@@ -47,7 +47,7 @@ public class StoreController {
     @DeleteMapping("/deleteStore")
     @ResponseBody
     @ApiOperation(value = "删除商户信息", notes = "根据id删除商户信息")
-    public Response deleteStore(@RequestBody List<Integer> idList){
+    public Response deleteStore(@RequestBody List<Long> idList){
         return storeService.deleteStore(idList);
     }
 }

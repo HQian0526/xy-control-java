@@ -20,11 +20,11 @@ import java.util.Date;
 public class Role {
     @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "id", required = true)
-    private Integer id;
+    private Long id;
 
     @JsonSerialize(using = ToStringSerializer.class)
-    @ApiModelProperty(value = "角色id", required = true)
-    private Integer roleId;
+    @ApiModelProperty(value = "角色id", required = false)
+    private Long roleId;
 
     @ApiModelProperty(value = "角色名称", required = true)
     private String roleName;

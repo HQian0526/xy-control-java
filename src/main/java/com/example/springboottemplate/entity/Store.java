@@ -1,7 +1,11 @@
 package com.example.springboottemplate.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -17,10 +21,13 @@ import java.util.Date;
 @NoArgsConstructor // 生成无参构造函数
 @ApiModel(description = "商户信息")
 public class Store {
-    @ApiModelProperty(value = "id", required = true)
+    @TableId(type = IdType.INPUT)
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "主键id（雪花算法，新增时无需传入）", required = false)
     private Long id;
 
-    @ApiModelProperty(value = "商户id", required = true)
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "商户业务id（雪花算法，新增时无需传入）", required = false)
     private Long storeId;
 
     @ApiModelProperty(value = "商户名", required = true)

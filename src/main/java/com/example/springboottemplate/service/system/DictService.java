@@ -15,5 +15,5 @@ public interface DictService {
 
     Response updateDict(Dict dict, HttpServletRequest request);
 
-    Response deleteDict(List<Integer> idList);
+    Response deleteDict(List<Long> idList);
 }

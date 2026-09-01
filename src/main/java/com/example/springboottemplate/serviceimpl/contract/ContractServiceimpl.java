@@ -17,6 +17,7 @@ import com.example.springboottemplate.mapper.contract.ContractMapper;
 import com.example.springboottemplate.mapper.contract.PayRecordMapper;
 import com.example.springboottemplate.service.contract.ContractService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -37,6 +38,9 @@ import java.util.stream.Collectors;
 public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> implements ContractService {
     @Autowired
     private ContractMapper contractMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Autowired
@@ -95,11 +99,11 @@ public class ContractServiceimpl extends ServiceImpl<ContractMapper, Contract> i
     }
 
     @Override
-    public Response deleteContract(List<Integer> idList) {
+    public Response deleteContract(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        Integer affectedRows = contractMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("contract", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

@@ -22,7 +22,7 @@ public interface MenuService extends IService<Menu> {
 
     Response updateMenu(Menu menu);
 
-    Response deleteMenu(List<String> idList);
+    Response deleteMenu(List<Long> idList);
 
     // 暴露buildMenuTree方法
     List<MenuTreeDto> buildMenuTree(List<Menu> menus, List<Long> checkedMenuIds);

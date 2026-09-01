@@ -13,5 +13,5 @@ public interface EquService {
 
     Response updateEqu(Equ equ, HttpServletRequest request);
 
-    Response deleteEqu(List<Integer> idList);
+    Response deleteEqu(List<Long> idList);
 }

@@ -86,13 +86,13 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
 
         Claims claims = parseClaims(httpRequest);
-        Integer userId = jwtUtil.getUserId(claims);
+        Long userId = jwtUtil.getUserId(claims);
         String username = claims.getSubject();
         if (userId == null) {
             throw new BusinessException("登录状态无效");
         }
 
-        User user = userMapper.selectById(userId.longValue());
+        User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
@@ -174,7 +174,7 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .id(orderId)
                 .orderNo(orderNo)
                 .storeId(storeId)
-                .userId(userId.longValue())
+                .userId(userId)
                 .openid(user.getOpenid())
                 .contact(request.getContact().trim())
                 .address(request.getAddress().trim())
@@ -239,11 +239,11 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Override
     public Response findMallOrder(Integer payStatus, Integer pageNum, Integer pageSize, HttpServletRequest httpRequest) {
         Claims claims = parseClaims(httpRequest);
-        Integer userId = jwtUtil.getUserId(claims);
+        Long userId = jwtUtil.getUserId(claims);
         if (userId == null) {
             throw new BusinessException("登录状态无效");
         }
-        User user = userMapper.selectById(userId.longValue());
+        User user = userMapper.selectById(userId);
         Integer identityType = user == null ? null : user.getIdentityType();
 
         MallOrder query = new MallOrder();
@@ -254,7 +254,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (identityType != null && identityType == 2) {
             // 商户：查本店订单
             Store storeQuery = new Store();
-            storeQuery.setUserId(userId.longValue());
+            storeQuery.setUserId(userId);
             storeQuery.setDeleted(0);
             List<Store> storeList = storeMapper.findStore(storeQuery);
             if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
@@ -265,7 +265,7 @@ public class MallOrderServiceimpl implements MallOrderService {
             // 管理员：可查全部（仅按 payStatus 过滤）
         } else {
             // 普通用户：仅本人订单
-            query.setUserId(userId.longValue());
+            query.setUserId(userId);
         }
 
         if (pageNum != null && pageSize != null) {
@@ -382,7 +382,7 @@ public class MallOrderServiceimpl implements MallOrderService {
             throw new BusinessException("订单号不能为空");
         }
         Claims claims = parseClaims(httpRequest);
-        Integer userId = jwtUtil.getUserId(claims);
+        Long userId = jwtUtil.getUserId(claims);
         MallOrder order = mallOrderMapper.selectByOrderNo(orderNo.trim());
         if (order == null) {
             throw new BusinessException("订单不存在");
@@ -390,20 +390,20 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (userId == null) {
             throw new BusinessException("无权查看该订单");
         }
-        User user = userMapper.selectById(userId.longValue());
+        User user = userMapper.selectById(userId);
         Integer identityType = user == null ? null : user.getIdentityType();
         // 管理员可查全部
         if (identityType != null && identityType == 3) {
             return order;
         }
         // 下单人可查
-        if (order.getUserId() != null && order.getUserId().equals(userId.longValue())) {
+        if (order.getUserId() != null && order.getUserId().equals(userId)) {
             return order;
         }
         // 本店商户可查
         if (identityType != null && identityType == 2 && order.getStoreId() != null) {
             Store storeQuery = new Store();
-            storeQuery.setUserId(userId.longValue());
+            storeQuery.setUserId(userId);
             storeQuery.setDeleted(0);
             List<Store> storeList = storeMapper.findStore(storeQuery);
             if (!ValidateUtil.isEmpty(storeList)

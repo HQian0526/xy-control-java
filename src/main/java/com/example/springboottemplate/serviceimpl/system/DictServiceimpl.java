@@ -5,6 +5,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.system.DictMapper;
 import com.example.springboottemplate.service.system.DictService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -24,6 +25,9 @@ import java.util.Map;
 public class DictServiceimpl implements DictService {
     @Autowired
     private DictMapper dictMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
 
@@ -80,11 +84,11 @@ public class DictServiceimpl implements DictService {
     }
 
     @Override
-    public Response deleteDict(List<Integer> idList) {
+    public Response deleteDict(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = dictMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("dict", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

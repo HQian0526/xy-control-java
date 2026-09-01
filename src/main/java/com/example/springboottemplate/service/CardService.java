@@ -13,5 +13,5 @@ public interface CardService {
 
     Response updateCard(Card card, HttpServletRequest request);
 
-    Response deleteCard(List<Integer> idList);
+    Response deleteCard(List<Long> idList);
 }

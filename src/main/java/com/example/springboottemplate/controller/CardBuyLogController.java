@@ -46,7 +46,7 @@ public class CardBuyLogController {
     @DeleteMapping("/deleteCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "删除套餐购买记录", notes = "根据id删除套餐购买记录")
-    public Response deleteCardBuyLog(@RequestBody List<Integer> idList){
+    public Response deleteCardBuyLog(@RequestBody List<Long> idList){
         return cardBuyLogService.deleteCardBuyLog(idList);
     }
 }

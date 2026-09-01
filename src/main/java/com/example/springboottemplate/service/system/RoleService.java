@@ -17,7 +17,7 @@ public interface RoleService extends IService<Role> {
 
     Response updateRole(Role role, HttpServletRequest request);
 
-    Response deleteRole(List<Integer> idList);
+    Response deleteRole(List<Long> idList);
     /**
      * 获取角色权限树
      */

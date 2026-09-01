@@ -10,7 +10,9 @@ import com.example.springboottemplate.mapper.OtherBusinessMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.OtherBusinessService;
+import com.example.springboottemplate.utils.BrowseStoreHelper;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -33,6 +35,9 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
     @Autowired
     private OtherBusinessMapper otherBusinessMapper;
     @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
+    @Autowired
     private StoreMapper storeMapper;
     @Autowired
     private UserMapper userMapper;
@@ -44,10 +49,10 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
         String token = request.getHeader("Authorization").substring(7);
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
-        Integer userId = jwtUtil.getUserId(claims);
+        Long userId = jwtUtil.getUserId(claims);
 
         Store query = new Store();
-        query.setUserId(userId == null ? null : Long.valueOf(userId));
+        query.setUserId(userId == null ? null : userId);
         query.setDeleted(0);
         List<Store> storeList = storeMapper.findStore(query);
         if (ValidateUtil.isEmpty(storeList)) {
@@ -70,8 +75,8 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
     @Override
     public Response findOtherBusiness(OtherBusiness otherBusiness, Integer pageNum, Integer pageSize,
                                       HttpServletRequest request) {
-        Integer userId = jwtUtil.tryGetUserId(request);
-        User user = userId == null ? null : userMapper.selectById(userId.longValue());
+        Long userId = jwtUtil.tryGetUserId(request);
+        User user = userId == null ? null : userMapper.selectById(userId);
         Integer identityType = user == null ? null : user.getIdentityType();
 
         // 普通用户：优先用请求 storeId，未传则用用户 bindStoreId；仍没有则空
@@ -83,16 +88,15 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }
         }
-        // 商户用户：仅返回本账号绑定商户下的业务
+        // 商户用户：未传 storeId 或扫的是自己店，看本店；扫别人店则按请求 storeId 逛店
         if (identityType != null && identityType == 2) {
-            Store storeQuery = new Store();
-            storeQuery.setUserId(Long.valueOf(userId));
-            storeQuery.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(storeQuery);
-            if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
+            String requested = otherBusiness.getStoreId() == null ? null : String.valueOf(otherBusiness.getStoreId());
+            String browseStoreId = BrowseStoreHelper
+                    .resolveMerchantBrowseStoreId(userId, requested, storeMapper);
+            if (browseStoreId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }
-            otherBusiness.setStoreId(storeList.get(0).getStoreId());
+            otherBusiness.setStoreId(Long.parseLong(browseStoreId));
         }
         // 管理员(3)：不额外过滤，可用入参 storeId 过滤
 
@@ -136,7 +140,7 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
         if (ValidateUtil.isEmpty(idList)) {
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        Integer affectedRows = otherBusinessMapper.deleteBatchIds(idList);
+        int affectedRows = logicDeleteHelper.deleteByIds("other_business", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         }

@@ -1,5 +1,6 @@
 package com.example.springboottemplate.serviceimpl.system;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.WxSessionResult;
 import com.example.springboottemplate.entity.system.User;
@@ -90,7 +91,7 @@ public class AuthServiceimpl implements AuthService {
 
     @Override
     public Response bindPhone(String phoneCode, HttpServletRequest request) {
-        Integer currentUserId = resolveCurrentUserId(request);
+        Long currentUserId = resolveCurrentUserId(request);
         if (currentUserId == null) {
             throw new RuntimeException("未登录或登录已失效");
         }
@@ -143,17 +144,17 @@ public class AuthServiceimpl implements AuthService {
     /**
      * 优先读拦截器/过滤器写入的 userId；没有则从 Authorization 头解析（兼容 context-path 导致拦截器未命中）
      */
-    private Integer resolveCurrentUserId(HttpServletRequest request) {
+    private Long resolveCurrentUserId(HttpServletRequest request) {
         Object attr = request.getAttribute("userId");
-        if (attr instanceof Integer) {
-            return (Integer) attr;
+        if (attr instanceof Long) {
+            return (Long) attr;
         }
         if (attr instanceof Number) {
-            return ((Number) attr).intValue();
+            return ((Number) attr).longValue();
         }
         if (attr instanceof String && StringUtils.hasText((String) attr)) {
             try {
-                return Integer.valueOf((String) attr);
+                return Long.valueOf((String) attr);
             } catch (NumberFormatException ignored) {
                 // fall through
             }
@@ -221,6 +222,7 @@ public class AuthServiceimpl implements AuthService {
         }
 
         User user = User.builder()
+                .id(IdWorker.getId())
                 .userName(userName)
                 .realName("微信用户")
                 .identityType(1)
@@ -239,6 +241,7 @@ public class AuthServiceimpl implements AuthService {
                 return reuseOrRestoreWxUser(conflict, session);
             }
             // user_name 仍冲突则换一个后缀再插一次
+            user.setId(IdWorker.getId());
             user.setUserName(userName + "_" + UUID.randomUUID().toString().substring(0, 4));
             userMapper.addUser(user);
         }
@@ -263,6 +266,7 @@ public class AuthServiceimpl implements AuthService {
                 && !openid.equals(existing.getOpenid())) {
             String userName = existing.getUserName() + "_" + UUID.randomUUID().toString().substring(0, 4);
             User user = User.builder()
+                    .id(IdWorker.getId())
                     .userName(userName)
                     .realName("微信用户")
                     .identityType(1)
@@ -295,11 +299,14 @@ public class AuthServiceimpl implements AuthService {
             existing.setIdentityType(1);
         }
         userMapper.updateUser(existing);
-        User refreshed = userMapper.selectById(existing.getId().longValue());
+        User refreshed = userMapper.selectById(existing.getId());
         return refreshed != null ? refreshed : existing;
     }
 
     private Response buildLoginResponse(User user, boolean merged) {
+        if (user == null || user.getId() == null) {
+            throw new RuntimeException("登录失败：用户ID为空");
+        }
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUserName());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUserName());
 
@@ -333,7 +340,7 @@ public class AuthServiceimpl implements AuthService {
 
         // 2. 解析token获取用户信息
         Claims claims = jwtUtil.parseToken(refreshToken);
-        Integer userId = jwtUtil.getUserId(claims);
+        Long userId = jwtUtil.getUserId(claims);
         String username = claims.getSubject();
         if (userId == null) {
             return new Response(401, null, "无效的 refreshToken");

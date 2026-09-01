@@ -20,7 +20,7 @@ public interface UserService {
     Response updateUser(User user, HttpServletRequest request);
 
     // 逻辑删除用户
-    Response deleteUser(List<Integer> idList);
+    Response deleteUser(List<Long> idList);
 
     // 查询当前用户信息
     Response getUserInfo(HttpServletRequest request);

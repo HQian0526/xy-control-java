@@ -55,7 +55,7 @@ public class DictController {
     @DeleteMapping("/deleteDict")
     @ResponseBody
     @ApiOperation(value = "删除字典", notes = "根据id删除字典")
-    public Response deleteDict(@RequestBody List<Integer> idList){
+    public Response deleteDict(@RequestBody List<Long> idList){
         return dictService.deleteDict(idList);
     }
 }

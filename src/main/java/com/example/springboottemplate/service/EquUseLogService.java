@@ -12,5 +12,5 @@ public interface EquUseLogService {
 
     Response updateEquUseLog(EquUseLog equUseLog);
 
-    Response deleteEquUseLog(List<Integer> idList);
+    Response deleteEquUseLog(List<Long> idList);
 }

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 
 import java.util.Date;
@@ -26,6 +27,9 @@ public class AreaServiceimpl implements AreaService {
 
     @Autowired
     private AreaMapper areaMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private StoreMapper storeMapper;
     @Autowired
@@ -82,11 +86,11 @@ public class AreaServiceimpl implements AreaService {
     }
 
     @Override
-    public Response deleteArea(List<Integer> idList) {
+    public Response deleteArea(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        Integer affectedRows = areaMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("area", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

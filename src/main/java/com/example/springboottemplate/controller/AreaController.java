@@ -47,7 +47,7 @@ public class AreaController {
     @DeleteMapping("/deleteArea")
     @ResponseBody
     @ApiOperation(value = "删除区域", notes = "根据id删除区域")
-    public Response deleteArea(@RequestBody List<Integer> idList){
+    public Response deleteArea(@RequestBody List<Long> idList){
         return areaService.deleteArea(idList);
     }
 }

@@ -5,6 +5,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.mapper.CardMapper;
 import com.example.springboottemplate.service.CardService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -24,6 +25,9 @@ import java.util.Map;
 public class CardServiceimpl implements CardService {
     @Autowired
     private CardMapper cardMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
 
@@ -74,11 +78,11 @@ public class CardServiceimpl implements CardService {
     }
 
     @Override
-    public Response deleteCard(List<Integer> idList) {
+    public Response deleteCard(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = cardMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("card", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {

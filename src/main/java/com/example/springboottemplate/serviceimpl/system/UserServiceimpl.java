@@ -1,4 +1,5 @@
 package com.example.springboottemplate.serviceimpl.system;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.User;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 
 import java.util.Date;
@@ -27,6 +29,9 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private UserMapper userMapper;
     @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
+    @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
 
     @Override
@@ -36,8 +41,13 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         // 2. 解析令牌获取用户名
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
+        // 3. 系统生成雪花 id，忽略前端传入
+        user.setId(IdWorker.getId());
         user.setCreatedTime(new Date());
         user.setCreatedBy(username);
+        if (user.getDeleted() == null) {
+            user.setDeleted(0);
+        }
 
         try {
             userMapper.addUser(user);
@@ -85,11 +95,11 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Response deleteUser(List<Integer> idList) {
+    public Response deleteUser(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = userMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        int affectedRows = logicDeleteHelper.deleteByIds("user", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
         } else {
@@ -99,16 +109,28 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response getUserInfo(HttpServletRequest request) {
-        // 1. 从请求头中获取JWT令牌
-        String token = request.getHeader("Authorization").substring(7);
-        // 2. 安全解析userId（兼容 Integer/Long）
-        Integer userId = jwtUtil.getUserIdFromToken(token);
+        // 优先用拦截器已解析的 userId；否则再从 Authorization 解析
+        Long userId = null;
+        Object attr = request.getAttribute("userId");
+        if (attr instanceof Long) {
+            userId = (Long) attr;
+        } else if (attr instanceof Number) {
+            userId = ((Number) attr).longValue();
+        } else if (attr instanceof String && !((String) attr).isBlank()) {
+            try {
+                userId = Long.valueOf(((String) attr).trim());
+            } catch (NumberFormatException ignored) {
+                // fall through
+            }
+        }
+        if (userId == null) {
+            userId = jwtUtil.tryGetUserId(request);
+        }
         if (userId == null) {
             return new Response(401, null, "无效的登录信息");
         }
 
-        // 3. 按用户id查询当前登录用户详细信息
-        User user = userMapper.selectById(userId.longValue());
+        User user = userMapper.selectById(userId);
         if (user == null) {
             return new Response(200, null, "操作成功");
         }

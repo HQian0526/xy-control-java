@@ -56,7 +56,7 @@ public class CardBuyLogServiceimpl implements CardBuyLogService {
     }
 
     @Override
-    public Response deleteCardBuyLog(List<Integer> idList) {
+    public Response deleteCardBuyLog(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }

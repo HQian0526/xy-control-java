@@ -47,7 +47,7 @@ public class CardController {
     @DeleteMapping("/deleteCard")
     @ResponseBody
     @ApiOperation(value = "删除卡", notes = "根据id删除卡")
-    public Response deleteCard(@RequestBody List<Integer> idList){
+    public Response deleteCard(@RequestBody List<Long> idList){
         return cardService.deleteCard(idList);
     }
 }

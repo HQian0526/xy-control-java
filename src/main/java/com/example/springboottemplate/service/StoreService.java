@@ -13,5 +13,5 @@ public interface StoreService {
 
     Response updateStore(Store store, HttpServletRequest request);
 
-    Response deleteStore(List<Integer> idList);
+    Response deleteStore(List<Long> idList);
 }

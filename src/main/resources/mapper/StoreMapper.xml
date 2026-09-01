@@ -30,20 +30,21 @@
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (store_id, store_name, avatar, address, user_id, store_type, store_status, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark) value (#{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeStatus}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark})
+        INSERT into store (id, store_id, store_name, avatar, address, user_id, store_type, store_status, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark, deleted)
+        value (#{id}, #{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeStatus}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark}, #{deleted})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
     <select id="findStore" parameterType="Store" resultMap="storeResultMap">
         select * from store
         <where>
-            <if test="id != null and id != ''">
-                and id LIKE CONCAT('%', #{id}, '%')
+            <if test="id != null">
+                and id = #{id}
             </if>
-            <if test="storeId != null and storeId != ''">
-                and store_id like CONCAT('%', #{storeId}, '%')
+            <if test="storeId != null">
+                and store_id = #{storeId}
             </if>
-            <if test="userId != null and userId != ''">
+            <if test="userId != null">
                 and user_id = #{userId}
             </if>
             <if test="storeName != null and storeName != ''">
@@ -93,11 +94,10 @@
         </where>
     </select>
 
-    <!-- 根据用户ID修改商户信息 -->
+    <!-- 根据用户ID修改商户信息（store_id 创建后不可改） -->
     <update id="updateStore" parameterType="Store">
         update store
         <set>
-            <if test="storeId != null">store_id = #{storeId},</if>
             <if test="storeName != null">store_name = #{storeName},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
             <if test="address != null">address = #{address},</if>

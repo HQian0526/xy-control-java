@@ -50,7 +50,7 @@ public class RoleController {
     @DeleteMapping("/deleteRole")
     @ResponseBody
     @ApiOperation(value = "删除角色", notes = "根据id删除角色")
-    public Response deleteRole(@RequestBody List<Integer> idList){
+    public Response deleteRole(@RequestBody List<Long> idList){
         return roleService.deleteRole(idList);
     }
 

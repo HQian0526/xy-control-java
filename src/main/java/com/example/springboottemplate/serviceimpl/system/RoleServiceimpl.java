@@ -11,6 +11,7 @@ import com.example.springboottemplate.mapper.system.*;
 import com.example.springboottemplate.service.system.MenuService;
 import com.example.springboottemplate.service.system.RoleService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -29,6 +30,9 @@ import java.util.stream.Collectors;
 public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
     @Autowired
     private RoleMapper roleMapper;
+    @Autowired
+    private LogicDeleteHelper logicDeleteHelper;
+
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Autowired
@@ -89,16 +93,16 @@ public class RoleServiceimpl extends ServiceImpl<RoleMapper, Role> implements Ro
     }
 
     @Override
-    public Response deleteRole(List<Integer> idList) {
-        if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
+    public Response deleteRole(List<Long> idList) {
+        if (ValidateUtil.isEmpty(idList)) {
             return new Response(400, null, "操作失败，ID 列表不能为空");
         }
-        int affectedRows = roleMapper.deleteBatchIds(idList); // 调用mybatis-plus的逻辑删除，返回受影响行数
+        // 前端经 ToStringSerializer 后常传 ["11"]，用 Long 接收；显式 SQL 避免 TableLogic 漏删
+        int affectedRows = logicDeleteHelper.deleteByIds("role", idList);
         if (affectedRows > 0) {
             return new Response(200, null, "操作成功");
-        } else {
-            return new Response(400, null, "操作失败，未找到需要删除的记录");
         }
+        return new Response(400, null, "操作失败，未找到需要删除的记录");
     }
 
     @Override

@@ -46,7 +46,7 @@ public class EquUseLogController {
     @DeleteMapping("/deleteEquUseLog")
     @ResponseBody
     @ApiOperation(value = "删除设备使用记录", notes = "根据id删除设备使用记录")
-    public Response deleteEquUseLog(@RequestBody List<Integer> idList){
+    public Response deleteEquUseLog(@RequestBody List<Long> idList){
         return equUseLogService.deleteEquUseLog(idList);
     }
 }
