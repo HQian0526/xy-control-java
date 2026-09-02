@@ -1,5 +1,6 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.service.system.UserService;
@@ -57,5 +58,22 @@ public class UserController {
     @ApiOperation(value = "查询当前登录用户信息", notes = "查询当前登录用户信息")
     public Response getUserInfo(HttpServletRequest request) {
         return userService.getUserInfo(request);
+    }
+
+    // 重置密码（管理员）：按默认规则生成新密码，响应中返回一次明文
+    @PostMapping("/resetPassword")
+    @ResponseBody
+    @ApiOperation(value = "重置用户密码", notes = "按配置前缀+MD5(当天yyyyMMdd)后6位生成新密码，data.newPassword 返回一次明文")
+    public Response resetPassword(@RequestBody User user, HttpServletRequest request) {
+        return userService.resetPassword(user != null ? user.getId() : null, request);
+    }
+
+    // 当前登录用户修改自己的密码
+    @PostMapping("/changePassword")
+    @ResponseBody
+    @ApiOperation(value = "修改密码", notes = "已登录用户校验原密码后设置新密码")
+    public Response changePassword(@RequestBody ChangePasswordRequest req,
+                                   HttpServletRequest request) {
+        return userService.changePassword(req, request);
     }
 }

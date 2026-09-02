@@ -14,8 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.springboottemplate.config.UserProperties;
+import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.PasswordUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -34,6 +38,9 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
 
+    @Autowired
+    private UserProperties userProperties;
+
     @Override
     public Response addUser(User user, HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
@@ -48,9 +55,19 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         if (user.getDeleted() == null) {
             user.setDeleted(0);
         }
+        boolean usedDefaultPassword = !StringUtils.hasText(user.getPassword());
+        String plainPassword = usedDefaultPassword
+                ? PasswordUtil.generateDefaultPassword(userProperties.getDefaultPasswordPrefix())
+                : user.getPassword().trim();
+        user.setPassword(PasswordUtil.encode(plainPassword));
 
         try {
             userMapper.addUser(user);
+            if (usedDefaultPassword) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("initialPassword", plainPassword);
+                return Response.success(data);
+            }
             return Response.success();
         } catch (DuplicateKeyException e) {
             // 解析错误信息（不同数据库错误信息格式不同）
@@ -70,6 +87,11 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 查询数据
         List<User> list = userMapper.findUser(user);
+        for (User item : list) {
+            if (item != null) {
+                item.setPassword(null);
+            }
+        }
         // 封装分页结果
         PageInfo<User> pageInfo = new PageInfo<>(list);
         // 构造返回数据
@@ -90,6 +112,12 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
         user.setUpdateBy(username);
+        // 未传/空密码：不更新 password 列；有明文则转 BCrypt
+        if (!StringUtils.hasText(user.getPassword())) {
+            user.setPassword(null);
+        } else if (!PasswordUtil.isBcrypt(user.getPassword())) {
+            user.setPassword(PasswordUtil.encode(user.getPassword()));
+        }
         userMapper.updateUser(user);
         return new Response(200, null, "操作成功");
     }
@@ -140,6 +168,114 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response getUserById(Long id) {
-        return Response.success(userMapper.selectById(id));
+        User user = userMapper.selectById(id);
+        if (user != null) {
+            user.setPassword(null);
+        }
+        return Response.success(user);
+    }
+
+    @Override
+    public Response resetPassword(Long id, HttpServletRequest request) {
+        if (id == null) {
+            return Response.fail(400, "用户ID不能为空");
+        }
+        User exist = userMapper.selectById(id);
+        if (exist == null || (exist.getDeleted() != null && exist.getDeleted() == 1)) {
+            return Response.fail(400, "用户不存在");
+        }
+
+        String token = request.getHeader("Authorization");
+        String operator = null;
+        if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
+            Claims claims = jwtUtil.parseToken(token.substring(7));
+            operator = claims.getSubject();
+        }
+
+        String plainPassword = PasswordUtil.generateDefaultPassword(userProperties.getDefaultPasswordPrefix());
+        User patch = new User();
+        patch.setId(id);
+        patch.setPassword(PasswordUtil.encode(plainPassword));
+        patch.setUpdateBy(operator);
+        userMapper.updateUser(patch);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("newPassword", plainPassword);
+        data.put("id", String.valueOf(id));
+        return Response.success(data);
+    }
+
+    @Override
+    public Response changePassword(ChangePasswordRequest req, HttpServletRequest request) {
+        if (req == null) {
+            return Response.fail(400, "参数不能为空");
+        }
+        if (!StringUtils.hasText(req.getOldPassword())) {
+            return Response.fail(400, "原密码不能为空");
+        }
+        if (!StringUtils.hasText(req.getNewPassword())) {
+            return Response.fail(400, "新密码不能为空");
+        }
+        String newPassword = req.getNewPassword().trim();
+        if (newPassword.length() <= 6) {
+            return Response.fail(400, "新密码长度必须大于6位");
+        }
+        if (StringUtils.hasText(req.getConfirmPassword())
+                && !newPassword.equals(req.getConfirmPassword().trim())) {
+            return Response.fail(400, "两次输入的新密码不一致");
+        }
+        if (req.getOldPassword().trim().equals(newPassword)) {
+            return Response.fail(400, "新密码不能与原密码相同");
+        }
+
+        Long userId = resolveCurrentUserId(request);
+        if (userId == null) {
+            return Response.fail(401, "无效的登录信息");
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null || (user.getDeleted() != null && user.getDeleted() == 1)) {
+            return Response.fail(400, "用户不存在");
+        }
+        if (!PasswordUtil.matches(req.getOldPassword(), user.getPassword())) {
+            return Response.fail(400, "原密码错误");
+        }
+
+        String operator = null;
+        Object usernameAttr = request.getAttribute("username");
+        if (usernameAttr instanceof String && StringUtils.hasText((String) usernameAttr)) {
+            operator = (String) usernameAttr;
+        } else {
+            String token = request.getHeader("Authorization");
+            if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
+                operator = jwtUtil.parseToken(token.substring(7)).getSubject();
+            }
+        }
+
+        User patch = new User();
+        patch.setId(userId);
+        patch.setPassword(PasswordUtil.encode(newPassword));
+        patch.setUpdateBy(operator);
+        userMapper.updateUser(patch);
+        return Response.success();
+    }
+
+    private Long resolveCurrentUserId(HttpServletRequest request) {
+        Long userId = null;
+        Object attr = request.getAttribute("userId");
+        if (attr instanceof Long) {
+            userId = (Long) attr;
+        } else if (attr instanceof Number) {
+            userId = ((Number) attr).longValue();
+        } else if (attr instanceof String && !((String) attr).isBlank()) {
+            try {
+                userId = Long.valueOf(((String) attr).trim());
+            } catch (NumberFormatException ignored) {
+                // fall through
+            }
+        }
+        if (userId == null) {
+            userId = jwtUtil.tryGetUserId(request);
+        }
+        return userId;
     }
 }

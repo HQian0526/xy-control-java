@@ -8,6 +8,7 @@ import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.system.AuthService;
 import com.example.springboottemplate.service.wx.WxApiService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.PasswordUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,16 +40,26 @@ public class AuthServiceimpl implements AuthService {
         if (!StringUtils.hasText(username)) {
             throw new RuntimeException("用户名不能为空");
         }
+        if (!StringUtils.hasText(password)) {
+            throw new RuntimeException("密码不能为空");
+        }
         // 1. 精确查询用户（避免 findUser 的 LIKE 误匹配）
         User user = userMapper.selectByUserName(username.trim());
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException("用户名或密码错误");
         }
 
-        // 2. 验证密码 先注释后续用aes解密
-//        if (!PasswordUtil.verifyPassword(password, user.getSalt(), user.getPassword())) {
-//            throw new RuntimeException("用户名或密码错误");
-//        }
+        // 2. 验证密码（BCrypt；兼容历史明文，成功后升级入库）
+        if (!PasswordUtil.matches(password, user.getPassword())) {
+            throw new RuntimeException("用户名或密码错误");
+        }
+        if (PasswordUtil.needsRehash(user.getPassword())) {
+            User patch = new User();
+            patch.setId(user.getId());
+            patch.setPassword(PasswordUtil.encode(password));
+            userMapper.updateUser(patch);
+            user.setPassword(patch.getPassword());
+        }
 
         // 3. 验证账号状态
         if (user.getDeleted() != null && user.getDeleted() == 1) {

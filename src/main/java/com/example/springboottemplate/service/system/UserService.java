@@ -1,5 +1,6 @@
 package com.example.springboottemplate.service.system;
 
+import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,4 +25,10 @@ public interface UserService {
 
     // 查询当前用户信息
     Response getUserInfo(HttpServletRequest request);
+
+    // 重置用户密码（按默认规则生成，返回一次明文）
+    Response resetPassword(Long id, HttpServletRequest request);
+
+    // 当前登录用户修改密码
+    Response changePassword(ChangePasswordRequest req, HttpServletRequest request);
 }

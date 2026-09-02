@@ -29,7 +29,7 @@ public class User {
     @com.fasterxml.jackson.annotation.JsonAlias({"username"})
     private String userName;
 
-    @ApiModelProperty(value = "密码", required = false)
+    @ApiModelProperty(value = "密码（入库为BCrypt哈希；接口入参传明文）", required = false)
     private String password;
 
     @ApiModelProperty(value = "真实姓名", required = true)

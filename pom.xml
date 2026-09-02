@@ -90,6 +90,11 @@
             <version>RELEASE</version>
             <scope>compile</scope>
         </dependency>
+		<!-- BCrypt 密码哈希（仅用 crypto，不引入完整 Spring Security） -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 		<!--JWT登录相关-->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
