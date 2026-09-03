@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.Equ;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.EquService;
@@ -23,6 +25,7 @@ public class EquController {
     @PostMapping("/addEqu")
     @ResponseBody
     @ApiOperation(value = "添加设备", notes = "传入用户各项信息进行添加设备")
+    @OperLog(module = "设备管理", type = OperTypes.ADD)
     public Response addEqu(@RequestBody Equ equ, HttpServletRequest request){
         return equService.addEqu(equ, request);
     }
@@ -39,6 +42,7 @@ public class EquController {
     @PutMapping("/updateEqu")
     @ResponseBody
     @ApiOperation(value = "修改设备信息", notes = "根据id更新设备信息")
+    @OperLog(module = "设备管理", type = OperTypes.UPDATE)
     public Response updateEqu(@RequestBody Equ equ, HttpServletRequest request){
         return equService.updateEqu(equ, request);
     }
@@ -47,6 +51,7 @@ public class EquController {
     @DeleteMapping("/deleteEqu")
     @ResponseBody
     @ApiOperation(value = "删除设备", notes = "根据id删除设备")
+    @OperLog(module = "设备管理", type = OperTypes.DELETE)
     public Response deleteEqu(@RequestBody List<Long> idList){
         return equService.deleteEqu(idList);
     }

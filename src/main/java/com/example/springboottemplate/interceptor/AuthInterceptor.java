@@ -27,6 +27,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (uri.contains("/auth/")
                 || uri.endsWith("/wx/login")
                 || uri.contains("/mallOrder/wxPayNotify")
+                || uri.contains("/mallOrder/wxRefundNotify")
                 || uri.contains("/upload-images/")
                 || uri.contains("/catagory/findCatagory")
                 || uri.contains("/product/findProduct")

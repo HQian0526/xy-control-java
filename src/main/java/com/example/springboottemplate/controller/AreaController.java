@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.Area;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.AreaService;
@@ -23,6 +25,7 @@ public class AreaController {
     @PostMapping("/addArea")
     @ResponseBody
     @ApiOperation(value = "添加区域", notes = "传入区域各项信息进行添加区域")
+    @OperLog(module = "区域管理", type = OperTypes.ADD)
     public Response addArea(@RequestBody Area area, HttpServletRequest request){
         return areaService.addArea(area, request);
     }
@@ -39,6 +42,7 @@ public class AreaController {
     @PutMapping("/updateArea")
     @ResponseBody
     @ApiOperation(value = "修改区域信息", notes = "根据id更新区域信息")
+    @OperLog(module = "区域管理", type = OperTypes.UPDATE)
     public Response updateArea(@RequestBody Area area, HttpServletRequest request){
         return areaService.updateArea(area, request);
     }
@@ -47,6 +51,7 @@ public class AreaController {
     @DeleteMapping("/deleteArea")
     @ResponseBody
     @ApiOperation(value = "删除区域", notes = "根据id删除区域")
+    @OperLog(module = "区域管理", type = OperTypes.DELETE)
     public Response deleteArea(@RequestBody List<Long> idList){
         return areaService.deleteArea(idList);
     }

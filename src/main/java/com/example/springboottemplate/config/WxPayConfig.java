@@ -6,6 +6,7 @@ import com.wechat.pay.java.core.notification.NotificationConfig;
 import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.service.payments.jsapi.JsapiService;
 import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
+import com.wechat.pay.java.service.refund.RefundService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,6 +53,11 @@ public class WxPayConfig {
     @Bean
     public JsapiServiceExtension jsapiServiceExtension(Config wxPayRsaConfig) {
         return new JsapiServiceExtension.Builder().config(wxPayRsaConfig).build();
+    }
+
+    @Bean
+    public RefundService refundService(Config wxPayRsaConfig) {
+        return new RefundService.Builder().config(wxPayRsaConfig).build();
     }
 
     @Bean

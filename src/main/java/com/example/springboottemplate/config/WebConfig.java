@@ -33,6 +33,8 @@ public class WebConfig implements WebMvcConfigurer {
                         // 微信支付异步通知（微信服务器直连，无 JWT）
                         "/mallOrder/wxPayNotify",
                         "/api/mallOrder/wxPayNotify",
+                        "/mallOrder/wxRefundNotify",
+                        "/api/mallOrder/wxRefundNotify",
                         "/upload-images/**",
                         "/api/upload-images/**",
                         "/error"

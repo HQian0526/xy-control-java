@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Visitor;
 import com.example.springboottemplate.service.VisitorService;
@@ -22,6 +24,7 @@ public class VisitorController {
     @PostMapping("/addVisitor")
     @ResponseBody
     @ApiOperation(value = "添加来客信息", notes = "传入姓名、联系方式等进行添加")
+    @OperLog(module = "来客管理", type = OperTypes.ADD)
     public Response addVisitor(@RequestBody Visitor visitor, HttpServletRequest request) {
         return visitorService.addVisitor(visitor, request);
     }
@@ -36,6 +39,7 @@ public class VisitorController {
     @PutMapping("/updateVisitor")
     @ResponseBody
     @ApiOperation(value = "修改来客信息", notes = "根据id更新来客信息")
+    @OperLog(module = "来客管理", type = OperTypes.UPDATE)
     public Response updateVisitor(@RequestBody Visitor visitor, HttpServletRequest request) {
         return visitorService.updateVisitor(visitor, request);
     }
@@ -43,6 +47,7 @@ public class VisitorController {
     @DeleteMapping("/deleteVisitor")
     @ResponseBody
     @ApiOperation(value = "删除来客信息", notes = "根据id删除来客（逻辑删除）")
+    @OperLog(module = "来客管理", type = OperTypes.DELETE)
     public Response deleteVisitor(@RequestBody List<Long> idList) {
         return visitorService.deleteVisitor(idList);
     }

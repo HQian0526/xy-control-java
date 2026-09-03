@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.User;
@@ -24,6 +26,7 @@ public class UserController {
     @PostMapping("/addUser")
     @ResponseBody
     @ApiOperation(value = "添加用户", notes = "传入用户各项信息进行添加用户")
+    @OperLog(module = "用户管理", type = OperTypes.ADD)
     public Response addUser(@RequestBody User user, HttpServletRequest request){
         return userService.addUser(user, request);
     }
@@ -40,6 +43,7 @@ public class UserController {
     @PutMapping("/updateUser")
     @ResponseBody
     @ApiOperation(value = "修改用户信息", notes = "根据id更新用户信息")
+    @OperLog(module = "用户管理", type = OperTypes.UPDATE)
     public Response updateUser(@RequestBody User user, HttpServletRequest request){
         return userService.updateUser(user, request);
     }
@@ -48,6 +52,7 @@ public class UserController {
     @DeleteMapping("/deleteUser")
     @ResponseBody
     @ApiOperation(value = "删除用户", notes = "根据id删除用户")
+    @OperLog(module = "用户管理", type = OperTypes.DELETE)
     public Response deleteUser(@RequestBody List<Long> idList){
         return userService.deleteUser(idList);
     }
@@ -64,6 +69,7 @@ public class UserController {
     @PostMapping("/resetPassword")
     @ResponseBody
     @ApiOperation(value = "重置用户密码", notes = "按配置前缀+MD5(当天yyyyMMdd)后6位生成新密码，data.newPassword 返回一次明文")
+    @OperLog(module = "用户管理", type = OperTypes.UPDATE)
     public Response resetPassword(@RequestBody User user, HttpServletRequest request) {
         return userService.resetPassword(user != null ? user.getId() : null, request);
     }
@@ -72,6 +78,7 @@ public class UserController {
     @PostMapping("/changePassword")
     @ResponseBody
     @ApiOperation(value = "修改密码", notes = "已登录用户校验原密码后设置新密码")
+    @OperLog(module = "用户管理", type = OperTypes.UPDATE)
     public Response changePassword(@RequestBody ChangePasswordRequest req,
                                    HttpServletRequest request) {
         return userService.changePassword(req, request);

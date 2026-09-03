@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.WxBindPhoneRequest;
 import com.example.springboottemplate.dto.WxLoginRequest;
@@ -25,6 +27,7 @@ public class WxController {
     @PostMapping("/login")
     @ResponseBody
     @ApiOperation(value = "微信小程序登录", notes = "用 wx.login 的 code 换取系统 JWT")
+    @OperLog(module = "登录认证", type = OperTypes.QUERY, remark = "微信小程序登录")
     public Response login(@RequestBody WxLoginRequest request) {
         return authService.wxLogin(request == null ? null : request.getCode());
     }
@@ -32,6 +35,7 @@ public class WxController {
     @PostMapping("/bindPhone")
     @ResponseBody
     @ApiOperation(value = "绑定微信手机号", notes = "需登录；用 getPhoneNumber 的 code 绑定手机号，若已有后台账号则合并")
+    @OperLog(module = "微信用户", type = OperTypes.UPDATE)
     public Response bindPhone(@RequestBody WxBindPhoneRequest request, HttpServletRequest httpRequest) {
         return authService.bindPhone(request == null ? null : request.getCode(), httpRequest);
     }

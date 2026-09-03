@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.Menu;
 import com.example.springboottemplate.service.system.MenuService;
@@ -54,6 +56,7 @@ public class MenuController {
     @PostMapping("/addMenu")
     @ResponseBody
     @ApiOperation(value = "添加菜单", notes = "添加菜单")
+    @OperLog(module = "菜单管理", type = OperTypes.ADD)
     public Response addMenu(@RequestBody Menu menu) {
         return menuService.addMenu(menu);
     }
@@ -61,6 +64,7 @@ public class MenuController {
     @PutMapping("/updateMenu")
     @ResponseBody
     @ApiOperation(value = "更新菜单", notes = "更新菜单")
+    @OperLog(module = "菜单管理", type = OperTypes.UPDATE)
     public Response updateMenu(@RequestBody Menu menu) {
         return menuService.updateMenu(menu);
     }
@@ -68,6 +72,7 @@ public class MenuController {
     @DeleteMapping("/deleteMenu")
     @ResponseBody
     @ApiOperation(value = "删除菜单", notes = "删除菜单")
+    @OperLog(module = "菜单管理", type = OperTypes.DELETE)
     public Response deleteMenu(@RequestBody List<Long> idList) {
         return menuService.deleteMenu(idList);
     }

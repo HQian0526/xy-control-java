@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.Catagory;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.CatagoryService;
@@ -23,6 +25,7 @@ public class CatagoryController {
     @PostMapping("/addCatagory")
     @ResponseBody
     @ApiOperation(value = "添加商品分类", notes = "传入分类各项信息进行添加")
+    @OperLog(module = "商品分类", type = OperTypes.ADD)
     public Response addCatagory(@RequestBody Catagory catagory, HttpServletRequest request){
         return catagoryService.addCatagory(catagory, request);
     }
@@ -39,6 +42,7 @@ public class CatagoryController {
     @PutMapping("/updateCatagory")
     @ResponseBody
     @ApiOperation(value = "修改商品分类信息", notes = "根据id更新分类信息")
+    @OperLog(module = "商品分类", type = OperTypes.UPDATE)
     public Response updateCatagory(@RequestBody Catagory catagory, HttpServletRequest request){
         return catagoryService.updateCatagory(catagory, request);
     }
@@ -47,6 +51,7 @@ public class CatagoryController {
     @DeleteMapping("/deleteCatagory")
     @ResponseBody
     @ApiOperation(value = "删除商品分类", notes = "根据id删除分类")
+    @OperLog(module = "商品分类", type = OperTypes.DELETE)
     public Response deleteCatagory(@RequestBody List<Long> idList){
         return catagoryService.deleteCatagory(idList);
     }

@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.Product;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.ProductService;
@@ -23,6 +25,7 @@ public class ProductController {
     @PostMapping("/addProduct")
     @ResponseBody
     @ApiOperation(value = "添加商品", notes = "传入商品各项信息进行添加")
+    @OperLog(module = "商品管理", type = OperTypes.ADD)
     public Response addProduct(@RequestBody Product product, HttpServletRequest request){
         return productService.addProduct(product, request);
     }
@@ -39,6 +42,7 @@ public class ProductController {
     @PutMapping("/updateProduct")
     @ResponseBody
     @ApiOperation(value = "修改商品信息", notes = "根据id更新商品信息")
+    @OperLog(module = "商品管理", type = OperTypes.UPDATE)
     public Response updateProduct(@RequestBody Product product, HttpServletRequest request){
         return productService.updateProduct(product, request);
     }
@@ -47,6 +51,7 @@ public class ProductController {
     @DeleteMapping("/deleteProduct")
     @ResponseBody
     @ApiOperation(value = "删除商品", notes = "根据id删除商品")
+    @OperLog(module = "商品管理", type = OperTypes.DELETE)
     public Response deleteProduct(@RequestBody List<Long> idList){
         return productService.deleteProduct(idList);
     }

@@ -28,4 +28,22 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
 
     java.util.List<MallOrder> selectPendingWxShipping(@Param("maxRetry") int maxRetry,
                                                       @Param("limit") int limit);
+
+    int markRefunding(@Param("orderNo") String orderNo,
+                      @Param("pendingRefundFen") Integer pendingRefundFen,
+                      @Param("outRefundNo") String outRefundNo,
+                      @Param("reason") String reason,
+                      @Param("refundBy") String refundBy);
+
+    int markRefundSuccess(@Param("orderNo") String orderNo,
+                          @Param("refundFen") Integer refundFen,
+                          @Param("outRefundNo") String outRefundNo,
+                          @Param("wxRefundId") String wxRefundId,
+                          @Param("refundTime") java.util.Date refundTime,
+                          @Param("allowDirect") int allowDirect);
+
+    int markRefundFailed(@Param("orderNo") String orderNo,
+                         @Param("outRefundNo") String outRefundNo);
+
+    MallOrder selectByOutRefundNo(@Param("outRefundNo") String outRefundNo);
 }

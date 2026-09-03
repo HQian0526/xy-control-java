@@ -19,6 +19,14 @@
         <result property="prepayId" column="prepay_id"/>
         <result property="transactionId" column="transaction_id"/>
         <result property="paidTime" column="paid_time"/>
+        <result property="refundAmount" column="refund_amount"/>
+        <result property="refundAmountFen" column="refund_amount_fen"/>
+        <result property="pendingRefundFen" column="pending_refund_fen"/>
+        <result property="outRefundNo" column="out_refund_no"/>
+        <result property="wxRefundId" column="wx_refund_id"/>
+        <result property="refundReason" column="refund_reason"/>
+        <result property="refundBy" column="refund_by"/>
+        <result property="refundTime" column="refund_time"/>
         <result property="wxShippingStatus" column="wx_shipping_status"/>
         <result property="wxShippingErrcode" column="wx_shipping_errcode"/>
         <result property="wxShippingErrmsg" column="wx_shipping_errmsg"/>
@@ -106,5 +114,63 @@
           and ifnull(wx_shipping_retry, 0) &lt; #{maxRetry}
         order by paid_time asc, id asc
         limit #{limit}
+    </select>
+
+    <!-- 发起退款：仅已支付/部分退款可进入退款中 -->
+    <update id="markRefunding">
+        update mall_order
+        set pay_status = 3,
+            pending_refund_fen = #{pendingRefundFen},
+            out_refund_no = #{outRefundNo},
+            refund_reason = #{reason},
+            refund_by = #{refundBy},
+            update_by = #{refundBy},
+            update_time = now()
+        where order_no = #{orderNo}
+          and deleted = 0
+          and pay_status in (1, 4)
+    </update>
+
+    <!-- 退款成功累计金额；全额→5，否则→4（同一 SET 内按 MySQL 从左到右赋值） -->
+    <update id="markRefundSuccess">
+        update mall_order
+        set refund_amount_fen = ifnull(refund_amount_fen, 0) + #{refundFen},
+            refund_amount = round(refund_amount_fen / 100, 2),
+            pending_refund_fen = null,
+            wx_refund_id = #{wxRefundId},
+            out_refund_no = #{outRefundNo},
+            refund_time = #{refundTime},
+            pay_status = case
+                when refund_amount_fen &gt;= ifnull(pay_amount_fen, 0) then 5
+                else 4
+            end,
+            update_time = #{refundTime}
+        where order_no = #{orderNo}
+          and deleted = 0
+          and (
+                (pay_status = 3 and out_refund_no = #{outRefundNo})
+                or (pay_status in (1, 4) and #{allowDirect} = 1)
+              )
+          and ifnull(refund_amount_fen, 0) + #{refundFen} &lt;= ifnull(pay_amount_fen, 0)
+    </update>
+
+    <!-- 退款失败/关闭：回退到可再次退款状态 -->
+    <update id="markRefundFailed">
+        update mall_order
+        set pending_refund_fen = null,
+            pay_status = case
+                when ifnull(refund_amount_fen, 0) &lt;= 0 then 1
+                when ifnull(refund_amount_fen, 0) &gt;= ifnull(pay_amount_fen, 0) then 5
+                else 4
+            end,
+            update_time = now()
+        where order_no = #{orderNo}
+          and deleted = 0
+          and pay_status = 3
+          and out_refund_no = #{outRefundNo}
+    </update>
+
+    <select id="selectByOutRefundNo" resultMap="mallOrderResultMap">
+        select * from mall_order where out_refund_no = #{outRefundNo} and deleted = 0 limit 1
     </select>
 </mapper>

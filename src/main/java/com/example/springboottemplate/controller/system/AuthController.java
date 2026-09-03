@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.RefreshToken;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.User;
@@ -20,6 +22,7 @@ public class AuthController {
     @PostMapping("/login")
     @ResponseBody
     @ApiOperation(value = "登录", notes = "获取登录token")
+    @OperLog(module = "登录认证", type = OperTypes.QUERY, remark = "账号密码登录")
     public Response login(@RequestBody User user) {
         return authService.login(user.getUserName(), user.getPassword());
     }

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.system.OperLogMapper">
+    <resultMap id="operLogResultMap" type="OperLog">
+        <id property="id" column="id"/>
+        <result property="operModule" column="oper_module"/>
+        <result property="operType" column="oper_type"/>
+        <result property="operUser" column="oper_user"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="ipLocation" column="ip_location"/>
+        <result property="operResult" column="oper_result"/>
+        <result property="operTime" column="oper_time"/>
+        <result property="remark" column="remark"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addOperLog" parameterType="OperLog">
+        INSERT INTO oper_log (
+            id, oper_module, oper_type, oper_user, ip_address, ip_location,
+            oper_result, oper_time, remark, created_time, created_by, deleted
+        ) VALUES (
+            #{id}, #{operModule}, #{operType}, #{operUser}, #{ipAddress}, #{ipLocation},
+            #{operResult}, #{operTime}, #{remark}, #{createdTime}, #{createdBy}, #{deleted}
+        )
+    </insert>
+
+    <select id="findOperLog" parameterType="OperLog" resultMap="operLogResultMap">
+        SELECT * FROM oper_log
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="operModule != null and operModule != ''">
+                AND oper_module LIKE CONCAT('%', #{operModule}, '%')
+            </if>
+            <if test="operType != null">
+                AND oper_type = #{operType}
+            </if>
+            <if test="operUser != null and operUser != ''">
+                AND oper_user LIKE CONCAT('%', #{operUser}, '%')
+            </if>
+            <if test="ipAddress != null and ipAddress != ''">
+                AND ip_address LIKE CONCAT('%', #{ipAddress}, '%')
+            </if>
+            <if test="ipLocation != null and ipLocation != ''">
+                AND ip_location LIKE CONCAT('%', #{ipLocation}, '%')
+            </if>
+            <if test="operResult != null">
+                AND oper_result = #{operResult}
+            </if>
+            <if test="operTimeStart != null and operTimeStart != ''">
+                AND oper_time &gt;= #{operTimeStart}
+            </if>
+            <if test="operTimeEnd != null and operTimeEnd != ''">
+                AND oper_time &lt;= #{operTimeEnd}
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND created_by = #{createdBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    AND deleted = #{deleted}
+                </when>
+                <otherwise>
+                    AND deleted = 0
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY oper_time DESC, id DESC
+    </select>
+
+    <update id="updateOperLog" parameterType="OperLog">
+        UPDATE oper_log
+        <set>
+            <if test="operModule != null">oper_module = #{operModule},</if>
+            <if test="operType != null">oper_type = #{operType},</if>
+            <if test="operUser != null">oper_user = #{operUser},</if>
+            <if test="ipAddress != null">ip_address = #{ipAddress},</if>
+            <if test="ipLocation != null">ip_location = #{ipLocation},</if>
+            <if test="operResult != null">oper_result = #{operResult},</if>
+            <if test="operTime != null">oper_time = #{operTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+</mapper>

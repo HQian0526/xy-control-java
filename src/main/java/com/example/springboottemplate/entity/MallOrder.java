@@ -69,7 +69,7 @@ public class MallOrder {
     @ApiModelProperty(value = "应付金额（分）")
     private Integer payAmountFen;
 
-    /** 0待支付 1已支付 2已关闭 */
+    /** 0待支付 1已支付 2已关闭 3退款中 4部分退款 5已全额退款 */
     @ApiModelProperty(value = "支付状态")
     private Integer payStatus;
 
@@ -81,6 +81,30 @@ public class MallOrder {
 
     @ApiModelProperty(value = "支付成功时间")
     private Date paidTime;
+
+    @ApiModelProperty(value = "累计已退款金额（元）")
+    private BigDecimal refundAmount;
+
+    @ApiModelProperty(value = "累计已退款金额（分）")
+    private Integer refundAmountFen;
+
+    @ApiModelProperty(value = "处理中的本次退款金额（分）")
+    private Integer pendingRefundFen;
+
+    @ApiModelProperty(value = "商户退款单号（最近一次）")
+    private String outRefundNo;
+
+    @ApiModelProperty(value = "微信退款单号（最近一次）")
+    private String wxRefundId;
+
+    @ApiModelProperty(value = "退款原因（最近一次）")
+    private String refundReason;
+
+    @ApiModelProperty(value = "退款操作人")
+    private String refundBy;
+
+    @ApiModelProperty(value = "最近一次退款成功时间")
+    private Date refundTime;
 
     /** 0未同步 1成功 2失败 */
     @ApiModelProperty(value = "微信发货同步状态")

@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.CardBuyLog;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.CardBuyLogService;
@@ -22,6 +24,7 @@ public class CardBuyLogController {
     @PostMapping("/addCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "添加套餐购买记录", notes = "进行添加套餐购买记录")
+    @OperLog(module = "购卡记录", type = OperTypes.ADD)
     public Response addCardBuyLog(@RequestBody CardBuyLog cardBuyLog){
         return cardBuyLogService.addCardBuyLog(cardBuyLog);
     }
@@ -38,6 +41,7 @@ public class CardBuyLogController {
     @PutMapping("/updateCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "修改套餐购买记录信息", notes = "根据id更新套餐购买记录信息")
+    @OperLog(module = "购卡记录", type = OperTypes.UPDATE)
     public Response updateCardBuyLog(@RequestBody CardBuyLog cardBuyLog){
         return cardBuyLogService.updateCardBuyLog(cardBuyLog);
     }
@@ -46,6 +50,7 @@ public class CardBuyLogController {
     @DeleteMapping("/deleteCardBuyLog")
     @ResponseBody
     @ApiOperation(value = "删除套餐购买记录", notes = "根据id删除套餐购买记录")
+    @OperLog(module = "购卡记录", type = OperTypes.DELETE)
     public Response deleteCardBuyLog(@RequestBody List<Long> idList){
         return cardBuyLogService.deleteCardBuyLog(idList);
     }

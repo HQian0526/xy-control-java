@@ -7,6 +7,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallCheckoutItemRequest;
 import com.example.springboottemplate.dto.mall.MallCheckoutRequest;
 import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
+import com.example.springboottemplate.dto.mall.MallRefundRequest;
 import com.example.springboottemplate.entity.MallOrder;
 import com.example.springboottemplate.entity.MallOrderItem;
 import com.example.springboottemplate.entity.Product;
@@ -26,6 +27,9 @@ import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.wechat.pay.java.service.payments.model.Transaction;
+import com.wechat.pay.java.service.refund.model.Refund;
+import com.wechat.pay.java.service.refund.model.RefundNotification;
+import com.wechat.pay.java.service.refund.model.Status;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -237,7 +241,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     }
 
     @Override
-    public Response findMallOrder(Integer payStatus, Integer pageNum, Integer pageSize, HttpServletRequest httpRequest) {
+    public Response findMallOrder(Integer payStatus, Long storeId, Integer pageNum, Integer pageSize,
+                                  HttpServletRequest httpRequest) {
         Claims claims = parseClaims(httpRequest);
         Long userId = jwtUtil.getUserId(claims);
         if (userId == null) {
@@ -252,7 +257,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
 
         if (identityType != null && identityType == 2) {
-            // 商户：查本店订单
+            // 商户：查本店订单（忽略前端传入的 storeId）
             Store storeQuery = new Store();
             storeQuery.setUserId(userId);
             storeQuery.setDeleted(0);
@@ -262,7 +267,10 @@ public class MallOrderServiceimpl implements MallOrderService {
             }
             query.setStoreId(storeList.get(0).getStoreId());
         } else if (identityType != null && identityType == 3) {
-            // 管理员：可查全部（仅按 payStatus 过滤）
+            // 管理员：可查全部，可按 storeId 过滤
+            if (storeId != null) {
+                query.setStoreId(storeId);
+            }
         } else {
             // 普通用户：仅本人订单
             query.setUserId(userId);
@@ -329,6 +337,214 @@ public class MallOrderServiceimpl implements MallOrderService {
         } catch (Exception e) {
             return "{\"code\":\"FAIL\",\"message\":\"" + escapeJson(e.getMessage()) + "\"}";
         }
+    }
+
+    @Override
+    public Response refund(MallRefundRequest request, HttpServletRequest httpRequest) {
+        if (request == null || !StringUtils.hasText(request.getOrderNo())) {
+            throw new BusinessException("订单号不能为空");
+        }
+        Claims claims = parseClaims(httpRequest);
+        Long userId = jwtUtil.getUserId(claims);
+        String operator = claims.getSubject();
+        if (userId == null) {
+            throw new BusinessException("登录状态无效");
+        }
+
+        MallOrder order = mallOrderMapper.selectByOrderNo(request.getOrderNo().trim());
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        requireMerchantOrAdmin(order, userId);
+
+        Integer payStatus = order.getPayStatus();
+        if (payStatus == null || (payStatus != 1 && payStatus != 4)) {
+            if (payStatus != null && payStatus == 3) {
+                throw new BusinessException("订单退款处理中，请稍后再试");
+            }
+            if (payStatus != null && payStatus == 5) {
+                throw new BusinessException("订单已全额退款");
+            }
+            throw new BusinessException("当前订单状态不可退款");
+        }
+        if (order.getPayAmountFen() == null || order.getPayAmountFen() <= 0) {
+            throw new BusinessException("订单支付金额异常");
+        }
+
+        int alreadyRefunded = order.getRefundAmountFen() == null ? 0 : order.getRefundAmountFen();
+        int remainFen = order.getPayAmountFen() - alreadyRefunded;
+        if (remainFen <= 0) {
+            throw new BusinessException("可退金额不足");
+        }
+
+        boolean fullRefund = Boolean.TRUE.equals(request.getFullRefund());
+        int refundFen;
+        if (fullRefund) {
+            refundFen = remainFen;
+        } else if (request.getRefundAmountFen() != null) {
+            refundFen = request.getRefundAmountFen();
+        } else if (request.getRefundAmount() != null) {
+            refundFen = request.getRefundAmount().movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact();
+        } else {
+            throw new BusinessException("请指定全额退款或部分退款金额");
+        }
+        if (refundFen <= 0) {
+            throw new BusinessException("退款金额必须大于0");
+        }
+        if (refundFen > remainFen) {
+            throw new BusinessException("退款金额不能超过可退金额（剩余"
+                    + BigDecimal.valueOf(remainFen).movePointLeft(2).toPlainString() + "元）");
+        }
+
+        String reason = StringUtils.hasText(request.getReason()) ? request.getReason().trim() : "商家协商退款";
+        String outRefundNo = generateRefundNo();
+
+        int locked = mallOrderMapper.markRefunding(order.getOrderNo(), refundFen, outRefundNo, reason, operator);
+        if (locked <= 0) {
+            throw new BusinessException("订单状态已变更，请刷新后重试");
+        }
+
+        try {
+            Refund refund = wxPayClientService.createRefund(
+                    order.getOrderNo(), outRefundNo, order.getPayAmountFen(), refundFen, reason);
+            Status status = refund.getStatus();
+            String wxRefundId = refund.getRefundId();
+
+            if (status == Status.SUCCESS) {
+                applyRefundSuccess(order.getOrderNo(), outRefundNo, wxRefundId, refundFen, new Date(), false);
+            } else if (status == Status.CLOSED || status == Status.ABNORMAL) {
+                mallOrderMapper.markRefundFailed(order.getOrderNo(), outRefundNo);
+                throw new BusinessException("微信退款未成功: " + status);
+            }
+            // PROCESSING：保持退款中，等回调
+
+            MallOrder latest = mallOrderMapper.selectByOrderNo(order.getOrderNo());
+            latest.setItems(mallOrderItemMapper.selectByOrderId(latest.getId()));
+            Map<String, Object> data = new HashMap<>();
+            data.put("order", latest);
+            data.put("outRefundNo", outRefundNo);
+            data.put("wxRefundId", wxRefundId);
+            data.put("refundAmountFen", refundFen);
+            data.put("refundAmount", BigDecimal.valueOf(refundFen).movePointLeft(2));
+            data.put("refundStatus", status == null ? null : status.name());
+            data.put("mock", wxPayClientService.isMock());
+            return Response.success(data);
+        } catch (BusinessException e) {
+            mallOrderMapper.markRefundFailed(order.getOrderNo(), outRefundNo);
+            throw e;
+        } catch (Exception e) {
+            mallOrderMapper.markRefundFailed(order.getOrderNo(), outRefundNo);
+            throw new BusinessException("发起退款失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String handleWxRefundNotify(HttpServletRequest request, String body) {
+        try {
+            RefundNotification notification = wxPayClientService.parseRefundNotify(
+                    body,
+                    request.getHeader("Wechatpay-Serial"),
+                    request.getHeader("Wechatpay-Nonce"),
+                    request.getHeader("Wechatpay-Signature"),
+                    request.getHeader("Wechatpay-Timestamp"),
+                    request.getHeader("Wechatpay-Signature-Type")
+            );
+            String outRefundNo = notification.getOutRefundNo();
+            String orderNo = notification.getOutTradeNo();
+            Status status = notification.getRefundStatus();
+            if (status == Status.SUCCESS) {
+                int refundFen = 0;
+                if (notification.getAmount() != null && notification.getAmount().getRefund() != null) {
+                    refundFen = notification.getAmount().getRefund().intValue();
+                } else {
+                    MallOrder order = mallOrderMapper.selectByOutRefundNo(outRefundNo);
+                    if (order != null && order.getPendingRefundFen() != null) {
+                        refundFen = order.getPendingRefundFen();
+                    }
+                }
+                if (refundFen > 0 && StringUtils.hasText(orderNo)) {
+                    applyRefundSuccess(orderNo, outRefundNo, notification.getRefundId(), refundFen, new Date(), false);
+                }
+            } else if (status == Status.CLOSED || status == Status.ABNORMAL) {
+                if (StringUtils.hasText(orderNo) && StringUtils.hasText(outRefundNo)) {
+                    mallOrderMapper.markRefundFailed(orderNo, outRefundNo);
+                }
+            }
+            return "{\"code\":\"SUCCESS\",\"message\":\"成功\"}";
+        } catch (Exception e) {
+            return "{\"code\":\"FAIL\",\"message\":\"" + escapeJson(e.getMessage()) + "\"}";
+        }
+    }
+
+    private void applyRefundSuccess(String orderNo, String outRefundNo, String wxRefundId,
+                                    int refundFen, Date refundTime, boolean allowDirect) {
+        MallOrder before = mallOrderMapper.selectByOrderNo(orderNo);
+        if (before == null) {
+            return;
+        }
+        // 幂等：同一退款单已成功计入则跳过
+        if (StringUtils.hasText(outRefundNo)
+                && outRefundNo.equals(before.getOutRefundNo())
+                && before.getPayStatus() != null
+                && before.getPayStatus() != 3
+                && before.getPendingRefundFen() == null
+                && before.getWxRefundId() != null
+                && before.getWxRefundId().equals(wxRefundId)) {
+            return;
+        }
+        int already = before.getRefundAmountFen() == null ? 0 : before.getRefundAmountFen();
+        boolean willFull = already + refundFen >= (before.getPayAmountFen() == null ? 0 : before.getPayAmountFen());
+
+        int rows = mallOrderMapper.markRefundSuccess(
+                orderNo, refundFen, outRefundNo, wxRefundId, refundTime, allowDirect ? 1 : 0);
+        if (rows <= 0) {
+            return;
+        }
+        // 全额退款成功后回滚库存/销量
+        if (willFull) {
+            restoreStock(before);
+        }
+    }
+
+    private void restoreStock(MallOrder order) {
+        List<MallOrderItem> items = mallOrderItemMapper.selectByOrderId(order.getId());
+        Date now = new Date();
+        for (MallOrderItem item : items) {
+            Product product = productMapper.selectOne(new LambdaQueryWrapper<Product>()
+                    .eq(Product::getProductId, item.getProductId())
+                    .last("limit 1"));
+            if (product == null) {
+                continue;
+            }
+            int stock = product.getProductNum() == null ? 0 : product.getProductNum();
+            int sale = product.getSaleNum() == null ? 0 : product.getSaleNum();
+            int qty = item.getQuantity() == null ? 0 : item.getQuantity();
+            product.setProductNum(stock + qty);
+            product.setSaleNum(Math.max(0, sale - qty));
+            product.setUpdateTime(now);
+            productMapper.updateProduct(product);
+        }
+    }
+
+    /** 仅本店商户或管理员可退款 */
+    private void requireMerchantOrAdmin(MallOrder order, Long userId) {
+        User user = userMapper.selectById(userId);
+        Integer identityType = user == null ? null : user.getIdentityType();
+        if (identityType != null && identityType == 3) {
+            return;
+        }
+        if (identityType != null && identityType == 2 && order.getStoreId() != null) {
+            Store storeQuery = new Store();
+            storeQuery.setUserId(userId);
+            storeQuery.setDeleted(0);
+            List<Store> storeList = storeMapper.findStore(storeQuery);
+            if (!ValidateUtil.isEmpty(storeList)
+                    && storeList.get(0).getStoreId() != null
+                    && storeList.get(0).getStoreId().equals(order.getStoreId())) {
+                return;
+            }
+        }
+        throw new BusinessException("仅本店商家或管理员可发起退款");
     }
 
     private void markOrderPaid(String orderNo, String transactionId, Date paidTime) {
@@ -438,6 +654,12 @@ public class MallOrderServiceimpl implements MallOrderService {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = ThreadLocalRandom.current().nextInt(100000, 999999);
         return "M" + time + rnd;
+    }
+
+    private String generateRefundNo() {
+        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int rnd = ThreadLocalRandom.current().nextInt(100000, 999999);
+        return "R" + time + rnd;
     }
 
     private String escapeJson(String msg) {

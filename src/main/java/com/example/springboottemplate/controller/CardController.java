@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.Card;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.CardService;
@@ -23,6 +25,7 @@ public class CardController {
     @PostMapping("/addCard")
     @ResponseBody
     @ApiOperation(value = "添加卡", notes = "传入卡片各项信息进行添加卡")
+    @OperLog(module = "卡片管理", type = OperTypes.ADD)
     public Response addUser(@RequestBody Card card, HttpServletRequest request){
         return cardService.addCard(card, request);
     }
@@ -39,6 +42,7 @@ public class CardController {
     @PutMapping("/updateCard")
     @ResponseBody
     @ApiOperation(value = "修改卡信息", notes = "根据id更新卡信息")
+    @OperLog(module = "卡片管理", type = OperTypes.UPDATE)
     public Response updateCard(@RequestBody Card card, HttpServletRequest request){
         return cardService.updateCard(card, request);
     }
@@ -47,6 +51,7 @@ public class CardController {
     @DeleteMapping("/deleteCard")
     @ResponseBody
     @ApiOperation(value = "删除卡", notes = "根据id删除卡")
+    @OperLog(module = "卡片管理", type = OperTypes.DELETE)
     public Response deleteCard(@RequestBody List<Long> idList){
         return cardService.deleteCard(idList);
     }

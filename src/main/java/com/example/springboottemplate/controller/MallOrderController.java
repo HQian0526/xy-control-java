@@ -1,7 +1,10 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallCheckoutRequest;
+import com.example.springboottemplate.dto.mall.MallRefundRequest;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.service.MallOrderService;
 import io.swagger.annotations.Api;
@@ -27,6 +30,7 @@ public class MallOrderController {
     @PostMapping("/checkoutAndPay")
     @ResponseBody
     @ApiOperation(value = "商城下单并获取支付参数", notes = "服务端计价后调微信下单；mock 模式返回 mock=true")
+    @OperLog(module = "商城订单", type = OperTypes.ADD)
     public Response checkoutAndPay(@RequestBody MallCheckoutRequest request, HttpServletRequest httpRequest) {
         try {
             return mallOrderService.checkoutAndPay(request, httpRequest);
@@ -52,13 +56,14 @@ public class MallOrderController {
 
     @GetMapping("/findMallOrder")
     @ResponseBody
-    @ApiOperation(value = "商城订单列表", notes = "普通用户查本人；商户查本店；可按 payStatus 过滤")
+    @ApiOperation(value = "商城订单列表", notes = "普通用户查本人；商户查本店；管理员可查全部并按 storeId/payStatus 过滤")
     public Response findMallOrder(@RequestParam(required = false) Integer payStatus,
+                                  @RequestParam(required = false) Long storeId,
                                   @RequestParam(required = false) Integer pageNum,
                                   @RequestParam(required = false) Integer pageSize,
                                   HttpServletRequest httpRequest) {
         try {
-            return mallOrderService.findMallOrder(payStatus, pageNum, pageSize, httpRequest);
+            return mallOrderService.findMallOrder(payStatus, storeId, pageNum, pageSize, httpRequest);
         } catch (BusinessException e) {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {
@@ -69,6 +74,7 @@ public class MallOrderController {
     @PostMapping("/mockConfirmPay")
     @ResponseBody
     @ApiOperation(value = "mock 确认支付", notes = "仅 wechat.pay.mock=true 时可用")
+    @OperLog(module = "商城订单", type = OperTypes.ADD)
     public Response mockConfirmPay(@RequestBody Map<String, String> body, HttpServletRequest httpRequest) {
         try {
             String orderNo = body == null ? null : body.get("orderNo");
@@ -92,6 +98,35 @@ public class MallOrderController {
             return mallOrderService.handleWxPayNotify(request, body);
         } catch (Exception e) {
             return "{\"code\":\"FAIL\",\"message\":\"notify error\"}";
+        }
+    }
+
+    @PostMapping("/refund")
+    @ResponseBody
+    @ApiOperation(value = "商户退款", notes = "本店商户或管理员对已支付订单发起全额/部分退款")
+    @OperLog(module = "商城订单", type = OperTypes.UPDATE, remark = "订单退款")
+    public Response refund(@RequestBody MallRefundRequest request, HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.refund(request, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("退款失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/wxRefundNotify", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    @ApiOperation(value = "微信退款回调", notes = "微信服务器回调，无需登录")
+    public String wxRefundNotify(HttpServletRequest request) {
+        try {
+            String body;
+            try (BufferedReader reader = request.getReader()) {
+                body = reader.lines().collect(Collectors.joining("\n"));
+            }
+            return mallOrderService.handleWxRefundNotify(request, body);
+        } catch (Exception e) {
+            return "{\"code\":\"FAIL\",\"message\":\"refund notify error\"}";
         }
     }
 }

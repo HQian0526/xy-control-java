@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.MinioService;
 import io.swagger.annotations.Api;
@@ -27,6 +29,7 @@ public class FileController {
     @PostMapping("/upload")
     @ResponseBody
     @ApiOperation(value = "文件上传", notes = "上传文件到MinIO")
+    @OperLog(module = "文件管理", type = OperTypes.ADD)
     public Response upload(@RequestParam("file") MultipartFile file) throws Exception {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("文件不能为空");

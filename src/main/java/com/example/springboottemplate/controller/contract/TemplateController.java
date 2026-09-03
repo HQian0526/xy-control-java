@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.contract;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.contract.ContractDetailVO;
 import com.example.springboottemplate.entity.contract.ContractTemplate;
@@ -34,6 +36,7 @@ public class TemplateController {
     @PostMapping("/addContractTemp")
     @ResponseBody
     @ApiOperation(value = "添加合同模板", notes = "传入合同各项信息进行添加合同模板")
+    @OperLog(module = "合同模板", type = OperTypes.ADD)
     public Response addContractTemp(@RequestBody ContractTemplate contractTemplate, HttpServletRequest request){
         return templateService.addContractTemp(contractTemplate, request);
     }
@@ -50,6 +53,7 @@ public class TemplateController {
     @PutMapping("/updateContractTemp")
     @ResponseBody
     @ApiOperation(value = "修改合同模板信息", notes = "根据id更新合同模板信息")
+    @OperLog(module = "合同模板", type = OperTypes.UPDATE)
     public Response updateContractTemp(@RequestBody ContractTemplate contractTemplate, HttpServletRequest request){
         return templateService.updateContractTemp(contractTemplate, request);
     }
@@ -58,6 +62,7 @@ public class TemplateController {
     @DeleteMapping("/deleteContractTemp")
     @ResponseBody
     @ApiOperation(value = "删除合同模板", notes = "根据id删除合同模板")
+    @OperLog(module = "合同模板", type = OperTypes.DELETE)
     public Response deleteContractTemp(@RequestBody List<Long> idList){
         return templateService.deleteContractTemp(idList);
     }

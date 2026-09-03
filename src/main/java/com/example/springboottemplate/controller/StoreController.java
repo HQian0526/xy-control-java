@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.service.StoreService;
@@ -23,6 +25,7 @@ public class StoreController {
     @PostMapping("/addStore")
     @ResponseBody
     @ApiOperation(value = "添加商户", notes = "传入商户各项信息进行添加；id、storeId 由系统雪花算法生成，无需传入")
+    @OperLog(module = "商户管理", type = OperTypes.ADD)
     public Response addStore(@RequestBody Store store, HttpServletRequest request){
         return storeService.addStore(store, request);
     }
@@ -39,6 +42,7 @@ public class StoreController {
     @PutMapping("/updateStore")
     @ResponseBody
     @ApiOperation(value = "修改商户信息", notes = "根据id更新商户信息")
+    @OperLog(module = "商户管理", type = OperTypes.UPDATE)
     public Response updateStore(@RequestBody Store store, HttpServletRequest request){
         return storeService.updateStore(store, request);
     }
@@ -47,6 +51,7 @@ public class StoreController {
     @DeleteMapping("/deleteStore")
     @ResponseBody
     @ApiOperation(value = "删除商户信息", notes = "根据id删除商户信息")
+    @OperLog(module = "商户管理", type = OperTypes.DELETE)
     public Response deleteStore(@RequestBody List<Long> idList){
         return storeService.deleteStore(idList);
     }

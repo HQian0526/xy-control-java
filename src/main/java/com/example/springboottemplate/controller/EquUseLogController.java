@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.EquUseLog;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.EquUseLogService;
@@ -22,6 +24,7 @@ public class EquUseLogController {
     @PostMapping("/addEquUseLog")
     @ResponseBody
     @ApiOperation(value = "添加设备使用记录", notes = "添加设备使用记录")
+    @OperLog(module = "设备使用记录", type = OperTypes.ADD)
     public Response addEquUseLog(@RequestBody EquUseLog equUseLog){
         return equUseLogService.addEquUseLog(equUseLog);
     }
@@ -38,6 +41,7 @@ public class EquUseLogController {
     @PutMapping("/updateEquUseLog")
     @ResponseBody
     @ApiOperation(value = "修改设备使用记录信息", notes = "根据id更新设备使用记录信息")
+    @OperLog(module = "设备使用记录", type = OperTypes.UPDATE)
     public Response updateEquUseLog(@RequestBody EquUseLog equUseLog){
         return equUseLogService.updateEquUseLog(equUseLog);
     }
@@ -46,6 +50,7 @@ public class EquUseLogController {
     @DeleteMapping("/deleteEquUseLog")
     @ResponseBody
     @ApiOperation(value = "删除设备使用记录", notes = "根据id删除设备使用记录")
+    @OperLog(module = "设备使用记录", type = OperTypes.DELETE)
     public Response deleteEquUseLog(@RequestBody List<Long> idList){
         return equUseLogService.deleteEquUseLog(idList);
     }

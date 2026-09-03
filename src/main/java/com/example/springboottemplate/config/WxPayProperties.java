@@ -30,6 +30,8 @@ public class WxPayProperties {
     /** 微信支付公钥 ID，形如 PUB_KEY_ID_xxx */
     private String publicKeyId;
     private String notifyUrl;
+    /** 退款结果回调 URL（公网 HTTPS） */
+    private String refundNotifyUrl;
     /** 配送费（元） */
     private BigDecimal deliveryFee = BigDecimal.ZERO;
     /** 支付成功后向微信发货信息管理报发货 */

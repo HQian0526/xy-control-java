@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.contract;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.contract.ContractDTO;
 import com.example.springboottemplate.dto.contract.ContractQueryDTO;
@@ -25,6 +27,7 @@ public class ContractController {
     @PostMapping("/addContract")
     @ResponseBody
     @ApiOperation(value = "添加合同", notes = "传入合同各项信息进行添加合同")
+    @OperLog(module = "合同管理", type = OperTypes.ADD)
     public Response addContract(@RequestBody Contract contract, HttpServletRequest request){
         return contractService.addContract(contract, request);
     }
@@ -41,6 +44,7 @@ public class ContractController {
     @PutMapping("/updateContract")
     @ResponseBody
     @ApiOperation(value = "修改合同信息", notes = "根据id更新合同信息")
+    @OperLog(module = "合同管理", type = OperTypes.UPDATE)
     public Response updateContract(@RequestBody Contract contract, HttpServletRequest request){
         return contractService.updateContract(contract, request);
     }
@@ -49,6 +53,7 @@ public class ContractController {
     @DeleteMapping("/deleteContract")
     @ResponseBody
     @ApiOperation(value = "删除合同", notes = "根据id删除合同")
+    @OperLog(module = "合同管理", type = OperTypes.DELETE)
     public Response deleteContract(@RequestBody List<Long> idList){
         return contractService.deleteContract(idList);
     }
@@ -75,6 +80,7 @@ public class ContractController {
     @PostMapping("/saveContractItems")
     @ResponseBody
     @ApiOperation("保存合同细则")
+    @OperLog(module = "合同管理", type = OperTypes.UPDATE)
     public Response saveContract(@RequestBody ContractDTO contractDTO, HttpServletRequest request) {
         return Response.success(contractService.saveContract(contractDTO, request));
     }
@@ -82,6 +88,7 @@ public class ContractController {
     @PostMapping("/terminate/{id}")
     @ResponseBody
     @ApiOperation("终止合同")
+    @OperLog(module = "合同管理", type = OperTypes.UPDATE)
     public Response terminateContract(@PathVariable Long id, @RequestParam String reason) {
         return Response.success(contractService.terminateContract(id, reason));
     }

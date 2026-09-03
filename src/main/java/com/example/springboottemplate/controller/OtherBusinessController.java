@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.OtherBusiness;
 import com.example.springboottemplate.service.OtherBusinessService;
@@ -22,6 +24,7 @@ public class OtherBusinessController {
     @PostMapping("/addOtherBusiness")
     @ResponseBody
     @ApiOperation(value = "添加其他业务", notes = "传入业务各项信息进行添加")
+    @OperLog(module = "其他业务", type = OperTypes.ADD)
     public Response addOtherBusiness(@RequestBody OtherBusiness otherBusiness, HttpServletRequest request) {
         return otherBusinessService.addOtherBusiness(otherBusiness, request);
     }
@@ -43,6 +46,7 @@ public class OtherBusinessController {
     @PutMapping("/updateOtherBusiness")
     @ResponseBody
     @ApiOperation(value = "修改其他业务", notes = "根据id更新业务信息")
+    @OperLog(module = "其他业务", type = OperTypes.UPDATE)
     public Response updateOtherBusiness(@RequestBody OtherBusiness otherBusiness, HttpServletRequest request) {
         return otherBusinessService.updateOtherBusiness(otherBusiness, request);
     }
@@ -50,6 +54,7 @@ public class OtherBusinessController {
     @DeleteMapping("/deleteOtherBusiness")
     @ResponseBody
     @ApiOperation(value = "删除其他业务", notes = "根据id删除业务（逻辑删除）")
+    @OperLog(module = "其他业务", type = OperTypes.DELETE)
     public Response deleteOtherBusiness(@RequestBody List<Long> idList) {
         return otherBusinessService.deleteOtherBusiness(idList);
     }

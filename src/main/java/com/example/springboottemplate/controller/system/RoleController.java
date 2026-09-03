@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.MenuTreeDto;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.RoleMenuDto;
@@ -26,6 +28,7 @@ public class RoleController {
     @PostMapping("/addRole")
     @ResponseBody
     @ApiOperation(value = "添加角色", notes = "传入角色各项信息进行添加")
+    @OperLog(module = "角色管理", type = OperTypes.ADD)
     public Response addRole(@RequestBody Role role, HttpServletRequest request){
         return roleService.addRole(role, request);
     }
@@ -42,6 +45,7 @@ public class RoleController {
     @PutMapping("/updateRole")
     @ResponseBody
     @ApiOperation(value = "修改角色信息", notes = "根据id更新角色信息")
+    @OperLog(module = "角色管理", type = OperTypes.UPDATE)
     public Response updateRole(@RequestBody Role role, HttpServletRequest request){
         return roleService.updateRole(role, request);
     }
@@ -50,6 +54,7 @@ public class RoleController {
     @DeleteMapping("/deleteRole")
     @ResponseBody
     @ApiOperation(value = "删除角色", notes = "根据id删除角色")
+    @OperLog(module = "角色管理", type = OperTypes.DELETE)
     public Response deleteRole(@RequestBody List<Long> idList){
         return roleService.deleteRole(idList);
     }
@@ -67,6 +72,7 @@ public class RoleController {
     @PostMapping("/assignPerms")
     @ResponseBody
     @ApiOperation(value = "角色授权", notes = "给某个角色授予特定菜单权限")
+    @OperLog(module = "角色管理", type = OperTypes.UPDATE)
     public Response assignMenus(@RequestBody RoleMenuDto roleMenuDto) {
         return roleService.assignMenus(roleMenuDto);
     }
@@ -75,6 +81,7 @@ public class RoleController {
     @PostMapping("/assignRoles")
     @ResponseBody
     @ApiOperation(value = "用户授予角色", notes = "给某个用户授予特定角色")
+    @OperLog(module = "角色管理", type = OperTypes.UPDATE)
     public Response assignRoles(@RequestBody UserRoleDto userRoleDto) {
         return roleService.assignRoles(userRoleDto);
     }

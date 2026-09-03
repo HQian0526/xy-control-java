@@ -1,5 +1,7 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperLog;
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.entity.system.Dict;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.system.DictService;
@@ -23,6 +25,7 @@ public class DictController {
     @PostMapping("/addDict")
     @ResponseBody
     @ApiOperation(value = "添加字典", notes = "传入字典信息进行添加字典")
+    @OperLog(module = "字典管理", type = OperTypes.ADD)
     public Response addDict(@RequestBody Dict dict, HttpServletRequest request){
         return dictService.addDict(dict, request);
     }
@@ -47,6 +50,7 @@ public class DictController {
     @PutMapping("/updateDict")
     @ResponseBody
     @ApiOperation(value = "修改字典信息", notes = "根据id更新字典信息")
+    @OperLog(module = "字典管理", type = OperTypes.UPDATE)
     public Response updateDict(@RequestBody Dict dict, HttpServletRequest request){
         return dictService.updateDict(dict, request);
     }
@@ -55,6 +59,7 @@ public class DictController {
     @DeleteMapping("/deleteDict")
     @ResponseBody
     @ApiOperation(value = "删除字典", notes = "根据id删除字典")
+    @OperLog(module = "字典管理", type = OperTypes.DELETE)
     public Response deleteDict(@RequestBody List<Long> idList){
         return dictService.deleteDict(idList);
     }
