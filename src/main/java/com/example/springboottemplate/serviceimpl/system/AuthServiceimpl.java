@@ -235,7 +235,7 @@ public class AuthServiceimpl implements AuthService {
         User user = User.builder()
                 .id(IdWorker.getId())
                 .userName(userName)
-                .realName("微信用户")
+                .realName(defaultWxRealName())
                 .identityType(1)
                 .openid(openid)
                 .unionid(session.getUnionid())
@@ -279,7 +279,7 @@ public class AuthServiceimpl implements AuthService {
             User user = User.builder()
                     .id(IdWorker.getId())
                     .userName(userName)
-                    .realName("微信用户")
+                    .realName(defaultWxRealName())
                     .identityType(1)
                     .openid(openid)
                     .unionid(session.getUnionid())
@@ -304,7 +304,7 @@ public class AuthServiceimpl implements AuthService {
         }
         existing.setDeleted(0);
         if (!StringUtils.hasText(existing.getRealName())) {
-            existing.setRealName("微信用户");
+            existing.setRealName(defaultWxRealName());
         }
         if (existing.getIdentityType() == null) {
             existing.setIdentityType(1);
@@ -312,6 +312,13 @@ public class AuthServiceimpl implements AuthService {
         userMapper.updateUser(existing);
         User refreshed = userMapper.selectById(existing.getId());
         return refreshed != null ? refreshed : existing;
+    }
+
+    /** 无微信昵称时：微信用户 + 当前时间戳 MD5 后 5 位 */
+    private String defaultWxRealName() {
+        String hash = DigestUtils.md5DigestAsHex(
+                String.valueOf(System.currentTimeMillis()).getBytes(StandardCharsets.UTF_8));
+        return "微信用户" + hash.substring(hash.length() - 5);
     }
 
     private Response buildLoginResponse(User user, boolean merged) {
