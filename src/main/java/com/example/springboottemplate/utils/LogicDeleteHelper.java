@@ -32,7 +32,8 @@ public class LogicDeleteHelper {
             "other_business",
             "visitor",
             "mall_order",
-            "oper_log"
+            "oper_log",
+            "store_blacklist"
     );
 
     @Autowired

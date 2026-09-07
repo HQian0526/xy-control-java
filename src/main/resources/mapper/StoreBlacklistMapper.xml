@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreBlacklistMapper">
+    <resultMap id="storeBlacklistResultMap" type="StoreBlacklist">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="phone" column="phone"/>
+        <result property="realName" column="real_name"/>
+        <result property="reason" column="reason"/>
+        <result property="remark" column="remark"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addStoreBlacklist" parameterType="StoreBlacklist">
+        INSERT INTO store_blacklist (
+            id, store_id, user_id, phone, real_name, reason, remark,
+            created_time, created_by, deleted
+        ) VALUES (
+            #{id}, #{storeId}, #{userId}, #{phone}, #{realName}, #{reason}, #{remark},
+            #{createdTime}, #{createdBy}, #{deleted}
+        )
+    </insert>
+
+    <select id="findStoreBlacklist" parameterType="StoreBlacklist" resultMap="storeBlacklistResultMap">
+        SELECT * FROM store_blacklist
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="storeId != null">
+                AND store_id = #{storeId}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                AND real_name LIKE CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="reason != null and reason != ''">
+                AND reason LIKE CONCAT('%', #{reason}, '%')
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                AND created_by = #{createdBy}
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    AND deleted = #{deleted}
+                </when>
+                <otherwise>
+                    AND deleted = 0
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY created_time DESC, id DESC
+    </select>
+
+    <select id="selectByStoreAndPhoneAny" resultMap="storeBlacklistResultMap">
+        SELECT * FROM store_blacklist
+        WHERE store_id = #{storeId}
+          AND phone = #{phone}
+        LIMIT 1
+    </select>
+
+    <select id="selectByStoreAndUserIdAny" resultMap="storeBlacklistResultMap">
+        SELECT * FROM store_blacklist
+        WHERE store_id = #{storeId}
+          AND user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <select id="countHit" resultType="int">
+        SELECT COUNT(1) FROM store_blacklist
+        WHERE store_id = #{storeId}
+          AND deleted = 0
+          AND (
+            <trim prefixOverrides="OR">
+                <if test="phone != null and phone != ''">
+                    OR phone = #{phone}
+                </if>
+                <if test="contact != null and contact != ''">
+                    OR phone = #{contact}
+                </if>
+                <if test="userId != null">
+                    OR user_id = #{userId}
+                </if>
+            </trim>
+          )
+    </select>
+
+    <update id="updateStoreBlacklist" parameterType="StoreBlacklist">
+        UPDATE store_blacklist
+        <set>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="realName != null">real_name = #{realName},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+</mapper>

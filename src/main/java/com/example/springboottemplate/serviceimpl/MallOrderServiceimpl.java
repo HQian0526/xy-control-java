@@ -20,6 +20,7 @@ import com.example.springboottemplate.mapper.ProductMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.MallOrderService;
+import com.example.springboottemplate.service.StoreBlacklistService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -76,6 +77,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     private WxPayProperties wxPayProperties;
     @Autowired
     private WxShippingService wxShippingService;
+    @Autowired
+    private StoreBlacklistService storeBlacklistService;
 
     @Override
     public Response checkoutAndPay(MallCheckoutRequest request, HttpServletRequest httpRequest) {
@@ -160,6 +163,9 @@ public class MallOrderServiceimpl implements MallOrderService {
             Store store = storeMapper.selectByStoreId(storeId);
             if (store != null && store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED) {
                 throw new BusinessException("店铺已打烊，请于营业时间下单");
+            }
+            if (storeBlacklistService.isBlacklisted(storeId, userId, user.getPhone(), request.getContact())) {
+                throw new BusinessException("您已被该店铺限制下单");
             }
         }
 

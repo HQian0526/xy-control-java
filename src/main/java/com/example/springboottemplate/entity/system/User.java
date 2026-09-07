@@ -1,6 +1,7 @@
 package com.example.springboottemplate.entity.system;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -71,6 +72,10 @@ public class User {
     @JsonSerialize(using = ToStringSerializer.class)
     @ApiModelProperty(value = "默认绑定的店铺id", required = false)
     private Long bindStoreId;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "所属店铺名", required = false)
+    private String storeName;
 
     @ApiModelProperty(value = "微信小程序 openid", required = false)
     private String openid;

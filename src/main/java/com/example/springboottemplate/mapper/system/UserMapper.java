@@ -13,6 +13,9 @@ public interface UserMapper extends BaseMapper<User> {
 
     List<User> findUser(User user); //查找所有用户
 
+    /** 店铺顾客：已进店且未拉黑的普通用户 */
+    List<User> findCustomer(User user);
+
     User selectByUserName(String userName); //根据用户名精确查询
 
     /** 按用户名查询（含逻辑删除），用于微信注册避免 user_name 唯一冲突 */

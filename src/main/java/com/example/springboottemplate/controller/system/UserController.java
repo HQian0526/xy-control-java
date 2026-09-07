@@ -39,6 +39,13 @@ public class UserController {
         return userService.findUser(user, pageNum, pageSize);
     }
 
+    @GetMapping("/findCustomer")
+    @ResponseBody
+    @ApiOperation(value = "查询店铺顾客", notes = "商户仅本店已进店且未拉黑的普通用户；管理员可看全部")
+    public Response findCustomer(User user, Integer pageNum, Integer pageSize, HttpServletRequest request) {
+        return userService.findCustomer(user, pageNum, pageSize, request);
+    }
+
     //修改用户信息
     @PutMapping("/updateUser")
     @ResponseBody

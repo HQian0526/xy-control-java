@@ -14,6 +14,9 @@ public interface UserService {
     // 查询用户列表
     Response findUser(User user, Integer pageNum, Integer pageSize);
 
+    // 查询店铺顾客（已进店且未拉黑）
+    Response findCustomer(User user, Integer pageNum, Integer pageSize, HttpServletRequest request);
+
     // 根据id查询用户信息
     Response getUserById(Long id);
 

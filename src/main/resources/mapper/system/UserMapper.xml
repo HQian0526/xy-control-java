@@ -19,6 +19,7 @@
         <result property="email" column="email"/>
         <result property="identityType" column="identity_type"/>
         <result property="bindStoreId" column="bind_store_id"/>
+        <result property="storeName" column="store_name"/>
         <result property="openid" column="openid"/>
         <result property="unionid" column="unionid"/>
         <result property="password" column="password"/>
@@ -87,6 +88,34 @@
 <!--                </otherwise>-->
             </choose>
         </where>
+    </select>
+
+    <!-- 店铺顾客：已绑定店铺的普通用户，排除本店黑名单 -->
+    <select id="findCustomer" parameterType="User" resultMap="userResultMap">
+        SELECT u.*, s.store_name AS store_name
+        FROM user u
+        LEFT JOIN store s ON s.store_id = u.bind_store_id AND s.deleted = 0
+        <where>
+            u.deleted = 0
+            AND u.identity_type = 1
+            AND u.bind_store_id IS NOT NULL
+            <if test="bindStoreId != null">
+                AND u.bind_store_id = #{bindStoreId}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND u.phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            AND NOT EXISTS (
+                SELECT 1 FROM store_blacklist b
+                WHERE b.deleted = 0
+                  AND b.store_id = u.bind_store_id
+                  AND (
+                    b.user_id = u.id
+                    OR (u.phone IS NOT NULL AND u.phone != '' AND b.phone = u.phone)
+                  )
+            )
+        </where>
+        ORDER BY u.created_time DESC, u.id DESC
     </select>
 
     <!-- 修改用户信息 -->

@@ -2,7 +2,9 @@ package com.example.springboottemplate.serviceimpl.system;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.system.UserService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -21,6 +23,7 @@ import com.example.springboottemplate.utils.PasswordUtil;
 import com.example.springboottemplate.utils.ValidateUtil;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +35,8 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private StoreMapper storeMapper;
     @Autowired
     private LogicDeleteHelper logicDeleteHelper;
 
@@ -101,6 +106,61 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         data.put("pages", pageInfo.getPages()); // 总页数
         data.put("pageNum", pageInfo.getPageNum()); // 当前页码
         data.put("pageSize", pageInfo.getPageSize()); // 每页数量
+        return new Response(200, data, "操作成功");
+    }
+
+    @Override
+    public Response findCustomer(User user, Integer pageNum, Integer pageSize, HttpServletRequest request) {
+        if (user == null) {
+            user = new User();
+        }
+        Long operatorId = jwtUtil.tryGetUserId(request);
+        User operator = operatorId == null ? null : userMapper.selectById(operatorId);
+        Integer identityType = operator == null ? null : operator.getIdentityType();
+        if (identityType == null || identityType == 1) {
+            return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);
+        }
+        if (identityType == 2) {
+            Long storeId = findMerchantStoreId(operatorId);
+            if (storeId == null) {
+                return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);
+            }
+            user.setBindStoreId(storeId);
+        }
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
+        List<User> list = userMapper.findCustomer(user);
+        for (User item : list) {
+            if (item != null) {
+                item.setPassword(null);
+            }
+        }
+        return buildUserPageResponse(list, pageNum, pageSize);
+    }
+
+    private Long findMerchantStoreId(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        Store query = new Store();
+        query.setUserId(userId);
+        query.setDeleted(0);
+        List<Store> storeList = storeMapper.findStore(query);
+        if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
+            return null;
+        }
+        return storeList.get(0).getStoreId();
+    }
+
+    private Response buildUserPageResponse(List<User> list, Integer pageNum, Integer pageSize) {
+        PageInfo<User> pageInfo = new PageInfo<>(list);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", pageInfo.getList());
+        data.put("total", pageInfo.getTotal());
+        data.put("pages", pageInfo.getPages());
+        data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
+        data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getTotal());
         return new Response(200, data, "操作成功");
     }
 
