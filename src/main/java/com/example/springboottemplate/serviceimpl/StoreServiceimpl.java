@@ -2,6 +2,7 @@ package com.example.springboottemplate.serviceimpl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.StoreBusinessHours;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.mapper.StoreMapper;
@@ -9,6 +10,7 @@ import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -72,6 +74,7 @@ public class StoreServiceimpl implements StoreService {
             User user = item.getUserId() == null ? null : userMapper.selectById(item.getUserId());
             item.setUserName(user != null ? user.getUserName() : null);
             item.setRealName(user != null ? user.getRealName() : null);
+            fillOpenFields(item);
         });
         // 封装分页结果
         PageInfo<Store> pageInfo = new PageInfo<>(list);
@@ -95,6 +98,151 @@ public class StoreServiceimpl implements StoreService {
         store.setUpdateBy(username);
         storeMapper.updateStore(store);
         return new Response(200, null, "操作成功");
+    }
+
+    @Override
+    public Response updateStoreProfile(Store body, HttpServletRequest request) {
+        Long userId = resolveCurrentUserId(request);
+        if (userId == null) {
+            return Response.fail(401, "无效的登录信息");
+        }
+        if (body == null || !org.springframework.util.StringUtils.hasText(body.getStoreName())) {
+            return Response.fail(400, "店铺名称不能为空");
+        }
+        String storeName = body.getStoreName().trim();
+        if (storeName.length() > 64) {
+            return Response.fail(400, "店铺名称不能超过64个字符");
+        }
+
+        Store query = new Store();
+        query.setUserId(userId);
+        query.setDeleted(0);
+        List list = storeMapper.findStore(query);
+        if (list == null || list.isEmpty()) {
+            return Response.fail(400, "未找到店铺信息");
+        }
+        Store exist = (Store) list.get(0);
+        if (exist == null || exist.getId() == null) {
+            return Response.fail(400, "未找到店铺信息");
+        }
+
+        String address = body.getAddress();
+        if (address != null) {
+            address = address.trim();
+            if (address.length() > 255) {
+                return Response.fail(400, "店铺位置不能超过255个字符");
+            }
+        }
+        String avatar = body.getAvatar();
+        if (avatar != null) {
+            avatar = avatar.trim();
+            if (avatar.length() > 255) {
+                return Response.fail(400, "店铺照片路径过长");
+            }
+        }
+
+        String operator = exist.getCreatedBy();
+        Object usernameAttr = request.getAttribute("username");
+        if (usernameAttr instanceof String && org.springframework.util.StringUtils.hasText((String) usernameAttr)) {
+            operator = (String) usernameAttr;
+        }
+
+        Store patch = new Store();
+        patch.setId(exist.getId());
+        patch.setStoreName(storeName);
+        patch.setAddress(address);
+        patch.setAvatar(avatar);
+        patch.setUpdateBy(operator);
+        storeMapper.updateStore(patch);
+
+        return Response.success(refreshStore(exist.getId(), exist));
+    }
+
+    @Override
+    public Response updateBusinessHours(StoreBusinessHours hours, HttpServletRequest request) {
+        Long userId = resolveCurrentUserId(request);
+        if (userId == null) {
+            return Response.fail(401, "无效的登录信息");
+        }
+        Store exist = findOwnStore(userId);
+        if (exist == null) {
+            return Response.fail(400, "未找到店铺信息");
+        }
+        String json;
+        try {
+            json = StoreOpenHelper.normalizeToJson(hours);
+        } catch (IllegalArgumentException e) {
+            return Response.fail(400, e.getMessage());
+        }
+
+        String operator = exist.getCreatedBy();
+        Object usernameAttr = request.getAttribute("username");
+        if (usernameAttr instanceof String && org.springframework.util.StringUtils.hasText((String) usernameAttr)) {
+            operator = (String) usernameAttr;
+        }
+
+        Store patch = new Store();
+        patch.setId(exist.getId());
+        patch.setBusinessHours(json);
+        patch.setUpdateBy(operator);
+        storeMapper.updateStore(patch);
+
+        return Response.success(refreshStore(exist.getId(), exist));
+    }
+
+    private Store findOwnStore(Long userId) {
+        Store query = new Store();
+        query.setUserId(userId);
+        query.setDeleted(0);
+        List list = storeMapper.findStore(query);
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        Store exist = (Store) list.get(0);
+        if (exist == null || exist.getId() == null) {
+            return null;
+        }
+        return exist;
+    }
+
+    private Store refreshStore(Long id, Store fallback) {
+        Store refreshQuery = new Store();
+        refreshQuery.setId(id);
+        refreshQuery.setDeleted(0);
+        List refreshedList = storeMapper.findStore(refreshQuery);
+        Store refreshed = (refreshedList != null && !refreshedList.isEmpty())
+                ? (Store) refreshedList.get(0)
+                : fallback;
+        fillOpenFields(refreshed);
+        return refreshed;
+    }
+
+    private void fillOpenFields(Store store) {
+        if (store == null) {
+            return;
+        }
+        store.setAcceptingOrders(StoreOpenHelper.isAcceptingOrders(store));
+        store.setBusinessHoursText(StoreOpenHelper.formatText(store.getBusinessHours()));
+    }
+
+    private Long resolveCurrentUserId(HttpServletRequest request) {
+        Long userId = null;
+        Object attr = request.getAttribute("userId");
+        if (attr instanceof Long) {
+            userId = (Long) attr;
+        } else if (attr instanceof Number) {
+            userId = ((Number) attr).longValue();
+        } else if (attr instanceof String && !((String) attr).isBlank()) {
+            try {
+                userId = Long.valueOf(((String) attr).trim());
+            } catch (NumberFormatException ignored) {
+                // fall through
+            }
+        }
+        if (userId == null) {
+            userId = jwtUtil.tryGetUserId(request);
+        }
+        return userId;
     }
 
     @Override

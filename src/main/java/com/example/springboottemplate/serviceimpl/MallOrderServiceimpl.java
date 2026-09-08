@@ -24,6 +24,7 @@ import com.example.springboottemplate.service.StoreBlacklistService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -55,9 +56,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 @Transactional
 public class MallOrderServiceimpl implements MallOrderService {
-
-    /** 与小程序约定：2=打烊 */
-    private static final int STORE_STATUS_CLOSED = 2;
 
     @Autowired
     private MallOrderMapper mallOrderMapper;
@@ -161,8 +159,8 @@ public class MallOrderServiceimpl implements MallOrderService {
 
         if (storeId != null) {
             Store store = storeMapper.selectByStoreId(storeId);
-            if (store != null && store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED) {
-                throw new BusinessException("店铺已打烊，请于营业时间下单");
+            if (store != null && !StoreOpenHelper.isAcceptingOrders(store)) {
+                throw new BusinessException(StoreOpenHelper.rejectMessage(store));
             }
             if (storeBlacklistService.isBlacklisted(storeId, userId, user.getPhone(), request.getContact())) {
                 throw new BusinessException("您已被该店铺限制下单");

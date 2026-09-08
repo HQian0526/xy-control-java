@@ -45,8 +45,19 @@ public class Store {
     @ApiModelProperty(value = "商户类型 1永久 2租用", required = true)
     private Integer storeType;
 
-    @ApiModelProperty(value = "商户状态 0正常 1锁定", required = false)
+    @ApiModelProperty(value = "商户状态 1营业中 2打烊", required = false)
     private Integer storeStatus;
+
+    @ApiModelProperty(value = "营业时间JSON", required = false)
+    private String businessHours;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "当前是否可下单（计算字段）", required = false)
+    private Boolean acceptingOrders;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "营业时间展示文案（计算字段）", required = false)
+    private String businessHoursText;
 
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;

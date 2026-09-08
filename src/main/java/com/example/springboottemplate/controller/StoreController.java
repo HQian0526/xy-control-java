@@ -3,6 +3,7 @@ package com.example.springboottemplate.controller;
 import com.example.springboottemplate.annotation.OperLog;
 import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.StoreBusinessHours;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.service.StoreService;
 import io.swagger.annotations.Api;
@@ -45,6 +46,22 @@ public class StoreController {
     @OperLog(module = "商户管理", type = OperTypes.UPDATE)
     public Response updateStore(@RequestBody Store store, HttpServletRequest request){
         return storeService.updateStore(store, request);
+    }
+
+    @PutMapping("/updateStoreProfile")
+    @ResponseBody
+    @ApiOperation(value = "修改商家资料", notes = "仅更新当前登录商家的店铺照片、名称、位置，手机号不可改")
+    @OperLog(module = "商户管理", type = OperTypes.UPDATE)
+    public Response updateStoreProfile(@RequestBody Store store, HttpServletRequest request) {
+        return storeService.updateStoreProfile(store, request);
+    }
+
+    @PutMapping("/updateBusinessHours")
+    @ResponseBody
+    @ApiOperation(value = "设置营业时间", notes = "仅更新当前登录商家的营业时间；rules 为空视为全天可下单")
+    @OperLog(module = "商户管理", type = OperTypes.UPDATE)
+    public Response updateBusinessHours(@RequestBody StoreBusinessHours hours, HttpServletRequest request) {
+        return storeService.updateBusinessHours(hours, request);
     }
 
     //删除商户信息（慎用）
