@@ -23,6 +23,9 @@ public interface UserService {
     // 更新用户信息
     Response updateUser(User user, HttpServletRequest request);
 
+    // 当前登录用户修改自己的资料（昵称/性别/默认收货地址）
+    Response updateProfile(User user, HttpServletRequest request);
+
     // 逻辑删除用户
     Response deleteUser(List<Long> idList);
 

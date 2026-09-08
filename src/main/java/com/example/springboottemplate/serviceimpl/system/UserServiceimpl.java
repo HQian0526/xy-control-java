@@ -183,6 +183,58 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public Response updateProfile(User body, HttpServletRequest request) {
+        Long userId = resolveCurrentUserId(request);
+        if (userId == null) {
+            return Response.fail(401, "无效的登录信息");
+        }
+        if (body == null || !StringUtils.hasText(body.getRealName())) {
+            return Response.fail(400, "昵称不能为空");
+        }
+        String realName = body.getRealName().trim();
+        if (realName.length() > 64) {
+            return Response.fail(400, "昵称不能超过64个字符");
+        }
+
+        User exist = userMapper.selectById(userId);
+        if (exist == null || (exist.getDeleted() != null && exist.getDeleted() == 1)) {
+            return Response.fail(400, "用户不存在");
+        }
+
+        Integer sex = body.getSex();
+        if (sex != null && sex != 0 && sex != 1) {
+            return Response.fail(400, "性别参数不正确");
+        }
+        String address = body.getAddress();
+        if (address != null) {
+            address = address.trim();
+            if (address.length() > 255) {
+                return Response.fail(400, "默认收货地址不能超过255个字符");
+            }
+        }
+
+        String operator = exist.getUserName();
+        Object usernameAttr = request.getAttribute("username");
+        if (usernameAttr instanceof String && StringUtils.hasText((String) usernameAttr)) {
+            operator = (String) usernameAttr;
+        }
+
+        User patch = new User();
+        patch.setId(userId);
+        patch.setRealName(realName);
+        patch.setSex(sex);
+        patch.setAddress(address);
+        patch.setUpdateBy(operator);
+        userMapper.updateUser(patch);
+
+        User refreshed = userMapper.selectById(userId);
+        if (refreshed != null) {
+            refreshed.setPassword(null);
+        }
+        return Response.success(refreshed);
+    }
+
+    @Override
     public Response deleteUser(List<Long> idList) {
         if (ValidateUtil.isEmpty(idList)) {  // 使用工具类
             return new Response(400, null, "操作失败，ID 列表不能为空");

@@ -55,6 +55,15 @@ public class UserController {
         return userService.updateUser(user, request);
     }
 
+    // 小程序：当前用户改自己的资料
+    @PutMapping("/updateProfile")
+    @ResponseBody
+    @ApiOperation(value = "修改个人资料", notes = "仅更新当前登录用户的昵称、性别、默认收货地址")
+    @OperLog(module = "用户管理", type = OperTypes.UPDATE)
+    public Response updateProfile(@RequestBody User user, HttpServletRequest request) {
+        return userService.updateProfile(user, request);
+    }
+
     //删除用户信息
     @DeleteMapping("/deleteUser")
     @ResponseBody
