@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
@@ -141,4 +142,9 @@ public class MallOrder {
     @TableField(exist = false)
     @ApiModelProperty(value = "订单明细")
     private List<MallOrderItem> items;
+
+    @JsonIgnore
+    @TableField(exist = false)
+    @ApiModelProperty(value = "支付状态列表（多状态查询）")
+    private List<Integer> payStatuses;
 }

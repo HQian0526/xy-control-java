@@ -26,12 +26,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 微信支付封装：真实下单 / mock 分流
  */
 @Service
 public class WxPayClientService {
+
+    private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter RFC3339 =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
     @Autowired
     private WxPayProperties wxPayProperties;
@@ -73,6 +80,7 @@ public class WxPayClientService {
         request.setDescription(truncate(description, 127));
         request.setOutTradeNo(orderNo);
         request.setNotifyUrl(wxPayProperties.getNotifyUrl());
+        request.setTimeExpire(buildTimeExpire());
 
         Amount amount = new Amount();
         amount.setTotal(totalFen);
@@ -130,8 +138,15 @@ public class WxPayClientService {
         try {
             return jsapiService.queryOrderByOutTradeNo(request);
         } catch (ServiceException e) {
-            throw new BusinessException("查询微信支付单失败: " + e.getErrorMessage());
+            throw new BusinessException("查询微信支付单失败: " + e.getErrorCode() + " " + e.getErrorMessage());
         }
+    }
+
+    private String buildTimeExpire() {
+        int minutes = wxPayProperties.getUnpaid() == null
+                ? 15
+                : wxPayProperties.getUnpaid().resolvedTimeoutMinutes();
+        return OffsetDateTime.now(SHANGHAI).plusMinutes(minutes).format(RFC3339);
     }
 
     /**

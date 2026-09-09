@@ -14,6 +14,8 @@
         <result property="storeType" column="store_type"/>
         <result property="storeStatus" column="store_status"/>
         <result property="businessHours" column="business_hours"/>
+        <result property="closedUntil" column="closed_until"/>
+        <result property="deliveryFee" column="delivery_fee"/>
         <result property="storeTime" column="store_time"/>
         <result property="identityName" column="identity_name"/>
         <result property="identityCompanyName" column="identity_company_name"/>
@@ -106,6 +108,9 @@
             <if test="storeType != null">store_type = #{storeType},</if>
             <if test="storeStatus != null">store_status = #{storeStatus},</if>
             <if test="businessHours != null">business_hours = #{businessHours},</if>
+            <if test="closedUntil != null">closed_until = #{closedUntil},</if>
+            <if test="closedUntilCleared != null and closedUntilCleared">closed_until = null,</if>
+            <if test="deliveryFee != null">delivery_fee = #{deliveryFee},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>

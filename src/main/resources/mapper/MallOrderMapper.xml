@@ -65,7 +65,13 @@
             <if test="storeId != null">
                 and store_id = #{storeId}
             </if>
-            <if test="payStatus != null">
+            <if test="payStatuses != null and payStatuses.size() &gt; 0">
+                and pay_status in
+                <foreach collection="payStatuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="(payStatuses == null or payStatuses.size() == 0) and payStatus != null">
                 and pay_status = #{payStatus}
             </if>
             <if test="orderNo != null and orderNo != ''">
@@ -105,6 +111,24 @@
         where order_no = #{orderNo}
           and deleted = 0
     </update>
+
+    <update id="markClosed">
+        update mall_order
+        set pay_status = 2,
+            update_time = #{closedTime}
+        where order_no = #{orderNo}
+          and pay_status = 0
+          and deleted = 0
+    </update>
+
+    <select id="selectExpiredUnpaid" resultMap="mallOrderResultMap">
+        select * from mall_order
+        where deleted = 0
+          and pay_status = 0
+          and created_time &lt; #{expireBefore}
+        order by created_time asc, id asc
+        limit #{limit}
+    </select>
 
     <select id="selectPendingWxShipping" resultMap="mallOrderResultMap">
         select * from mall_order
@@ -172,5 +196,114 @@
 
     <select id="selectByOutRefundNo" resultMap="mallOrderResultMap">
         select * from mall_order where out_refund_no = #{outRefundNo} and deleted = 0 limit 1
+    </select>
+
+    <!-- 已支付订单按支付成功时间聚合；退款冲减原支付账期 -->
+    <select id="sumIncomeFlow" resultType="com.example.springboottemplate.dto.mall.MallIncomeFlowRow">
+        select
+            case
+                when #{periodType} = 'year' then date_format(paid_time, '%Y')
+                when #{periodType} = 'quarter' then concat(year(paid_time), '-Q', quarter(paid_time))
+                when #{periodType} = 'month' then date_format(paid_time, '%Y-%m')
+                else date_format(paid_time, '%Y-%m-%d')
+            end as period,
+            count(*) as orderCount,
+            ifnull(sum(pay_amount), 0) as payAmount,
+            ifnull(sum(ifnull(refund_amount, 0)), 0) as refundAmount,
+            ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as netAmount
+        from mall_order
+        where deleted = 0
+          and store_id = #{storeId}
+          and paid_time is not null
+          and paid_time &gt;= #{startTime}
+          and paid_time &lt; #{endTime}
+          and pay_status in (1, 3, 4, 5)
+        group by 1
+        order by 1
+    </select>
+
+    <!-- 一单一收入 + 有退款再记一笔退款；多次部分退款目前只有累计金额和最近退款时间 -->
+    <select id="selectFinanceLedger" resultType="com.example.springboottemplate.dto.mall.MallFinanceRecord">
+        select id, type, title, orderNo, amount, time, status from (
+            select
+                concat(order_no, '-in') as id,
+                'income' as type,
+                '订单收入' as title,
+                order_no as orderNo,
+                pay_amount as amount,
+                date_format(paid_time, '%Y-%m-%d %H:%i:%s') as time,
+                '已到账' as status
+            from mall_order
+            where deleted = 0
+              and store_id = #{storeId}
+              and paid_time is not null
+              and pay_status in (1, 3, 4, 5)
+              <if test="startTime != null">
+                  and paid_time &gt;= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  and paid_time &lt; #{endTime}
+              </if>
+            union all
+            select
+                concat(order_no, '-out') as id,
+                'expense' as type,
+                '订单退款' as title,
+                order_no as orderNo,
+                refund_amount as amount,
+                date_format(ifnull(refund_time, update_time), '%Y-%m-%d %H:%i:%s') as time,
+                case
+                    when pay_status = 5 then '已全额退款'
+                    when pay_status = 4 then '部分退款'
+                    else '已退款'
+                end as status
+            from mall_order
+            where deleted = 0
+              and store_id = #{storeId}
+              and ifnull(refund_amount, 0) &gt; 0
+              <if test="startTime != null">
+                  and ifnull(refund_time, update_time) &gt;= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  and ifnull(refund_time, update_time) &lt; #{endTime}
+              </if>
+        ) t
+        <where>
+            <if test="type != null and type != '' and type != 'all'">
+                and t.type = #{type}
+            </if>
+        </where>
+        order by t.time desc, t.orderNo desc
+    </select>
+
+    <select id="sumFinanceLedger" resultType="com.example.springboottemplate.dto.mall.MallFinanceSummary">
+        select
+            ifnull((
+                select sum(pay_amount)
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status in (1, 3, 4, 5)
+                  <if test="startTime != null">
+                      and paid_time &gt;= #{startTime}
+                  </if>
+                  <if test="endTime != null">
+                      and paid_time &lt; #{endTime}
+                  </if>
+            ), 0) as income,
+            ifnull((
+                select sum(refund_amount)
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and ifnull(refund_amount, 0) &gt; 0
+                  <if test="startTime != null">
+                      and ifnull(refund_time, update_time) &gt;= #{startTime}
+                  </if>
+                  <if test="endTime != null">
+                      and ifnull(refund_time, update_time) &lt; #{endTime}
+                  </if>
+            ), 0) as expense
     </select>
 </mapper>

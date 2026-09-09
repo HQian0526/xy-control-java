@@ -52,18 +52,33 @@ public class CatagoryServiceimpl implements CatagoryService {
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
         Long userId = jwtUtil.getUserId(claims);
-        // 3. 校验当前用户是否绑定商户
-        Store query = new Store();
-        query.setUserId(userId == null ? null : userId);
-        query.setDeleted(0);
-        List<Store> storeList = storeMapper.findStore(query);
-        if (ValidateUtil.isEmpty(storeList)) {
-            throw new BusinessException("您不是商户类型的用户，暂时无法上架商品/商品分类");
-        }
-        // 4. 自动绑定商户storeId
-        Store store = storeList.get(0);
-        if (store.getStoreId() != null) {
-            catagory.setStoreId(String.valueOf(store.getStoreId()));
+        User operator = userId == null ? null : userMapper.selectById(userId);
+        Integer identityType = operator == null ? null : operator.getIdentityType();
+        // 3. 管理员按请求店铺写入；商户自动绑定本店
+        if (identityType != null && identityType == 3) {
+            if (catagory.getStoreId() == null || catagory.getStoreId().isEmpty()) {
+                throw new BusinessException("请选择店铺");
+            }
+            try {
+                Store target = storeMapper.selectByStoreId(Long.parseLong(catagory.getStoreId()));
+                if (target == null) {
+                    throw new BusinessException("店铺不存在");
+                }
+            } catch (NumberFormatException e) {
+                throw new BusinessException("店铺不存在");
+            }
+        } else {
+            Store query = new Store();
+            query.setUserId(userId == null ? null : userId);
+            query.setDeleted(0);
+            List<Store> storeList = storeMapper.findStore(query);
+            if (ValidateUtil.isEmpty(storeList)) {
+                throw new BusinessException("您不是商户类型的用户，暂时无法上架商品/商品分类");
+            }
+            Store store = storeList.get(0);
+            if (store.getStoreId() != null) {
+                catagory.setStoreId(String.valueOf(store.getStoreId()));
+            }
         }
         // 5. 雪花算法自动生成分类id，排序号默认1
         catagory.setCatagoryId(IdWorker.getId());

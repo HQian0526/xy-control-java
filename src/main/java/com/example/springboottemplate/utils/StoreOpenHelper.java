@@ -5,12 +5,14 @@ import com.example.springboottemplate.dto.StoreBusinessHoursRule;
 import com.example.springboottemplate.entity.Store;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,14 +20,20 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * 店铺是否可下单：手动打烊优先；未配置营业时间视为全天可下单；时间段不跨天。
+ * 店铺是否可下单：临时/长期打烊优先；未配置营业时间视为全天可下单；时间段不跨天。
+ * 无定时任务，每次查询/下单按上海时区即时计算。
  */
 public final class StoreOpenHelper {
+    public static final int STORE_STATUS_OPEN = 1;
     public static final int STORE_STATUS_CLOSED = 2;
     public static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
+    public static final String OPEN_STATUS_OPEN = "open";
+    public static final String OPEN_STATUS_REST = "rest";
+    public static final String OPEN_STATUS_CLOSED = "closed";
 
     private static final Pattern HH_MM = Pattern.compile("^([01]\\d|2[0-3]):[0-5]\\d$");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter MOMENT_FMT = DateTimeFormatter.ofPattern("M月d日 HH:mm");
     private static final String[] WEEKDAY_LABELS = {
             "", "周一", "周二", "周三", "周四", "周五", "周六", "周日"
     };
@@ -41,11 +49,30 @@ public final class StoreOpenHelper {
         if (store == null) {
             return true;
         }
-        if (store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED) {
+        if (isManuallyClosed(store, now)) {
             return false;
         }
-        StoreBusinessHours hours = parse(store.getBusinessHours());
-        List<StoreBusinessHoursRule> rules = validRules(hours);
+        return isWithinHours(store.getBusinessHours(), now);
+    }
+
+    /**
+     * 临时打烊：closed_until 未到期。
+     * 长期打烊：closed_until 为空且 store_status=2（含旧数据）。
+     * closed_until 已过期时忽略 store_status=2，改走营业时间。
+     */
+    public static boolean isManuallyClosed(Store store, ZonedDateTime now) {
+        if (store == null) {
+            return false;
+        }
+        ZonedDateTime until = toShanghai(store.getClosedUntil());
+        if (until != null) {
+            return now.isBefore(until);
+        }
+        return store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED;
+    }
+
+    public static boolean isWithinHours(String businessHoursJson, ZonedDateTime now) {
+        List<StoreBusinessHoursRule> rules = validRules(parse(businessHoursJson));
         if (rules.isEmpty()) {
             return true;
         }
@@ -64,15 +91,108 @@ public final class StoreOpenHelper {
         return false;
     }
 
+    public static String openStatus(Store store, ZonedDateTime now) {
+        if (isManuallyClosed(store, now)) {
+            return OPEN_STATUS_CLOSED;
+        }
+        return isWithinHours(store == null ? null : store.getBusinessHours(), now)
+                ? OPEN_STATUS_OPEN
+                : OPEN_STATUS_REST;
+    }
+
+    public static ZonedDateTime nextOpenTime(String businessHoursJson, ZonedDateTime now) {
+        return nextBoundary(businessHoursJson, now, true);
+    }
+
+    public static ZonedDateTime nextCloseTime(String businessHoursJson, ZonedDateTime now) {
+        return nextBoundary(businessHoursJson, now, false);
+    }
+
+    public static Date toDate(ZonedDateTime time) {
+        return time == null ? null : Date.from(time.toInstant());
+    }
+
+    public static ZonedDateTime toShanghai(Date date) {
+        return date == null ? null : date.toInstant().atZone(SHANGHAI);
+    }
+
+    public static String formatMoment(ZonedDateTime time, ZonedDateTime now) {
+        if (time == null) {
+            return "";
+        }
+        if (now != null && time.toLocalDate().equals(now.toLocalDate())) {
+            return time.format(TIME_FMT);
+        }
+        return time.format(MOMENT_FMT);
+    }
+
+    public static String closedUntilText(Store store, ZonedDateTime now) {
+        if (!isManuallyClosed(store, now)) {
+            return "";
+        }
+        return formatMoment(toShanghai(store.getClosedUntil()), now);
+    }
+
+    public static String statusHint(Store store, ZonedDateTime now) {
+        if (isManuallyClosed(store, now)) {
+            String until = closedUntilText(store, now);
+            if (StringUtils.hasText(until)) {
+                return "已打烊，将于 " + until + " 自动开始营业";
+            }
+            return "已打烊，未设置营业时间将一直保持，直到点击开始营业";
+        }
+        String hoursJson = store == null ? null : store.getBusinessHours();
+        if (!isWithinHours(hoursJson, now)) {
+            String nextOpen = formatMoment(nextOpenTime(hoursJson, now), now);
+            if (StringUtils.hasText(nextOpen)) {
+                return "当前不在营业时间内，将于 " + nextOpen + " 开始营业";
+            }
+            return "当前不在营业时间内，用户暂时无法下单";
+        }
+        String nextClose = formatMoment(nextCloseTime(hoursJson, now), now);
+        if (StringUtils.hasText(nextClose)) {
+            return "营业中，将于 " + nextClose + " 自动休息";
+        }
+        return "营业中，用户可正常下单";
+    }
+
     public static String rejectMessage(Store store) {
-        if (store != null && store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED) {
-            return "店铺已打烊，请于营业时间下单";
+        ZonedDateTime now = ZonedDateTime.now(SHANGHAI);
+        if (isManuallyClosed(store, now)) {
+            String until = closedUntilText(store, now);
+            if (StringUtils.hasText(until)) {
+                return "店铺已打烊，将于 " + until + " 开始营业";
+            }
+            return "店铺已打烊";
         }
         String text = formatText(store == null ? null : store.getBusinessHours());
         if (StringUtils.hasText(text)) {
             return "当前不在营业时间内（" + text + "）";
         }
         return "当前不在营业时间内";
+    }
+
+    private static ZonedDateTime nextBoundary(String businessHoursJson, ZonedDateTime now, boolean open) {
+        List<StoreBusinessHoursRule> rules = validRules(parse(businessHoursJson));
+        if (rules.isEmpty() || now == null) {
+            return null;
+        }
+        ZonedDateTime best = null;
+        for (int offset = 0; offset <= 7; offset++) {
+            LocalDate date = now.toLocalDate().plusDays(offset);
+            int day = date.getDayOfWeek().getValue();
+            for (StoreBusinessHoursRule rule : rules) {
+                if (!rule.getDays().contains(day)) {
+                    continue;
+                }
+                LocalTime clock = LocalTime.parse(open ? rule.getStart() : rule.getEnd(), TIME_FMT);
+                ZonedDateTime candidate = ZonedDateTime.of(date, clock, SHANGHAI);
+                if (candidate.isAfter(now) && (best == null || candidate.isBefore(best))) {
+                    best = candidate;
+                }
+            }
+        }
+        return best;
     }
 
     public static String formatText(String json) {

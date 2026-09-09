@@ -36,6 +36,28 @@ public class WxPayProperties {
     private BigDecimal deliveryFee = BigDecimal.ZERO;
     /** 支付成功后向微信发货信息管理报发货 */
     private Shipping shipping = new Shipping();
+    /** 待支付超时关单 */
+    private Unpaid unpaid = new Unpaid();
+
+    @Data
+    public static class Unpaid {
+        /** 未支付超时分钟数，同时写入微信 time_expire */
+        private int timeoutMinutes = 15;
+        /** 是否启用定时扫尾 */
+        private boolean scanEnabled = true;
+        /** 定时扫描间隔（毫秒），上一轮结束后再等该时间 */
+        private long scanIntervalMs = 120000L;
+        /** 每次扫描最多处理多少笔 */
+        private int scanBatchSize = 50;
+
+        public int resolvedTimeoutMinutes() {
+            return Math.max(2, Math.min(timeoutMinutes, 7 * 24 * 60));
+        }
+
+        public int resolvedScanBatchSize() {
+            return Math.max(1, scanBatchSize);
+        }
+    }
 
     @Data
     public static class Shipping {

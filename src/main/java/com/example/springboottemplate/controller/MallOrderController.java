@@ -16,6 +16,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -56,14 +58,16 @@ public class MallOrderController {
 
     @GetMapping("/findMallOrder")
     @ResponseBody
-    @ApiOperation(value = "商城订单列表", notes = "普通用户查本人；商户查本店；管理员可查全部并按 storeId/payStatus 过滤")
+    @ApiOperation(value = "商城订单列表", notes = "普通用户查本人；商户查本店；管理员可查全部并按 storeId/payStatus 过滤。payStatuses 逗号分隔，如 1,3,4,5")
     public Response findMallOrder(@RequestParam(required = false) Integer payStatus,
+                                  @RequestParam(required = false) String payStatuses,
                                   @RequestParam(required = false) Long storeId,
                                   @RequestParam(required = false) Integer pageNum,
                                   @RequestParam(required = false) Integer pageSize,
                                   HttpServletRequest httpRequest) {
         try {
-            return mallOrderService.findMallOrder(payStatus, storeId, pageNum, pageSize, httpRequest);
+            return mallOrderService.findMallOrder(payStatus, parsePayStatuses(payStatuses),
+                    storeId, pageNum, pageSize, httpRequest);
         } catch (BusinessException e) {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {
@@ -128,5 +132,64 @@ public class MallOrderController {
         } catch (Exception e) {
             return "{\"code\":\"FAIL\",\"message\":\"refund notify error\"}";
         }
+    }
+
+    @GetMapping("/incomeFlow")
+    @ResponseBody
+    @ApiOperation(value = "店铺订单金额流水", notes = "按年/季/月/日聚合已支付订单；商家查本店，管理员须传 storeId")
+    public Response incomeFlow(@RequestParam(required = false) Long storeId,
+                               @RequestParam(required = false, defaultValue = "month") String periodType,
+                               @RequestParam(required = false) Integer year,
+                               @RequestParam(required = false) Integer yearFrom,
+                               @RequestParam(required = false) Integer yearTo,
+                               @RequestParam(required = false) Integer month,
+                               HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.incomeFlow(storeId, periodType, year, yearFrom, yearTo, month, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/financeLedger")
+    @ResponseBody
+    @ApiOperation(value = "店铺资金明细", notes = "每笔已支付订单记收入，有退款再记一笔退款；商家查本店，管理员须传 storeId")
+    public Response financeLedger(@RequestParam(required = false) Long storeId,
+                                  @RequestParam(required = false, defaultValue = "all") String type,
+                                  @RequestParam(required = false) String date,
+                                  @RequestParam(required = false) Integer pageNum,
+                                  @RequestParam(required = false) Integer pageSize,
+                                  HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.financeLedger(storeId, type, date, pageNum, pageSize, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    private List<Integer> parsePayStatuses(String payStatuses) {
+        if (payStatuses == null || payStatuses.isBlank()) {
+            return null;
+        }
+        List<Integer> list = new ArrayList<>();
+        for (String part : payStatuses.split(",")) {
+            if (part == null) {
+                continue;
+            }
+            String value = part.trim();
+            if (value.isEmpty()) {
+                continue;
+            }
+            try {
+                list.add(Integer.parseInt(value));
+            } catch (NumberFormatException ignored) {
+                // skip invalid token
+            }
+        }
+        return list.isEmpty() ? null : list;
     }
 }

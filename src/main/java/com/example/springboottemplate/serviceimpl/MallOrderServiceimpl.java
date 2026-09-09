@@ -6,6 +6,10 @@ import com.example.springboottemplate.config.WxPayProperties;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallCheckoutItemRequest;
 import com.example.springboottemplate.dto.mall.MallCheckoutRequest;
+import com.example.springboottemplate.dto.mall.MallFinanceRecord;
+import com.example.springboottemplate.dto.mall.MallFinanceSummary;
+import com.example.springboottemplate.dto.mall.MallIncomeFlowRow;
+import com.example.springboottemplate.dto.mall.MallIncomeFlowVO;
 import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
 import com.example.springboottemplate.dto.mall.MallRefundRequest;
 import com.example.springboottemplate.entity.MallOrder;
@@ -21,6 +25,7 @@ import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.MallOrderService;
 import com.example.springboottemplate.service.StoreBlacklistService;
+import com.example.springboottemplate.service.wx.MallOrderTimeoutService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -35,6 +40,7 @@ import com.wechat.pay.java.service.refund.model.Status;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -43,12 +49,16 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -77,6 +87,9 @@ public class MallOrderServiceimpl implements MallOrderService {
     private WxShippingService wxShippingService;
     @Autowired
     private StoreBlacklistService storeBlacklistService;
+    @Autowired
+    @Lazy
+    private MallOrderTimeoutService mallOrderTimeoutService;
 
     @Override
     public Response checkoutAndPay(MallCheckoutRequest request, HttpServletRequest httpRequest) {
@@ -157,8 +170,9 @@ public class MallOrderServiceimpl implements MallOrderService {
                     .build());
         }
 
+        Store store = null;
         if (storeId != null) {
-            Store store = storeMapper.selectByStoreId(storeId);
+            store = storeMapper.selectByStoreId(storeId);
             if (store != null && !StoreOpenHelper.isAcceptingOrders(store)) {
                 throw new BusinessException(StoreOpenHelper.rejectMessage(store));
             }
@@ -167,9 +181,7 @@ public class MallOrderServiceimpl implements MallOrderService {
             }
         }
 
-        BigDecimal deliveryFee = wxPayProperties.getDeliveryFee() == null
-                ? BigDecimal.ZERO
-                : wxPayProperties.getDeliveryFee().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal deliveryFee = resolveStoreDeliveryFee(store);
         BigDecimal payAmount = goodsAmount.add(deliveryFee).setScale(2, RoundingMode.HALF_UP);
         int payAmountFen = payAmount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact();
         if (payAmountFen <= 0) {
@@ -225,13 +237,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Override
     public Response queryOrder(String orderNo, HttpServletRequest httpRequest) {
         MallOrder order = requireOwnedOrder(orderNo, httpRequest);
-        // 待支付时尝试向微信查单，补齐回调延迟
-        if (order.getPayStatus() != null && order.getPayStatus() == 0 && !wxPayClientService.isMock()) {
-            Transaction tx = wxPayClientService.queryByOutTradeNo(orderNo);
-            if (tx != null && tx.getTradeState() == Transaction.TradeStateEnum.SUCCESS) {
-                markOrderPaid(orderNo, tx.getTransactionId(), new Date());
-                order = mallOrderMapper.selectByOrderNo(orderNo);
-            }
+        if (order.getPayStatus() != null && order.getPayStatus() == 0) {
+            order = mallOrderTimeoutService.reconcileUnpaid(order, true);
         }
         order.setItems(mallOrderItemMapper.selectByOrderId(order.getId()));
         if (order.getStoreId() != null) {
@@ -245,8 +252,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     }
 
     @Override
-    public Response findMallOrder(Integer payStatus, Long storeId, Integer pageNum, Integer pageSize,
-                                  HttpServletRequest httpRequest) {
+    public Response findMallOrder(Integer payStatus, List<Integer> payStatuses, Long storeId,
+                                  Integer pageNum, Integer pageSize, HttpServletRequest httpRequest) {
         Claims claims = parseClaims(httpRequest);
         Long userId = jwtUtil.getUserId(claims);
         if (userId == null) {
@@ -256,7 +263,9 @@ public class MallOrderServiceimpl implements MallOrderService {
         Integer identityType = user == null ? null : user.getIdentityType();
 
         MallOrder query = new MallOrder();
-        if (payStatus != null) {
+        if (payStatuses != null && !payStatuses.isEmpty()) {
+            query.setPayStatuses(payStatuses);
+        } else if (payStatus != null) {
             query.setPayStatus(payStatus);
         }
 
@@ -284,6 +293,22 @@ public class MallOrderServiceimpl implements MallOrderService {
             PageHelper.startPage(pageNum, pageSize);
         }
         List<MallOrder> list = mallOrderMapper.findMallOrder(query);
+        int closed = 0;
+        for (int i = 0; i < list.size(); i++) {
+            MallOrder item = list.get(i);
+            if (item.getPayStatus() != null && item.getPayStatus() == 0
+                    && mallOrderTimeoutService.isExpired(item)) {
+                MallOrder synced = mallOrderTimeoutService.reconcileUnpaid(item, false);
+                list.set(i, synced);
+                if (synced == null || synced.getPayStatus() == null || synced.getPayStatus() != 0) {
+                    closed++;
+                }
+            }
+        }
+        boolean onlyUnpaid = (payStatuses == null || payStatuses.isEmpty()) && payStatus != null && payStatus == 0;
+        if (onlyUnpaid && closed > 0) {
+            list.removeIf(item -> item == null || item.getPayStatus() == null || item.getPayStatus() != 0);
+        }
         list.forEach(item -> {
             item.setItems(mallOrderItemMapper.selectByOrderId(item.getId()));
             if (item.getStoreId() != null) {
@@ -291,14 +316,318 @@ public class MallOrderServiceimpl implements MallOrderService {
                 item.setStoreName(store != null ? store.getStoreName() : null);
             }
         });
-        return buildListResponse(list, pageNum, pageSize);
+        return buildListResponse(list, pageNum, pageSize, (pageNum != null && pageSize != null) ? closed : 0);
+    }
+
+    @Override
+    public Response incomeFlow(Long storeId, String periodType, Integer year, Integer yearFrom, Integer yearTo,
+                               Integer month, HttpServletRequest httpRequest) {
+        Store store = requireMerchantOrAdminStore(storeId, httpRequest);
+
+        String dim = normalizePeriodType(periodType);
+        LocalDate today = LocalDate.now(SHANGHAI);
+        int currentYear = today.getYear();
+        PeriodRange range = resolvePeriodRange(dim, year, yearFrom, yearTo, month, currentYear, today.getMonthValue());
+
+        List<MallIncomeFlowRow> raw = mallOrderMapper.sumIncomeFlow(
+                store.getStoreId(), dim, toDate(range.start), toDate(range.endExclusive));
+        Map<String, MallIncomeFlowRow> byPeriod = new LinkedHashMap<>();
+        if (raw != null) {
+            for (MallIncomeFlowRow row : raw) {
+                if (row == null || !StringUtils.hasText(row.getPeriod())) {
+                    continue;
+                }
+                byPeriod.put(row.getPeriod(), moneyRow(row));
+            }
+        }
+
+        List<String> periods = buildPeriods(dim, range);
+        List<MallIncomeFlowRow> list = new ArrayList<>();
+        int totalCount = 0;
+        BigDecimal totalPay = BigDecimal.ZERO;
+        BigDecimal totalRefund = BigDecimal.ZERO;
+        BigDecimal totalNet = BigDecimal.ZERO;
+        for (String period : periods) {
+            MallIncomeFlowRow row = byPeriod.get(period);
+            if (row == null) {
+                row = emptyRow(period);
+            }
+            row.setPeriodLabel(formatPeriodLabel(dim, period));
+            list.add(row);
+            totalCount += row.getOrderCount() == null ? 0 : row.getOrderCount();
+            totalPay = totalPay.add(row.getPayAmount());
+            totalRefund = totalRefund.add(row.getRefundAmount());
+            totalNet = totalNet.add(row.getNetAmount());
+        }
+
+        MallIncomeFlowRow summary = new MallIncomeFlowRow();
+        summary.setPeriod("summary");
+        summary.setPeriodLabel("合计");
+        summary.setOrderCount(totalCount);
+        summary.setPayAmount(money(totalPay));
+        summary.setRefundAmount(money(totalRefund));
+        summary.setNetAmount(money(totalNet));
+
+        MallIncomeFlowVO vo = new MallIncomeFlowVO();
+        vo.setStoreId(store.getStoreId());
+        vo.setStoreName(store.getStoreName());
+        vo.setPeriodType(dim);
+        vo.setSummary(summary);
+        vo.setList(list);
+        return Response.success(vo);
+    }
+
+    @Override
+    public Response financeLedger(Long storeId, String type, String date, Integer pageNum, Integer pageSize,
+                                  HttpServletRequest httpRequest) {
+        Store store = requireMerchantOrAdminStore(storeId, httpRequest);
+        String filterType = "expense".equalsIgnoreCase(type) || "income".equalsIgnoreCase(type)
+                ? type.trim().toLowerCase()
+                : "all";
+        Date startTime = null;
+        Date endTime = null;
+        if (StringUtils.hasText(date)) {
+            LocalDate day;
+            try {
+                String text = date.trim();
+                if (text.length() >= 10) {
+                    text = text.substring(0, 10);
+                }
+                day = LocalDate.parse(text);
+            } catch (Exception e) {
+                throw new BusinessException("日期格式不正确");
+            }
+            startTime = toDate(day);
+            endTime = toDate(day.plusDays(1));
+        }
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
+        List<MallFinanceRecord> list = mallOrderMapper.selectFinanceLedger(
+                store.getStoreId(), filterType, startTime, endTime);
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        for (MallFinanceRecord row : list) {
+            row.setStoreName(store.getStoreName());
+        }
+        MallFinanceSummary summary = mallOrderMapper.sumFinanceLedger(store.getStoreId(), startTime, endTime);
+        if (summary == null) {
+            summary = new MallFinanceSummary();
+        }
+        summary.setIncome(money(summary.getIncome()));
+        summary.setExpense(money(summary.getExpense()));
+
+        PageInfo<MallFinanceRecord> pageInfo = new PageInfo<>(list);
+        Map<String, Object> data = new HashMap<>();
+        data.put("storeId", String.valueOf(store.getStoreId()));
+        data.put("storeName", store.getStoreName());
+        data.put("summary", summary);
+        data.put("list", pageInfo.getList());
+        data.put("total", pageInfo.getTotal());
+        data.put("pages", pageInfo.getPages());
+        data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
+        data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getSize());
+        return Response.success(data);
+    }
+
+    private Store requireMerchantOrAdminStore(Long storeId, HttpServletRequest httpRequest) {
+        Claims claims = parseClaims(httpRequest);
+        Long userId = jwtUtil.getUserId(claims);
+        if (userId == null) {
+            throw new BusinessException("登录状态无效");
+        }
+        User user = userMapper.selectById(userId);
+        Integer identityType = user == null ? null : user.getIdentityType();
+        if (identityType != null && identityType == 2) {
+            Store store = findOwnStore(userId);
+            if (store == null || store.getStoreId() == null) {
+                throw new BusinessException("未找到店铺信息");
+            }
+            return store;
+        }
+        if (identityType != null && identityType == 3) {
+            if (storeId == null) {
+                throw new BusinessException("请选择店铺");
+            }
+            Store store = storeMapper.selectByStoreId(storeId);
+            if (store == null || (store.getDeleted() != null && store.getDeleted() == 1)) {
+                throw new BusinessException("未找到店铺信息");
+            }
+            return store;
+        }
+        throw new BusinessException("仅商家或管理员可查询流水");
+    }
+
+    private Store findOwnStore(Long userId) {
+        Store storeQuery = new Store();
+        storeQuery.setUserId(userId);
+        storeQuery.setDeleted(0);
+        List<Store> storeList = storeMapper.findStore(storeQuery);
+        if (ValidateUtil.isEmpty(storeList)) {
+            return null;
+        }
+        return storeList.get(0);
+    }
+
+    private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
+    private static final String[] QUARTER_LABELS = {"", "第一季度", "第二季度", "第三季度", "第四季度"};
+
+    private static String normalizePeriodType(String periodType) {
+        if (!StringUtils.hasText(periodType)) {
+            return "month";
+        }
+        String dim = periodType.trim().toLowerCase();
+        if ("year".equals(dim) || "quarter".equals(dim) || "month".equals(dim) || "day".equals(dim)) {
+            return dim;
+        }
+        throw new BusinessException("统计维度不正确");
+    }
+
+    private static PeriodRange resolvePeriodRange(String dim, Integer year, Integer yearFrom, Integer yearTo,
+                                                  Integer month, int currentYear, int currentMonth) {
+        PeriodRange range = new PeriodRange();
+        if ("year".equals(dim)) {
+            int from = yearFrom != null ? yearFrom : (year != null ? year : currentYear);
+            int to = yearTo != null ? yearTo : from;
+            if (from > to) {
+                int tmp = from;
+                from = to;
+                to = tmp;
+            }
+            if (from < 2000 || to > 2100 || to - from > 20) {
+                throw new BusinessException("年份范围不正确");
+            }
+            range.yearFrom = from;
+            range.yearTo = to;
+            range.start = LocalDate.of(from, 1, 1);
+            range.endExclusive = LocalDate.of(to + 1, 1, 1);
+            return range;
+        }
+        int y = year != null ? year : currentYear;
+        if (y < 2000 || y > 2100) {
+            throw new BusinessException("年份不正确");
+        }
+        range.yearFrom = y;
+        range.yearTo = y;
+        if ("day".equals(dim)) {
+            int m = month != null ? month : currentMonth;
+            if (m < 1 || m > 12) {
+                throw new BusinessException("月份不正确");
+            }
+            range.month = m;
+            range.start = LocalDate.of(y, m, 1);
+            range.endExclusive = range.start.plusMonths(1);
+            return range;
+        }
+        range.start = LocalDate.of(y, 1, 1);
+        range.endExclusive = LocalDate.of(y + 1, 1, 1);
+        return range;
+    }
+
+    private static List<String> buildPeriods(String dim, PeriodRange range) {
+        List<String> periods = new ArrayList<>();
+        if ("year".equals(dim)) {
+            for (int y = range.yearFrom; y <= range.yearTo; y++) {
+                periods.add(String.valueOf(y));
+            }
+            return periods;
+        }
+        if ("quarter".equals(dim)) {
+            for (int q = 1; q <= 4; q++) {
+                periods.add(range.yearFrom + "-Q" + q);
+            }
+            return periods;
+        }
+        if ("month".equals(dim)) {
+            for (int m = 1; m <= 12; m++) {
+                periods.add(String.format("%d-%02d", range.yearFrom, m));
+            }
+            return periods;
+        }
+        YearMonth ym = YearMonth.of(range.yearFrom, range.month);
+        for (int d = 1; d <= ym.lengthOfMonth(); d++) {
+            periods.add(String.format("%d-%02d-%02d", range.yearFrom, range.month, d));
+        }
+        return periods;
+    }
+
+    private static String formatPeriodLabel(String dim, String period) {
+        if ("year".equals(dim)) {
+            return period + "年";
+        }
+        if ("quarter".equals(dim)) {
+            int qIndex = period.lastIndexOf("-Q");
+            int q = 0;
+            try {
+                q = Integer.parseInt(period.substring(qIndex + 2));
+            } catch (Exception ignored) {
+                // fall through
+            }
+            String year = qIndex > 0 ? period.substring(0, qIndex) : period;
+            String qLabel = q >= 1 && q <= 4 ? QUARTER_LABELS[q] : period;
+            return year + "年" + qLabel;
+        }
+        if ("month".equals(dim) && period.length() >= 7) {
+            return period.substring(0, 4) + "年" + Integer.parseInt(period.substring(5, 7)) + "月";
+        }
+        if (period.length() >= 10) {
+            return period.substring(0, 4) + "年"
+                    + Integer.parseInt(period.substring(5, 7)) + "月"
+                    + Integer.parseInt(period.substring(8, 10)) + "日";
+        }
+        return period;
+    }
+
+    private static MallIncomeFlowRow emptyRow(String period) {
+        MallIncomeFlowRow row = new MallIncomeFlowRow();
+        row.setPeriod(period);
+        row.setOrderCount(0);
+        row.setPayAmount(money(BigDecimal.ZERO));
+        row.setRefundAmount(money(BigDecimal.ZERO));
+        row.setNetAmount(money(BigDecimal.ZERO));
+        return row;
+    }
+
+    private static MallIncomeFlowRow moneyRow(MallIncomeFlowRow row) {
+        if (row.getOrderCount() == null) {
+            row.setOrderCount(0);
+        }
+        row.setPayAmount(money(row.getPayAmount()));
+        row.setRefundAmount(money(row.getRefundAmount()));
+        row.setNetAmount(money(row.getNetAmount()));
+        return row;
+    }
+
+    private static BigDecimal money(BigDecimal value) {
+        return (value == null ? BigDecimal.ZERO : value).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static Date toDate(LocalDate date) {
+        return Date.from(date.atStartOfDay(SHANGHAI).toInstant());
+    }
+
+    private static class PeriodRange {
+        int yearFrom;
+        int yearTo;
+        int month;
+        LocalDate start;
+        LocalDate endExclusive;
     }
 
     private Response buildListResponse(List<MallOrder> list, Integer pageNum, Integer pageSize) {
+        return buildListResponse(list, pageNum, pageSize, 0);
+    }
+
+    private Response buildListResponse(List<MallOrder> list, Integer pageNum, Integer pageSize, int closedOnPage) {
         PageInfo<MallOrder> pageInfo = new PageInfo<>(list);
         Map<String, Object> data = new HashMap<>();
         data.put("list", pageInfo.getList());
-        data.put("total", pageInfo.getTotal());
+        long total = pageInfo.getTotal();
+        if (closedOnPage > 0) {
+            total = Math.max(0, total - closedOnPage);
+        }
+        data.put("total", total);
         data.put("pages", pageInfo.getPages());
         data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
         data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getTotal());
@@ -551,6 +880,19 @@ public class MallOrderServiceimpl implements MallOrderService {
         throw new BusinessException("仅本店商家或管理员可发起退款");
     }
 
+    @Override
+    public void applyPaidIfUnpaid(String orderNo, String transactionId) {
+        markOrderPaid(orderNo, transactionId, new Date());
+    }
+
+    @Override
+    public void closeIfUnpaid(String orderNo) {
+        if (!StringUtils.hasText(orderNo)) {
+            return;
+        }
+        mallOrderMapper.markClosed(orderNo.trim(), new Date());
+    }
+
     private void markOrderPaid(String orderNo, String transactionId, Date paidTime) {
         MallOrder order = mallOrderMapper.selectByOrderNo(orderNo);
         if (order == null) {
@@ -641,6 +983,17 @@ public class MallOrderServiceimpl implements MallOrderService {
             throw new BusinessException("未登录");
         }
         return jwtUtil.parseToken(auth.substring(7));
+    }
+
+    private BigDecimal resolveStoreDeliveryFee(Store store) {
+        BigDecimal fee = store != null ? store.getDeliveryFee() : null;
+        if (fee == null && wxPayProperties.getDeliveryFee() != null) {
+            fee = wxPayProperties.getDeliveryFee();
+        }
+        if (fee == null || fee.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return fee.setScale(2, RoundingMode.HALF_UP);
     }
 
     private Long parseStoreId(String storeId) {

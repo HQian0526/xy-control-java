@@ -20,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -90,14 +93,26 @@ public class StoreServiceimpl implements StoreService {
 
     @Override
     public Response updateStore(Store store, HttpServletRequest request) {
-        // 1. 从请求头中获取JWT令牌
+        if (store == null || store.getId() == null) {
+            return Response.fail(400, "缺少店铺ID");
+        }
         String token = request.getHeader("Authorization").substring(7);
-        // 2. 解析令牌获取用户名
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
+        Store exist = findById(store.getId());
+        if (store.getDeliveryFee() != null) {
+            if (store.getDeliveryFee().compareTo(BigDecimal.ZERO) < 0) {
+                return Response.fail(400, "配送费不能小于0");
+            }
+            store.setDeliveryFee(store.getDeliveryFee().setScale(2, RoundingMode.HALF_UP));
+        }
+        String hoursJson = store.getBusinessHours() != null
+                ? store.getBusinessHours()
+                : (exist == null ? null : exist.getBusinessHours());
+        applyStatusChangeIfNeeded(store, exist, hoursJson);
         store.setUpdateBy(username);
         storeMapper.updateStore(store);
-        return new Response(200, null, "操作成功");
+        return Response.success(refreshStore(store.getId(), exist != null ? exist : store));
     }
 
     @Override
@@ -164,10 +179,26 @@ public class StoreServiceimpl implements StoreService {
         if (userId == null) {
             return Response.fail(401, "无效的登录信息");
         }
-        Store exist = findOwnStore(userId);
-        if (exist == null) {
-            return Response.fail(400, "未找到店铺信息");
+        User current = userMapper.selectById(userId);
+        Integer identityType = current == null ? null : current.getIdentityType();
+
+        Store exist;
+        if (identityType != null && identityType == 3) {
+            Long targetStoreId = hours == null ? null : hours.getStoreId();
+            if (targetStoreId == null) {
+                return Response.fail(400, "请选择店铺");
+            }
+            exist = storeMapper.selectByStoreId(targetStoreId);
+            if (exist == null || (exist.getDeleted() != null && exist.getDeleted() == 1)) {
+                return Response.fail(400, "未找到店铺信息");
+            }
+        } else {
+            exist = findOwnStore(userId);
+            if (exist == null) {
+                return Response.fail(400, "未找到店铺信息");
+            }
         }
+
         String json;
         try {
             json = StoreOpenHelper.normalizeToJson(hours);
@@ -185,9 +216,63 @@ public class StoreServiceimpl implements StoreService {
         patch.setId(exist.getId());
         patch.setBusinessHours(json);
         patch.setUpdateBy(operator);
+        exist.setBusinessHours(json);
+        if (StoreOpenHelper.isManuallyClosed(exist, ZonedDateTime.now(StoreOpenHelper.SHANGHAI))) {
+            applyManualStatus(patch, json, StoreOpenHelper.STORE_STATUS_CLOSED);
+        }
         storeMapper.updateStore(patch);
 
         return Response.success(refreshStore(exist.getId(), exist));
+    }
+
+    private void applyStatusChangeIfNeeded(Store patch, Store exist, String businessHoursJson) {
+        if (patch == null || patch.getStoreStatus() == null) {
+            return;
+        }
+        boolean currentlyClosed = exist != null
+                && StoreOpenHelper.isManuallyClosed(exist, ZonedDateTime.now(StoreOpenHelper.SHANGHAI));
+        int target = patch.getStoreStatus();
+        if (target == StoreOpenHelper.STORE_STATUS_CLOSED && !currentlyClosed) {
+            applyManualStatus(patch, businessHoursJson, StoreOpenHelper.STORE_STATUS_CLOSED);
+            return;
+        }
+        if (target == StoreOpenHelper.STORE_STATUS_OPEN && currentlyClosed) {
+            applyManualStatus(patch, businessHoursJson, StoreOpenHelper.STORE_STATUS_OPEN);
+        }
+    }
+
+    private void applyManualStatus(Store patch, String businessHoursJson, Integer storeStatus) {
+        if (patch == null || storeStatus == null) {
+            return;
+        }
+        ZonedDateTime now = ZonedDateTime.now(StoreOpenHelper.SHANGHAI);
+        if (storeStatus == StoreOpenHelper.STORE_STATUS_CLOSED) {
+            ZonedDateTime nextOpen = StoreOpenHelper.nextOpenTime(businessHoursJson, now);
+            if (nextOpen != null) {
+                patch.setClosedUntil(StoreOpenHelper.toDate(nextOpen));
+                patch.setClosedUntilCleared(false);
+            } else {
+                patch.setClosedUntil(null);
+                patch.setClosedUntilCleared(true);
+            }
+            return;
+        }
+        patch.setClosedUntil(null);
+        patch.setClosedUntilCleared(true);
+    }
+
+    private Store findById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        Store query = new Store();
+        query.setId(id);
+        query.setDeleted(0);
+        List list = storeMapper.findStore(query);
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        return (Store) list.get(0);
     }
 
     private Store findOwnStore(Long userId) {
@@ -221,8 +306,17 @@ public class StoreServiceimpl implements StoreService {
         if (store == null) {
             return;
         }
-        store.setAcceptingOrders(StoreOpenHelper.isAcceptingOrders(store));
+        ZonedDateTime now = ZonedDateTime.now(StoreOpenHelper.SHANGHAI);
+        store.setManuallyClosed(StoreOpenHelper.isManuallyClosed(store, now));
+        store.setAcceptingOrders(StoreOpenHelper.isAcceptingOrders(store, now));
+        store.setOpenStatus(StoreOpenHelper.openStatus(store, now));
         store.setBusinessHoursText(StoreOpenHelper.formatText(store.getBusinessHours()));
+        store.setStatusHint(StoreOpenHelper.statusHint(store, now));
+        store.setClosedUntilText(StoreOpenHelper.closedUntilText(store, now));
+        store.setNextOpenText(StoreOpenHelper.formatMoment(
+                StoreOpenHelper.nextOpenTime(store.getBusinessHours(), now), now));
+        store.setNextCloseText(StoreOpenHelper.formatMoment(
+                StoreOpenHelper.nextCloseTime(store.getBusinessHours(), now), now));
     }
 
     private Long resolveCurrentUserId(HttpServletRequest request) {

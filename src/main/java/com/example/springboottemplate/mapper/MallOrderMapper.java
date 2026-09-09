@@ -2,6 +2,7 @@ package com.example.springboottemplate.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.springboottemplate.entity.MallOrder;
+import com.example.springboottemplate.dto.mall.MallIncomeFlowRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,6 +27,12 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
                              @Param("retry") Integer retry,
                              @Param("shippingTime") java.util.Date shippingTime);
 
+    int markClosed(@Param("orderNo") String orderNo,
+                   @Param("closedTime") java.util.Date closedTime);
+
+    java.util.List<MallOrder> selectExpiredUnpaid(@Param("expireBefore") java.util.Date expireBefore,
+                                                  @Param("limit") int limit);
+
     java.util.List<MallOrder> selectPendingWxShipping(@Param("maxRetry") int maxRetry,
                                                       @Param("limit") int limit);
 
@@ -46,4 +53,20 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
                          @Param("outRefundNo") String outRefundNo);
 
     MallOrder selectByOutRefundNo(@Param("outRefundNo") String outRefundNo);
+
+    java.util.List<MallIncomeFlowRow> sumIncomeFlow(@Param("storeId") Long storeId,
+                                                    @Param("periodType") String periodType,
+                                                    @Param("startTime") java.util.Date startTime,
+                                                    @Param("endTime") java.util.Date endTime);
+
+    java.util.List<com.example.springboottemplate.dto.mall.MallFinanceRecord> selectFinanceLedger(
+            @Param("storeId") Long storeId,
+            @Param("type") String type,
+            @Param("startTime") java.util.Date startTime,
+            @Param("endTime") java.util.Date endTime);
+
+    com.example.springboottemplate.dto.mall.MallFinanceSummary sumFinanceLedger(
+            @Param("storeId") Long storeId,
+            @Param("startTime") java.util.Date startTime,
+            @Param("endTime") java.util.Date endTime);
 }

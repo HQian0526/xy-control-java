@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
@@ -13,6 +14,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -51,13 +53,48 @@ public class Store {
     @ApiModelProperty(value = "营业时间JSON", required = false)
     private String businessHours;
 
+    @ApiModelProperty(value = "临时打烊截止时间", required = false)
+    private Date closedUntil;
+
+    @ApiModelProperty(value = "配送费（元）", required = false)
+    private BigDecimal deliveryFee;
+
+    @TableField(exist = false)
+    @JsonIgnore
+    @ApiModelProperty(hidden = true)
+    private Boolean closedUntilCleared;
+
     @TableField(exist = false)
     @ApiModelProperty(value = "当前是否可下单（计算字段）", required = false)
     private Boolean acceptingOrders;
 
     @TableField(exist = false)
+    @ApiModelProperty(value = "当前是否处于手动打烊（计算字段）", required = false)
+    private Boolean manuallyClosed;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "open/rest/closed（计算字段）", required = false)
+    private String openStatus;
+
+    @TableField(exist = false)
     @ApiModelProperty(value = "营业时间展示文案（计算字段）", required = false)
     private String businessHoursText;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "状态说明（计算字段）", required = false)
+    private String statusHint;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "下次开门时刻文案（计算字段）", required = false)
+    private String nextOpenText;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "下次休息时刻文案（计算字段）", required = false)
+    private String nextCloseText;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "临时打烊截止文案（计算字段）", required = false)
+    private String closedUntilText;
 
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;
