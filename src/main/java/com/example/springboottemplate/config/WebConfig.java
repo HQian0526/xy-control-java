@@ -30,6 +30,11 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/otherBusiness/findOtherBusiness",
                         "/store/findStore",
                         "/api/store/findStore",
+                        // 逛店可看满减/可领券（领取仍需登录）
+                        "/mallPromo/active",
+                        "/api/mallPromo/active",
+                        "/mallCoupon/storeTemplates",
+                        "/api/mallCoupon/storeTemplates",
                         // 微信支付异步通知（微信服务器直连，无 JWT）
                         "/mallOrder/wxPayNotify",
                         "/api/mallOrder/wxPayNotify",

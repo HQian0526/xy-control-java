@@ -20,4 +20,7 @@ public class MallCheckoutRequest {
 
     @ApiModelProperty(value = "购物车商品", required = true)
     private List<MallCheckoutItemRequest> items;
+
+    @ApiModelProperty(value = "选用的用户优惠券id，可不传")
+    private Long userCouponId;
 }

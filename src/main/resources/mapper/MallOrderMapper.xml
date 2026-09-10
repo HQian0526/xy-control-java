@@ -13,6 +13,12 @@
         <result property="remark" column="remark"/>
         <result property="goodsAmount" column="goods_amount"/>
         <result property="deliveryFee" column="delivery_fee"/>
+        <result property="promoId" column="promo_id"/>
+        <result property="promoDiscount" column="promo_discount"/>
+        <result property="userCouponId" column="user_coupon_id"/>
+        <result property="couponDiscount" column="coupon_discount"/>
+        <result property="discountAmount" column="discount_amount"/>
+        <result property="discountDesc" column="discount_desc"/>
         <result property="payAmount" column="pay_amount"/>
         <result property="payAmountFen" column="pay_amount_fen"/>
         <result property="payStatus" column="pay_status"/>
@@ -42,11 +48,15 @@
     <insert id="addMallOrder" parameterType="MallOrder">
         INSERT into mall_order (
             id, order_no, store_id, user_id, openid, contact, address, remark,
-            goods_amount, delivery_fee, pay_amount, pay_amount_fen, pay_status,
+            goods_amount, delivery_fee, promo_id, promo_discount, user_coupon_id,
+            coupon_discount, discount_amount, discount_desc,
+            pay_amount, pay_amount_fen, pay_status,
             prepay_id, created_by, created_time, deleted
         ) value (
             #{id}, #{orderNo}, #{storeId}, #{userId}, #{openid}, #{contact}, #{address}, #{remark},
-            #{goodsAmount}, #{deliveryFee}, #{payAmount}, #{payAmountFen}, #{payStatus},
+            #{goodsAmount}, #{deliveryFee}, #{promoId}, #{promoDiscount}, #{userCouponId},
+            #{couponDiscount}, #{discountAmount}, #{discountDesc},
+            #{payAmount}, #{payAmountFen}, #{payStatus},
             #{prepayId}, #{createdBy}, #{createdTime}, #{deleted}
         )
     </insert>

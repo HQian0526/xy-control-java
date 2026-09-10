@@ -20,7 +20,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * 店铺是否可下单：临时/长期打烊优先；未配置营业时间视为全天可下单；时间段不跨天。
+ * 店铺是否可下单：手动打烊 / 手动开始营业优先于营业时间表；未配置营业时间视为全天可下单；时间段不跨天。
  * 无定时任务，每次查询/下单按上海时区即时计算。
  */
 public final class StoreOpenHelper {
@@ -52,6 +52,9 @@ public final class StoreOpenHelper {
         if (isManuallyClosed(store, now)) {
             return false;
         }
+        if (isForcedOpen(store, now)) {
+            return true;
+        }
         return isWithinHours(store.getBusinessHours(), now);
     }
 
@@ -69,6 +72,17 @@ public final class StoreOpenHelper {
             return now.isBefore(until);
         }
         return store.getStoreStatus() != null && store.getStoreStatus() == STORE_STATUS_CLOSED;
+    }
+
+    /**
+     * 手动开始营业：open_until 未到期。到期后改走营业时间。
+     */
+    public static boolean isForcedOpen(Store store, ZonedDateTime now) {
+        if (store == null || isManuallyClosed(store, now)) {
+            return false;
+        }
+        ZonedDateTime until = toShanghai(store.getOpenUntil());
+        return until != null && now.isBefore(until);
     }
 
     public static boolean isWithinHours(String businessHoursJson, ZonedDateTime now) {
@@ -95,9 +109,10 @@ public final class StoreOpenHelper {
         if (isManuallyClosed(store, now)) {
             return OPEN_STATUS_CLOSED;
         }
-        return isWithinHours(store == null ? null : store.getBusinessHours(), now)
-                ? OPEN_STATUS_OPEN
-                : OPEN_STATUS_REST;
+        if (isForcedOpen(store, now) || isWithinHours(store == null ? null : store.getBusinessHours(), now)) {
+            return OPEN_STATUS_OPEN;
+        }
+        return OPEN_STATUS_REST;
     }
 
     public static ZonedDateTime nextOpenTime(String businessHoursJson, ZonedDateTime now) {
@@ -133,6 +148,13 @@ public final class StoreOpenHelper {
         return formatMoment(toShanghai(store.getClosedUntil()), now);
     }
 
+    public static String openUntilText(Store store, ZonedDateTime now) {
+        if (!isForcedOpen(store, now)) {
+            return "";
+        }
+        return formatMoment(toShanghai(store.getOpenUntil()), now);
+    }
+
     public static String statusHint(Store store, ZonedDateTime now) {
         if (isManuallyClosed(store, now)) {
             String until = closedUntilText(store, now);
@@ -140,6 +162,13 @@ public final class StoreOpenHelper {
                 return "已打烊，将于 " + until + " 自动开始营业";
             }
             return "已打烊，未设置营业时间将一直保持，直到点击开始营业";
+        }
+        if (isForcedOpen(store, now)) {
+            String until = openUntilText(store, now);
+            if (StringUtils.hasText(until)) {
+                return "营业中，将于 " + until + " 自动休息";
+            }
+            return "营业中，用户可正常下单";
         }
         String hoursJson = store == null ? null : store.getBusinessHours();
         if (!isWithinHours(hoursJson, now)) {

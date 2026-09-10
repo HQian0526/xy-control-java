@@ -43,6 +43,19 @@ public class MallOrderController {
         }
     }
 
+    @PostMapping("/previewCheckout")
+    @ResponseBody
+    @ApiOperation(value = "结算预览", notes = "与下单同一计价，不建单；选中券无效时清空并返回 couponError")
+    public Response previewCheckout(@RequestBody MallCheckoutRequest request, HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.previewCheckout(request, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("预览失败: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/queryOrder")
     @ResponseBody
     @ApiOperation(value = "查询商城订单", notes = "支付后查单；非 mock 时会向微信二次确认")

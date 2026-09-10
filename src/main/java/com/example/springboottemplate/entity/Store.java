@@ -56,6 +56,9 @@ public class Store {
     @ApiModelProperty(value = "临时打烊截止时间", required = false)
     private Date closedUntil;
 
+    @ApiModelProperty(value = "手动开始营业截止时间", required = false)
+    private Date openUntil;
+
     @ApiModelProperty(value = "配送费（元）", required = false)
     private BigDecimal deliveryFee;
 
@@ -63,6 +66,11 @@ public class Store {
     @JsonIgnore
     @ApiModelProperty(hidden = true)
     private Boolean closedUntilCleared;
+
+    @TableField(exist = false)
+    @JsonIgnore
+    @ApiModelProperty(hidden = true)
+    private Boolean openUntilCleared;
 
     @TableField(exist = false)
     @ApiModelProperty(value = "当前是否可下单（计算字段）", required = false)
@@ -95,6 +103,10 @@ public class Store {
     @TableField(exist = false)
     @ApiModelProperty(value = "临时打烊截止文案（计算字段）", required = false)
     private String closedUntilText;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "手动营业截止文案（计算字段）", required = false)
+    private String openUntilText;
 
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;

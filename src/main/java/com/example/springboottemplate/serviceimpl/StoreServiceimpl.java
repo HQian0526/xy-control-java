@@ -217,8 +217,11 @@ public class StoreServiceimpl implements StoreService {
         patch.setBusinessHours(json);
         patch.setUpdateBy(operator);
         exist.setBusinessHours(json);
-        if (StoreOpenHelper.isManuallyClosed(exist, ZonedDateTime.now(StoreOpenHelper.SHANGHAI))) {
+        ZonedDateTime now = ZonedDateTime.now(StoreOpenHelper.SHANGHAI);
+        if (StoreOpenHelper.isManuallyClosed(exist, now)) {
             applyManualStatus(patch, json, StoreOpenHelper.STORE_STATUS_CLOSED);
+        } else if (StoreOpenHelper.isForcedOpen(exist, now)) {
+            applyManualStatus(patch, json, StoreOpenHelper.STORE_STATUS_OPEN);
         }
         storeMapper.updateStore(patch);
 
@@ -229,15 +232,10 @@ public class StoreServiceimpl implements StoreService {
         if (patch == null || patch.getStoreStatus() == null) {
             return;
         }
-        boolean currentlyClosed = exist != null
-                && StoreOpenHelper.isManuallyClosed(exist, ZonedDateTime.now(StoreOpenHelper.SHANGHAI));
         int target = patch.getStoreStatus();
-        if (target == StoreOpenHelper.STORE_STATUS_CLOSED && !currentlyClosed) {
-            applyManualStatus(patch, businessHoursJson, StoreOpenHelper.STORE_STATUS_CLOSED);
-            return;
-        }
-        if (target == StoreOpenHelper.STORE_STATUS_OPEN && currentlyClosed) {
-            applyManualStatus(patch, businessHoursJson, StoreOpenHelper.STORE_STATUS_OPEN);
+        if (target == StoreOpenHelper.STORE_STATUS_CLOSED
+                || target == StoreOpenHelper.STORE_STATUS_OPEN) {
+            applyManualStatus(patch, businessHoursJson, target);
         }
     }
 
@@ -247,6 +245,8 @@ public class StoreServiceimpl implements StoreService {
         }
         ZonedDateTime now = ZonedDateTime.now(StoreOpenHelper.SHANGHAI);
         if (storeStatus == StoreOpenHelper.STORE_STATUS_CLOSED) {
+            patch.setOpenUntil(null);
+            patch.setOpenUntilCleared(true);
             ZonedDateTime nextOpen = StoreOpenHelper.nextOpenTime(businessHoursJson, now);
             if (nextOpen != null) {
                 patch.setClosedUntil(StoreOpenHelper.toDate(nextOpen));
@@ -259,6 +259,14 @@ public class StoreServiceimpl implements StoreService {
         }
         patch.setClosedUntil(null);
         patch.setClosedUntilCleared(true);
+        ZonedDateTime nextClose = StoreOpenHelper.nextCloseTime(businessHoursJson, now);
+        if (nextClose != null) {
+            patch.setOpenUntil(StoreOpenHelper.toDate(nextClose));
+            patch.setOpenUntilCleared(false);
+        } else {
+            patch.setOpenUntil(null);
+            patch.setOpenUntilCleared(true);
+        }
     }
 
     private Store findById(Long id) {
@@ -313,6 +321,7 @@ public class StoreServiceimpl implements StoreService {
         store.setBusinessHoursText(StoreOpenHelper.formatText(store.getBusinessHours()));
         store.setStatusHint(StoreOpenHelper.statusHint(store, now));
         store.setClosedUntilText(StoreOpenHelper.closedUntilText(store, now));
+        store.setOpenUntilText(StoreOpenHelper.openUntilText(store, now));
         store.setNextOpenText(StoreOpenHelper.formatMoment(
                 StoreOpenHelper.nextOpenTime(store.getBusinessHours(), now), now));
         store.setNextCloseText(StoreOpenHelper.formatMoment(

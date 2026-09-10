@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.MallUserCouponMapper">
+    <resultMap id="mallUserCouponResultMap" type="MallUserCoupon">
+        <id property="id" column="id"/>
+        <result property="templateId" column="template_id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="name" column="name"/>
+        <result property="thresholdAmount" column="threshold_amount"/>
+        <result property="discountAmount" column="discount_amount"/>
+        <result property="status" column="status"/>
+        <result property="forever" column="forever"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="receiveTime" column="receive_time"/>
+        <result property="lockTime" column="lock_time"/>
+        <result property="useTime" column="use_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addMallUserCoupon" parameterType="MallUserCoupon">
+        INSERT INTO mall_user_coupon (
+            id, template_id, store_id, user_id, name, threshold_amount, discount_amount,
+            status, forever, expire_time, receive_time, deleted
+        ) VALUES (
+            #{id}, #{templateId}, #{storeId}, #{userId}, #{name}, #{thresholdAmount}, #{discountAmount},
+            #{status}, #{forever}, #{expireTime}, #{receiveTime}, #{deleted}
+        )
+    </insert>
+
+    <select id="selectCouponById" resultMap="mallUserCouponResultMap">
+        SELECT * FROM mall_user_coupon WHERE id = #{id} AND deleted = 0 LIMIT 1
+    </select>
+
+    <select id="countByTemplateAndUser" resultType="int">
+        SELECT COUNT(1) FROM mall_user_coupon
+        WHERE template_id = #{templateId} AND user_id = #{userId} AND deleted = 0
+    </select>
+
+    <select id="findMallUserCoupon" resultMap="mallUserCouponResultMap">
+        SELECT * FROM mall_user_coupon
+        <where>
+            deleted = 0
+            AND user_id = #{userId}
+            <if test="storeId != null">AND store_id = #{storeId}</if>
+            <choose>
+                <when test="tab == 'unused'">
+                    AND status = 0
+                    AND (forever = 1 OR (expire_time IS NOT NULL AND expire_time &gt; #{now}))
+                </when>
+                <when test="tab == 'used'">
+                    AND status IN (1, 2)
+                </when>
+                <when test="tab == 'expired'">
+                    AND (
+                        status = 3
+                        OR (status = 0 AND forever = 0 AND expire_time IS NOT NULL AND expire_time &lt;= #{now})
+                    )
+                </when>
+            </choose>
+        </where>
+        ORDER BY receive_time DESC, id DESC
+    </select>
+
+    <select id="selectUsableByUserAndStore" resultMap="mallUserCouponResultMap">
+        SELECT * FROM mall_user_coupon
+        WHERE deleted = 0
+          AND user_id = #{userId}
+          AND store_id = #{storeId}
+          AND status = 0
+          AND (forever = 1 OR (expire_time IS NOT NULL AND expire_time &gt; #{now}))
+        ORDER BY discount_amount DESC, id DESC
+    </select>
+
+    <update id="lockCoupon">
+        UPDATE mall_user_coupon
+        SET status = 1, order_no = #{orderNo}, lock_time = #{now}
+        WHERE id = #{id}
+          AND user_id = #{userId}
+          AND deleted = 0
+          AND status = 0
+          AND (forever = 1 OR (expire_time IS NOT NULL AND expire_time &gt; #{now}))
+    </update>
+
+    <update id="unlockByOrderNo">
+        UPDATE mall_user_coupon
+        SET status = 0, order_no = NULL, lock_time = NULL
+        WHERE order_no = #{orderNo} AND status = 1 AND deleted = 0
+    </update>
+
+    <update id="markUsedByOrderNo">
+        UPDATE mall_user_coupon
+        SET status = 2, use_time = #{now}
+        WHERE order_no = #{orderNo} AND status = 1 AND deleted = 0
+    </update>
+</mapper>

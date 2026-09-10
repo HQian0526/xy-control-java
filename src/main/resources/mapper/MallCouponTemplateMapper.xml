@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.MallCouponTemplateMapper">
+    <resultMap id="mallCouponTemplateResultMap" type="MallCouponTemplate">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="name" column="name"/>
+        <result property="thresholdAmount" column="threshold_amount"/>
+        <result property="discountAmount" column="discount_amount"/>
+        <result property="totalCount" column="total_count"/>
+        <result property="issuedCount" column="issued_count"/>
+        <result property="perUserLimit" column="per_user_limit"/>
+        <result property="issueType" column="issue_type"/>
+        <result property="status" column="status"/>
+        <result property="forever" column="forever"/>
+        <result property="endTime" column="end_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addMallCouponTemplate" parameterType="MallCouponTemplate">
+        INSERT INTO mall_coupon_template (
+            id, store_id, name, threshold_amount, discount_amount,
+            total_count, issued_count, per_user_limit, issue_type, status, forever, end_time,
+            created_by, created_time, deleted
+        ) VALUES (
+            #{id}, #{storeId}, #{name}, #{thresholdAmount}, #{discountAmount},
+            #{totalCount}, #{issuedCount}, #{perUserLimit}, #{issueType}, #{status}, #{forever}, #{endTime},
+            #{createdBy}, #{createdTime}, #{deleted}
+        )
+    </insert>
+
+    <select id="findMallCouponTemplate" parameterType="MallCouponTemplate" resultMap="mallCouponTemplateResultMap">
+        SELECT * FROM mall_coupon_template
+        <where>
+            <if test="id != null">AND id = #{id}</if>
+            <if test="storeId != null">AND store_id = #{storeId}</if>
+            <if test="name != null and name != ''">AND name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="issueType != null">AND issue_type = #{issueType}</if>
+            <choose>
+                <when test="deleted != null">AND deleted = #{deleted}</when>
+                <otherwise>AND deleted = 0</otherwise>
+            </choose>
+        </where>
+        ORDER BY created_time DESC, id DESC
+    </select>
+
+    <select id="selectTemplateById" resultMap="mallCouponTemplateResultMap">
+        SELECT * FROM mall_coupon_template WHERE id = #{id} AND deleted = 0 LIMIT 1
+    </select>
+
+    <select id="selectClaimableByStoreId" resultMap="mallCouponTemplateResultMap">
+        SELECT * FROM mall_coupon_template
+        WHERE store_id = #{storeId}
+          AND deleted = 0
+          AND status = 1
+          AND (issue_type IS NULL OR issue_type = 1)
+          AND (forever = 1 OR (end_time IS NOT NULL AND end_time &gt; #{now}))
+        ORDER BY created_time DESC, id DESC
+    </select>
+
+    <update id="increaseIssuedCount">
+        UPDATE mall_coupon_template
+        SET issued_count = issued_count + 1
+        WHERE id = #{id}
+          AND deleted = 0
+          AND status = 1
+          <if test="totalCount != null">
+              AND issued_count &lt; #{totalCount}
+          </if>
+    </update>
+
+    <update id="updateMallCouponTemplate" parameterType="MallCouponTemplate">
+        UPDATE mall_coupon_template
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="thresholdAmount != null">threshold_amount = #{thresholdAmount},</if>
+            <if test="discountAmount != null">discount_amount = #{discountAmount},</if>
+            <if test="name != null and totalCount == null">total_count = NULL,</if>
+            <if test="totalCount != null">total_count = #{totalCount},</if>
+            <if test="perUserLimit != null">per_user_limit = #{perUserLimit},</if>
+            <if test="issueType != null">issue_type = #{issueType},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="forever != null">forever = #{forever},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="forever != null and forever == 1">end_time = NULL,</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+</mapper>

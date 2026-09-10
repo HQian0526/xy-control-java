@@ -42,4 +42,6 @@ public interface MallOrderService {
      */
     Response financeLedger(Long storeId, String type, String date, Integer pageNum, Integer pageSize,
                            HttpServletRequest httpRequest);
+
+    Response previewCheckout(MallCheckoutRequest request, HttpServletRequest httpRequest);
 }

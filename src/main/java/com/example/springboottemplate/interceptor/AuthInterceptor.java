@@ -32,7 +32,9 @@ public class AuthInterceptor implements HandlerInterceptor {
                 || uri.contains("/catagory/findCatagory")
                 || uri.contains("/product/findProduct")
                 || uri.contains("/otherBusiness/findOtherBusiness")
-                || uri.contains("/store/findStore")) {
+                || uri.contains("/store/findStore")
+                || uri.contains("/mallPromo/active")
+                || uri.contains("/mallCoupon/storeTemplates")) {
             return true;
         }
 

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.MallPromoTierMapper">
+    <resultMap id="mallPromoTierResultMap" type="MallPromoTier">
+        <id property="id" column="id"/>
+        <result property="promoId" column="promo_id"/>
+        <result property="thresholdAmount" column="threshold_amount"/>
+        <result property="discountAmount" column="discount_amount"/>
+        <result property="sort" column="sort"/>
+    </resultMap>
+
+    <insert id="addMallPromoTier" parameterType="MallPromoTier">
+        INSERT INTO mall_promo_tier (id, promo_id, threshold_amount, discount_amount, sort)
+        VALUES (#{id}, #{promoId}, #{thresholdAmount}, #{discountAmount}, #{sort})
+    </insert>
+
+    <insert id="batchAdd">
+        INSERT INTO mall_promo_tier (id, promo_id, threshold_amount, discount_amount, sort)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.promoId}, #{item.thresholdAmount}, #{item.discountAmount}, #{item.sort})
+        </foreach>
+    </insert>
+
+    <select id="selectByPromoId" resultMap="mallPromoTierResultMap">
+        SELECT * FROM mall_promo_tier WHERE promo_id = #{promoId}
+        ORDER BY threshold_amount ASC, sort ASC, id ASC
+    </select>
+
+    <select id="selectByPromoIds" resultMap="mallPromoTierResultMap">
+        SELECT * FROM mall_promo_tier
+        WHERE promo_id IN
+        <foreach collection="promoIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY threshold_amount ASC, sort ASC, id ASC
+    </select>
+
+    <delete id="deleteByPromoId">
+        DELETE FROM mall_promo_tier WHERE promo_id = #{promoId}
+    </delete>
+</mapper>

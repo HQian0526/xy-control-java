@@ -15,6 +15,7 @@
         <result property="storeStatus" column="store_status"/>
         <result property="businessHours" column="business_hours"/>
         <result property="closedUntil" column="closed_until"/>
+        <result property="openUntil" column="open_until"/>
         <result property="deliveryFee" column="delivery_fee"/>
         <result property="storeTime" column="store_time"/>
         <result property="identityName" column="identity_name"/>
@@ -110,6 +111,8 @@
             <if test="businessHours != null">business_hours = #{businessHours},</if>
             <if test="closedUntil != null">closed_until = #{closedUntil},</if>
             <if test="closedUntilCleared != null and closedUntilCleared">closed_until = null,</if>
+            <if test="openUntil != null">open_until = #{openUntil},</if>
+            <if test="openUntilCleared != null and openUntilCleared">open_until = null,</if>
             <if test="deliveryFee != null">delivery_fee = #{deliveryFee},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>

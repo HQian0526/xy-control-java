@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.config.WxPayProperties;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallCheckoutItemRequest;
+import com.example.springboottemplate.dto.mall.MallCheckoutPreviewVO;
 import com.example.springboottemplate.dto.mall.MallCheckoutRequest;
+import com.example.springboottemplate.dto.mall.MallDiscountSnapshot;
 import com.example.springboottemplate.dto.mall.MallFinanceRecord;
 import com.example.springboottemplate.dto.mall.MallFinanceSummary;
 import com.example.springboottemplate.dto.mall.MallIncomeFlowRow;
@@ -14,6 +16,8 @@ import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
 import com.example.springboottemplate.dto.mall.MallRefundRequest;
 import com.example.springboottemplate.entity.MallOrder;
 import com.example.springboottemplate.entity.MallOrderItem;
+import com.example.springboottemplate.entity.MallPromo;
+import com.example.springboottemplate.entity.MallUserCoupon;
 import com.example.springboottemplate.entity.Product;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
@@ -23,12 +27,15 @@ import com.example.springboottemplate.mapper.MallOrderMapper;
 import com.example.springboottemplate.mapper.ProductMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
+import com.example.springboottemplate.service.MallCouponService;
 import com.example.springboottemplate.service.MallOrderService;
+import com.example.springboottemplate.service.MallPromoService;
 import com.example.springboottemplate.service.StoreBlacklistService;
 import com.example.springboottemplate.service.wx.MallOrderTimeoutService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.MallDiscountCalculator;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -88,6 +95,10 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Autowired
     private StoreBlacklistService storeBlacklistService;
     @Autowired
+    private MallPromoService mallPromoService;
+    @Autowired
+    private MallCouponService mallCouponService;
+    @Autowired
     @Lazy
     private MallOrderTimeoutService mallOrderTimeoutService;
 
@@ -118,89 +129,34 @@ public class MallOrderServiceimpl implements MallOrderService {
             throw new BusinessException("当前账号未绑定微信，请先微信登录");
         }
 
-        List<MallOrderItem> itemEntities = new ArrayList<>();
-        BigDecimal goodsAmount = BigDecimal.ZERO;
-        Long storeId = null;
+        CheckoutQuote quote = quoteCheckout(request, user, false);
+        MallDiscountSnapshot discount = quote.discount;
+        BigDecimal payAmount = discount.getPayAmount();
+        int payAmountFen = discount.getPayAmountFen();
         Date now = new Date();
 
-        for (MallCheckoutItemRequest line : request.getItems()) {
-            if (line == null || line.getProductId() == null || line.getQuantity() == null || line.getQuantity() <= 0) {
-                throw new BusinessException("商品或数量无效");
-            }
-            Product product = productMapper.selectOne(new LambdaQueryWrapper<Product>()
-                    .eq(Product::getProductId, line.getProductId())
-                    .last("limit 1"));
-            if (product == null) {
-                throw new BusinessException("商品不存在: " + line.getProductId());
-            }
-            if (product.getProductStatus() == null || product.getProductStatus() != 1) {
-                throw new BusinessException("商品已下架: " + product.getProductName());
-            }
-            if (product.getProductNum() == null || product.getProductNum() < line.getQuantity()) {
-                throw new BusinessException("库存不足: " + product.getProductName());
-            }
-            if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessException("商品价格异常: " + product.getProductName());
-            }
-
-            Long lineStoreId = parseStoreId(product.getStoreId());
-            if (lineStoreId != null) {
-                if (storeId == null) {
-                    storeId = lineStoreId;
-                } else if (!storeId.equals(lineStoreId)) {
-                    throw new BusinessException("暂不支持跨店结算，请分店铺下单");
-                }
-            }
-
-            BigDecimal lineAmount = product.getPrice()
-                    .multiply(BigDecimal.valueOf(line.getQuantity()))
-                    .setScale(2, RoundingMode.HALF_UP);
-            goodsAmount = goodsAmount.add(lineAmount);
-
-            itemEntities.add(MallOrderItem.builder()
-                    .id(IdWorker.getId())
-                    .productId(product.getProductId())
-                    .productName(product.getProductName())
-                    .productImg(product.getProductImg())
-                    .price(product.getPrice())
-                    .quantity(line.getQuantity())
-                    .amount(lineAmount)
-                    .createdTime(now)
-                    .deleted(0)
-                    .build());
-        }
-
-        Store store = null;
-        if (storeId != null) {
-            store = storeMapper.selectByStoreId(storeId);
-            if (store != null && !StoreOpenHelper.isAcceptingOrders(store)) {
-                throw new BusinessException(StoreOpenHelper.rejectMessage(store));
-            }
-            if (storeBlacklistService.isBlacklisted(storeId, userId, user.getPhone(), request.getContact())) {
-                throw new BusinessException("您已被该店铺限制下单");
-            }
-        }
-
-        BigDecimal deliveryFee = resolveStoreDeliveryFee(store);
-        BigDecimal payAmount = goodsAmount.add(deliveryFee).setScale(2, RoundingMode.HALF_UP);
-        int payAmountFen = payAmount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact();
-        if (payAmountFen <= 0) {
-            throw new BusinessException("应付金额必须大于0");
-        }
-
         String orderNo = generateOrderNo();
+        if (quote.coupon != null && !mallCouponService.lockCoupon(quote.coupon.getId(), userId, orderNo)) {
+            throw new BusinessException("优惠券已被使用，请重新选择");
+        }
         Long orderId = IdWorker.getId();
         MallOrder order = MallOrder.builder()
                 .id(orderId)
                 .orderNo(orderNo)
-                .storeId(storeId)
+                .storeId(quote.storeId)
                 .userId(userId)
                 .openid(user.getOpenid())
                 .contact(request.getContact().trim())
                 .address(request.getAddress().trim())
                 .remark(StringUtils.hasText(request.getRemark()) ? request.getRemark().trim() : null)
-                .goodsAmount(goodsAmount)
-                .deliveryFee(deliveryFee)
+                .goodsAmount(quote.goodsAmount)
+                .deliveryFee(quote.deliveryFee)
+                .promoId(discount.getPromoId())
+                .promoDiscount(discount.getPromoDiscount())
+                .userCouponId(discount.getUserCouponId())
+                .couponDiscount(discount.getCouponDiscount())
+                .discountAmount(discount.getDiscountAmount())
+                .discountDesc(discount.getDiscountDesc())
                 .payAmount(payAmount)
                 .payAmountFen(payAmountFen)
                 .payStatus(0)
@@ -210,15 +166,15 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .build();
         mallOrderMapper.addMallOrder(order);
 
-        for (MallOrderItem item : itemEntities) {
+        for (MallOrderItem item : quote.itemEntities) {
             item.setOrderId(orderId);
             item.setOrderNo(orderNo);
         }
-        mallOrderItemMapper.batchAdd(itemEntities);
+        mallOrderItemMapper.batchAdd(quote.itemEntities);
 
-        String description = itemEntities.size() == 1
-                ? itemEntities.get(0).getProductName()
-                : "商城订单-" + itemEntities.size() + "件商品";
+        String description = quote.itemEntities.size() == 1
+                ? quote.itemEntities.get(0).getProductName()
+                : "商城订单-" + quote.itemEntities.size() + "件商品";
         MallPayPrepareVO payVO = wxPayClientService.createJsapiPrepay(
                 orderNo, description, user.getOpenid(), payAmountFen);
 
@@ -232,6 +188,24 @@ public class MallOrderServiceimpl implements MallOrderService {
         payVO.setPayAmount(payAmount);
         payVO.setPayStatus(0);
         return Response.success(payVO);
+    }
+
+    @Override
+    public Response previewCheckout(MallCheckoutRequest request, HttpServletRequest httpRequest) {
+        if (request == null || ValidateUtil.isEmpty(request.getItems())) {
+            throw new BusinessException("购物车商品不能为空");
+        }
+        Claims claims = parseClaims(httpRequest);
+        Long userId = jwtUtil.getUserId(claims);
+        if (userId == null) {
+            throw new BusinessException("登录状态无效");
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        CheckoutQuote quote = quoteCheckout(request, user, true);
+        return Response.success(toPreviewVO(quote, user));
     }
 
     @Override
@@ -891,6 +865,7 @@ public class MallOrderServiceimpl implements MallOrderService {
             return;
         }
         mallOrderMapper.markClosed(orderNo.trim(), new Date());
+        mallCouponService.unlockByOrderNo(orderNo.trim());
     }
 
     private void markOrderPaid(String orderNo, String transactionId, Date paidTime) {
@@ -905,6 +880,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (rows <= 0) {
             return;
         }
+        mallCouponService.markUsedByOrderNo(orderNo);
         // 扣库存、加销量（幂等：仅首次 markPaid 成功时执行）
         List<MallOrderItem> items = mallOrderItemMapper.selectByOrderId(order.getId());
         for (MallOrderItem item : items) {
@@ -975,6 +951,179 @@ public class MallOrderServiceimpl implements MallOrderService {
             }
         }
         throw new BusinessException("无权查看该订单");
+    }
+
+    private CheckoutQuote quoteCheckout(MallCheckoutRequest request, User user, boolean preview) {
+        List<MallOrderItem> itemEntities = new ArrayList<>();
+        BigDecimal goodsAmount = BigDecimal.ZERO;
+        Long storeId = null;
+        Date now = new Date();
+
+        for (MallCheckoutItemRequest line : request.getItems()) {
+            if (line == null || line.getProductId() == null || line.getQuantity() == null || line.getQuantity() <= 0) {
+                throw new BusinessException("商品或数量无效");
+            }
+            Product product = productMapper.selectOne(new LambdaQueryWrapper<Product>()
+                    .eq(Product::getProductId, line.getProductId())
+                    .last("limit 1"));
+            if (product == null) {
+                throw new BusinessException("商品不存在: " + line.getProductId());
+            }
+            if (product.getProductStatus() == null || product.getProductStatus() != 1) {
+                throw new BusinessException("商品已下架: " + product.getProductName());
+            }
+            if (product.getProductNum() == null || product.getProductNum() < line.getQuantity()) {
+                throw new BusinessException("库存不足: " + product.getProductName());
+            }
+            if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessException("商品价格异常: " + product.getProductName());
+            }
+
+            Long lineStoreId = parseStoreId(product.getStoreId());
+            if (lineStoreId != null) {
+                if (storeId == null) {
+                    storeId = lineStoreId;
+                } else if (!storeId.equals(lineStoreId)) {
+                    throw new BusinessException("暂不支持跨店结算，请分店铺下单");
+                }
+            }
+
+            BigDecimal lineAmount = product.getPrice()
+                    .multiply(BigDecimal.valueOf(line.getQuantity()))
+                    .setScale(2, RoundingMode.HALF_UP);
+            goodsAmount = goodsAmount.add(lineAmount);
+
+            itemEntities.add(MallOrderItem.builder()
+                    .id(IdWorker.getId())
+                    .productId(product.getProductId())
+                    .productName(product.getProductName())
+                    .productImg(product.getProductImg())
+                    .price(product.getPrice())
+                    .quantity(line.getQuantity())
+                    .amount(lineAmount)
+                    .createdTime(now)
+                    .deleted(0)
+                    .build());
+        }
+
+        Store store = null;
+        if (storeId != null) {
+            store = storeMapper.selectByStoreId(storeId);
+            if (store != null && !StoreOpenHelper.isAcceptingOrders(store)) {
+                throw new BusinessException(StoreOpenHelper.rejectMessage(store));
+            }
+            if (storeBlacklistService.isBlacklisted(storeId, user.getId(), user.getPhone(), request.getContact())) {
+                throw new BusinessException("您已被该店铺限制下单");
+            }
+        }
+
+        BigDecimal deliveryFee = resolveStoreDeliveryFee(store);
+        MallPromo promo = mallPromoService.findActiveByStoreId(storeId);
+        String couponError = null;
+        MallUserCoupon coupon = null;
+        if (request.getUserCouponId() != null) {
+            try {
+                coupon = mallCouponService.requireUsableCoupon(request.getUserCouponId(), user.getId(), storeId);
+            } catch (BusinessException e) {
+                if (!preview) {
+                    throw e;
+                }
+                couponError = e.getMessage();
+            }
+        }
+
+        MallDiscountSnapshot discount;
+        try {
+            discount = MallDiscountCalculator.compute(goodsAmount, deliveryFee, promo, coupon);
+        } catch (BusinessException e) {
+            if (!preview || coupon == null) {
+                throw e;
+            }
+            couponError = e.getMessage();
+            coupon = null;
+            discount = MallDiscountCalculator.compute(goodsAmount, deliveryFee, promo, null);
+        }
+
+        CheckoutQuote quote = new CheckoutQuote();
+        quote.itemEntities = itemEntities;
+        quote.goodsAmount = goodsAmount.setScale(2, RoundingMode.HALF_UP);
+        quote.storeId = storeId;
+        quote.store = store;
+        quote.deliveryFee = deliveryFee;
+        quote.promo = promo;
+        quote.coupon = coupon;
+        quote.discount = discount;
+        quote.couponError = couponError;
+        return quote;
+    }
+
+    private MallCheckoutPreviewVO toPreviewVO(CheckoutQuote quote, User user) {
+        MallDiscountSnapshot discount = quote.discount;
+        List<MallUserCoupon> coupons = annotateCheckoutCoupons(
+                mallCouponService.listUnusedByUserAndStore(user.getId(), quote.storeId),
+                quote.goodsAmount,
+                quote.deliveryFee,
+                quote.promo);
+        return MallCheckoutPreviewVO.builder()
+                .goodsAmount(quote.goodsAmount)
+                .deliveryFee(quote.deliveryFee)
+                .promoId(quote.promo == null ? null : quote.promo.getId())
+                .promoDiscount(discount.getPromoDiscount())
+                .promoText(quote.promo == null ? null : MallDiscountCalculator.tierText(quote.promo.getTiers()))
+                .userCouponId(discount.getUserCouponId())
+                .couponDiscount(discount.getCouponDiscount())
+                .discountAmount(discount.getDiscountAmount())
+                .discountDesc(discount.getDiscountDesc())
+                .payAmount(discount.getPayAmount())
+                .couponError(quote.couponError)
+                .coupons(coupons)
+                .build();
+    }
+
+    private List<MallUserCoupon> annotateCheckoutCoupons(List<MallUserCoupon> coupons,
+                                                         BigDecimal goodsAmount,
+                                                         BigDecimal deliveryFee,
+                                                         MallPromo promo) {
+        if (ValidateUtil.isEmpty(coupons)) {
+            return Collections.emptyList();
+        }
+        List<MallUserCoupon> usable = new ArrayList<>();
+        List<MallUserCoupon> unusable = new ArrayList<>();
+        BigDecimal goods = goodsAmount == null ? BigDecimal.ZERO : goodsAmount;
+        for (MallUserCoupon coupon : coupons) {
+            BigDecimal threshold = coupon.getThresholdAmount() == null ? BigDecimal.ZERO : coupon.getThresholdAmount();
+            if (goods.compareTo(threshold) < 0) {
+                coupon.setUsable(false);
+                coupon.setDisableReason("商品满" + threshold.stripTrailingZeros().toPlainString() + "可用");
+                unusable.add(coupon);
+                continue;
+            }
+            MallDiscountSnapshot snapshot = MallDiscountCalculator.tryCompute(goods, deliveryFee, promo, coupon);
+            if (snapshot == null || snapshot.getCouponDiscount() == null
+                    || snapshot.getCouponDiscount().compareTo(BigDecimal.ZERO) <= 0) {
+                coupon.setUsable(false);
+                coupon.setDisableReason("当前订单无法使用该券");
+                unusable.add(coupon);
+                continue;
+            }
+            coupon.setUsable(true);
+            coupon.setDisableReason(null);
+            usable.add(coupon);
+        }
+        usable.addAll(unusable);
+        return usable;
+    }
+
+    private static class CheckoutQuote {
+        private List<MallOrderItem> itemEntities;
+        private BigDecimal goodsAmount;
+        private Long storeId;
+        private Store store;
+        private BigDecimal deliveryFee;
+        private MallPromo promo;
+        private MallUserCoupon coupon;
+        private MallDiscountSnapshot discount;
+        private String couponError;
     }
 
     private Claims parseClaims(HttpServletRequest request) {

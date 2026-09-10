@@ -64,6 +64,26 @@ public class MallOrder {
     @ApiModelProperty(value = "配送费（元）")
     private BigDecimal deliveryFee;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "满减活动id")
+    private Long promoId;
+
+    @ApiModelProperty(value = "满减优惠（元）")
+    private BigDecimal promoDiscount;
+
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "使用的用户券id")
+    private Long userCouponId;
+
+    @ApiModelProperty(value = "优惠券优惠（元）")
+    private BigDecimal couponDiscount;
+
+    @ApiModelProperty(value = "优惠合计（元）")
+    private BigDecimal discountAmount;
+
+    @ApiModelProperty(value = "优惠说明")
+    private String discountDesc;
+
     @ApiModelProperty(value = "应付金额（元）")
     private BigDecimal payAmount;
 

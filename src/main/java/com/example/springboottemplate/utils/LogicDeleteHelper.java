@@ -33,7 +33,10 @@ public class LogicDeleteHelper {
             "visitor",
             "mall_order",
             "oper_log",
-            "store_blacklist"
+            "store_blacklist",
+            "mall_promo",
+            "mall_coupon_template",
+            "mall_user_coupon"
     );
 
     @Autowired
