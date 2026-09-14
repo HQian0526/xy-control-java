@@ -11,6 +11,7 @@
         <result property="productName" column="product_name"/>
         <result property="productImg" column="product_img"/>
         <result property="price" column="price"/>
+        <result property="memberPrice" column="member_price"/>
         <result property="productNum" column="product_num"/>
         <result property="saleNum" column="sale_num"/>
         <result property="remark" column="remark"/>
@@ -24,8 +25,8 @@
 
     <!-- 新增商品 -->
     <insert id="addProduct" parameterType="Product">
-        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, product_num, sale_num, remark, product_status, created_by, created_time, deleted)
-        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime}, #{deleted})
+        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, member_price, product_num, sale_num, remark, product_status, created_by, created_time, deleted)
+        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{memberPrice}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime}, #{deleted})
     </insert>
 
     <!-- 查询所有商品信息（模糊查询）-->
@@ -83,6 +84,10 @@
             <if test="productName != null">product_name = #{productName},</if>
             <if test="productImg != null">product_img = #{productImg},</if>
             <if test="price != null">price = #{price},</if>
+            <choose>
+                <when test="clearMemberPrice != null and clearMemberPrice">member_price = null,</when>
+                <when test="memberPrice != null">member_price = #{memberPrice},</when>
+            </choose>
             <if test="productNum != null">product_num = #{productNum},</if>
             <if test="saleNum != null">sale_num = #{saleNum},</if>
             <if test="remark != null">remark = #{remark},</if>

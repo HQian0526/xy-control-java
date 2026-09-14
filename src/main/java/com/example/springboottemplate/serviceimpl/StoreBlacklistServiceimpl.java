@@ -251,7 +251,9 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
                 throw new BusinessException("用户不存在");
             }
         } else if (phone != null) {
-            target = userMapper.selectByPhone(phone);
+            if (record.getStoreId() != null) {
+                target = userMapper.selectByPhoneAndBindStore(phone, record.getStoreId());
+            }
         }
 
         if (target != null) {

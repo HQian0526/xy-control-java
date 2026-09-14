@@ -23,7 +23,16 @@ public interface UserMapper extends BaseMapper<User> {
 
     User selectByOpenid(String openid); //根据微信 openid 精确查询
 
-    User selectByPhone(String phone); //根据手机号精确查询
+    User selectByPhone(String phone); //根据手机号精确查询（全局第一条，历史兼容）
+
+    /** 同一小程序下按手机号查找；平台 appId 可把历史 app_id 为空的用户算进去 */
+    User selectByPhoneAndAppId(@org.apache.ibatis.annotations.Param("phone") String phone,
+                               @org.apache.ibatis.annotations.Param("appId") String appId,
+                               @org.apache.ibatis.annotations.Param("includeNullAppId") boolean includeNullAppId);
+
+    /** 本店顾客：手机号 + bind_store_id */
+    User selectByPhoneAndBindStore(@org.apache.ibatis.annotations.Param("phone") String phone,
+                                   @org.apache.ibatis.annotations.Param("bindStoreId") Long bindStoreId);
 
     void updateUser(User user); //修改用户信息
 

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreMemberRechargeMapper">
+    <resultMap id="storeMemberRechargeResultMap" type="StoreMemberRecharge">
+        <id property="id" column="id"/>
+        <result property="rechargeNo" column="recharge_no"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="openid" column="openid"/>
+        <result property="appId" column="app_id"/>
+        <result property="mchId" column="mch_id"/>
+        <result property="amount" column="amount"/>
+        <result property="amountFen" column="amount_fen"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="prepayId" column="prepay_id"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="paidTime" column="paid_time"/>
+        <result property="settleStatus" column="settle_status"/>
+        <result property="settleTime" column="settle_time"/>
+        <result property="settleBy" column="settle_by"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addRecharge" parameterType="StoreMemberRecharge">
+        insert into store_member_recharge (
+            id, recharge_no, store_id, user_id, openid, app_id, mch_id,
+            amount, amount_fen, pay_status, prepay_id, created_by, created_time, deleted
+        ) values (
+            #{id}, #{rechargeNo}, #{storeId}, #{userId}, #{openid}, #{appId}, #{mchId},
+            #{amount}, #{amountFen}, #{payStatus}, #{prepayId}, #{createdBy}, #{createdTime}, #{deleted}
+        )
+    </insert>
+
+    <select id="selectByRechargeNo" resultMap="storeMemberRechargeResultMap">
+        select * from store_member_recharge
+        where recharge_no = #{rechargeNo} and deleted = 0
+        limit 1
+    </select>
+
+    <update id="markPaid">
+        update store_member_recharge
+        set pay_status = 1,
+            transaction_id = #{transactionId},
+            paid_time = #{paidTime},
+            update_time = #{paidTime}
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+          and pay_status in (0, 2)
+    </update>
+
+    <update id="updatePrepayId">
+        update store_member_recharge
+        set prepay_id = #{prepayId},
+            update_time = now()
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+    </update>
+
+    <update id="markClosed">
+        update store_member_recharge
+        set pay_status = 2,
+            update_time = #{closedTime}
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+          and pay_status = 0
+    </update>
+
+    <select id="selectExpiredUnpaid" resultMap="storeMemberRechargeResultMap">
+        select * from store_member_recharge
+        where deleted = 0
+          and pay_status = 0
+          and created_time &lt; #{expireBefore}
+        order by created_time asc
+        limit #{limit}
+    </select>
+
+    <update id="markStoreSettled">
+        update store_member_recharge
+        set settle_status = 1,
+            settle_time = #{settleTime},
+            settle_by = #{settleBy},
+            update_time = #{settleTime}
+        where deleted = 0
+          and store_id = #{storeId}
+          and ifnull(settle_status, 0) = 0
+          and pay_status = 1
+    </update>
+</mapper>

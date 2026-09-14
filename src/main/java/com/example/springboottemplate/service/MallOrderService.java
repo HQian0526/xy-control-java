@@ -17,6 +17,8 @@ public interface MallOrderService {
 
     String handleWxPayNotify(HttpServletRequest request, String body);
 
+    String handleWxPayNotify(HttpServletRequest request, String body, Long storeId);
+
     /** 待支付且微信已付：补记支付（含扣库存） */
     void applyPaidIfUnpaid(String orderNo, String transactionId);
 
@@ -28,6 +30,8 @@ public interface MallOrderService {
 
     /** 微信退款结果回调 */
     String handleWxRefundNotify(HttpServletRequest request, String body);
+
+    String handleWxRefundNotify(HttpServletRequest request, String body, Long storeId);
 
     /**
      * 店铺订单金额流水。商家查本店；管理员必须先传 storeId。
@@ -42,6 +46,17 @@ public interface MallOrderService {
      */
     Response financeLedger(Long storeId, String type, String date, Integer pageNum, Integer pageSize,
                            HttpServletRequest httpRequest);
+
+    /** 商家查本店待结算金额与今日收入；管理员须传 storeId */
+    Response settlementSummary(Long storeId, HttpServletRequest httpRequest);
+
+    /** 管理员：待结算/已结算店铺列表。settleStatus: pending / settled */
+    Response pendingSettlementStores(Long storeId, String storeName, String settleStatus,
+                                     Integer pageNum, Integer pageSize, HttpServletRequest httpRequest);
+
+    /** 管理员：将该店当前待结算订单标记为已结算（打款线下进行） */
+    Response settleStore(com.example.springboottemplate.dto.mall.MallSettleStoreRequest request,
+                         HttpServletRequest httpRequest);
 
     Response previewCheckout(MallCheckoutRequest request, HttpServletRequest httpRequest);
 }

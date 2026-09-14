@@ -13,13 +13,17 @@ import com.example.springboottemplate.dto.mall.MallFinanceSummary;
 import com.example.springboottemplate.dto.mall.MallIncomeFlowRow;
 import com.example.springboottemplate.dto.mall.MallIncomeFlowVO;
 import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
+import com.example.springboottemplate.dto.mall.MallPendingSettlementStore;
 import com.example.springboottemplate.dto.mall.MallRefundRequest;
+import com.example.springboottemplate.dto.mall.MallSettleStoreRequest;
+import com.example.springboottemplate.dto.mall.MallSettlementSummary;
 import com.example.springboottemplate.entity.MallOrder;
 import com.example.springboottemplate.entity.MallOrderItem;
 import com.example.springboottemplate.entity.MallPromo;
 import com.example.springboottemplate.entity.MallUserCoupon;
 import com.example.springboottemplate.entity.Product;
 import com.example.springboottemplate.entity.Store;
+import com.example.springboottemplate.entity.StoreMember;
 import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.MallOrderItemMapper;
@@ -31,11 +35,15 @@ import com.example.springboottemplate.service.MallCouponService;
 import com.example.springboottemplate.service.MallOrderService;
 import com.example.springboottemplate.service.MallPromoService;
 import com.example.springboottemplate.service.StoreBlacklistService;
+import com.example.springboottemplate.service.StoreMemberService;
 import com.example.springboottemplate.service.wx.MallOrderTimeoutService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
+import com.example.springboottemplate.service.wx.WxTenantContext;
+import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.MallDiscountCalculator;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -89,6 +97,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Autowired
     private WxPayClientService wxPayClientService;
     @Autowired
+    private WxTenantResolver wxTenantResolver;
+    @Autowired
     private WxPayProperties wxPayProperties;
     @Autowired
     private WxShippingService wxShippingService;
@@ -101,6 +111,11 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Autowired
     @Lazy
     private MallOrderTimeoutService mallOrderTimeoutService;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
+    @Autowired
+    @Lazy
+    private StoreMemberService storeMemberService;
 
     @Override
     public Response checkoutAndPay(MallCheckoutRequest request, HttpServletRequest httpRequest) {
@@ -125,11 +140,27 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        if (!StringUtils.hasText(user.getOpenid()) && !wxPayClientService.isMock()) {
-            throw new BusinessException("当前账号未绑定微信，请先微信登录");
-        }
 
         CheckoutQuote quote = quoteCheckout(request, user, false);
+        int payChannel = quote.payChannel == 2 ? 2 : 1;
+        int memberPriced = quote.memberPriced ? 1 : 0;
+        WxTenantContext payTenant = null;
+        if (payChannel != 2) {
+            if (!StringUtils.hasText(user.getOpenid()) && !wxPayClientService.isMock()) {
+                throw new BusinessException("当前账号未绑定微信，请先微信登录");
+            }
+            payTenant = wxTenantResolver.byStoreId(quote.storeId);
+            if (!wxPayClientService.isMock()) {
+                String userAppId = StringUtils.hasText(user.getAppId())
+                        ? user.getAppId()
+                        : wxTenantResolver.platform().getAppId();
+                if (StringUtils.hasText(payTenant.getAppId())
+                        && StringUtils.hasText(userAppId)
+                        && !payTenant.getAppId().equals(userAppId)) {
+                    throw new BusinessException("请使用该店小程序下单支付");
+                }
+            }
+        }
         MallDiscountSnapshot discount = quote.discount;
         BigDecimal payAmount = discount.getPayAmount();
         int payAmountFen = discount.getPayAmountFen();
@@ -146,6 +177,8 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .storeId(quote.storeId)
                 .userId(userId)
                 .openid(user.getOpenid())
+                .appId(payTenant != null ? payTenant.getAppId() : user.getAppId())
+                .mchId(payTenant != null ? payTenant.getMchId() : null)
                 .contact(request.getContact().trim())
                 .address(request.getAddress().trim())
                 .remark(StringUtils.hasText(request.getRemark()) ? request.getRemark().trim() : null)
@@ -159,6 +192,8 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .discountDesc(discount.getDiscountDesc())
                 .payAmount(payAmount)
                 .payAmountFen(payAmountFen)
+                .payChannel(payChannel)
+                .memberPriced(memberPriced)
                 .payStatus(0)
                 .createdBy(username)
                 .createdTime(now)
@@ -172,11 +207,26 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
         mallOrderItemMapper.batchAdd(quote.itemEntities);
 
+        if (payChannel == 2) {
+            if (!storeMemberService.debit(quote.storeId, userId, payAmount)) {
+                throw new BusinessException("余额不足，请重新结算");
+            }
+            markOrderPaid(orderNo, "BAL" + orderNo, now);
+            MallPayPrepareVO paidVO = MallPayPrepareVO.builder()
+                    .mock(false)
+                    .orderNo(orderNo)
+                    .payAmount(payAmount)
+                    .payStatus(1)
+                    .payChannel(2)
+                    .build();
+            return Response.success(paidVO);
+        }
+
         String description = quote.itemEntities.size() == 1
                 ? quote.itemEntities.get(0).getProductName()
                 : "商城订单-" + quote.itemEntities.size() + "件商品";
         MallPayPrepareVO payVO = wxPayClientService.createJsapiPrepay(
-                orderNo, description, user.getOpenid(), payAmountFen);
+                payTenant, orderNo, description, user.getOpenid(), payAmountFen);
 
         if (!payVO.isMock() && StringUtils.hasText(payVO.getPackageValue())
                 && payVO.getPackageValue().startsWith("prepay_id=")) {
@@ -187,6 +237,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         payVO.setOrderNo(orderNo);
         payVO.setPayAmount(payAmount);
         payVO.setPayStatus(0);
+        payVO.setPayChannel(1);
         return Response.success(payVO);
     }
 
@@ -402,6 +453,86 @@ public class MallOrderServiceimpl implements MallOrderService {
         data.put("pages", pageInfo.getPages());
         data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
         data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getSize());
+        return Response.success(data);
+    }
+
+    @Override
+    public Response settlementSummary(Long storeId, HttpServletRequest httpRequest) {
+        Store store = requireMerchantOrAdminStore(storeId, httpRequest);
+        LocalDate today = LocalDate.now(SHANGHAI);
+        MallSettlementSummary summary = mallOrderMapper.sumSettlementSummary(
+                store.getStoreId(), toDate(today), toDate(today.plusDays(1)));
+        if (summary == null) {
+            summary = new MallSettlementSummary();
+        }
+        summary.setPendingAmount(money(summary.getPendingAmount()));
+        summary.setTodayIncome(money(summary.getTodayIncome()));
+        Map<String, Object> data = new HashMap<>();
+        data.put("storeId", String.valueOf(store.getStoreId()));
+        data.put("storeName", store.getStoreName());
+        data.put("pendingAmount", summary.getPendingAmount());
+        data.put("todayIncome", summary.getTodayIncome());
+        return Response.success(data);
+    }
+
+    @Override
+    public Response pendingSettlementStores(Long storeId, String storeName, String settleStatus,
+                                            Integer pageNum, Integer pageSize, HttpServletRequest httpRequest) {
+        storeAuthHelper.requireAdmin(httpRequest);
+        String statusFilter = "settled".equalsIgnoreCase(settleStatus) ? "settled" : "pending";
+        if (pageNum != null && pageSize != null) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
+        List<MallPendingSettlementStore> list = mallOrderMapper.selectPendingSettlementStores(
+                storeId,
+                StringUtils.hasText(storeName) ? storeName.trim() : null,
+                statusFilter);
+        if (list == null) {
+            list = Collections.emptyList();
+        }
+        for (MallPendingSettlementStore row : list) {
+            row.setPendingAmount(money(row.getPendingAmount()));
+            if (row.getOrderCount() == null) {
+                row.setOrderCount(0);
+            }
+            boolean pending = row.getPendingAmount() != null
+                    && row.getPendingAmount().compareTo(BigDecimal.ZERO) > 0;
+            row.setStatus(pending ? "待结算" : "已结算");
+        }
+        PageInfo<MallPendingSettlementStore> pageInfo = new PageInfo<>(list);
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", pageInfo.getList());
+        data.put("total", pageInfo.getTotal());
+        data.put("pages", pageInfo.getPages());
+        data.put("pageNum", pageNum != null ? pageInfo.getPageNum() : 1);
+        data.put("pageSize", pageSize != null ? pageInfo.getPageSize() : pageInfo.getSize());
+        return Response.success(data);
+    }
+
+    @Override
+    public Response settleStore(MallSettleStoreRequest request, HttpServletRequest httpRequest) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireAdmin(httpRequest);
+        if (request == null || request.getStoreId() == null) {
+            throw new BusinessException("请选择店铺");
+        }
+        Store store = storeMapper.selectByStoreId(request.getStoreId());
+        if (store == null || (store.getDeleted() != null && store.getDeleted() == 1)) {
+            throw new BusinessException("未找到店铺信息");
+        }
+        Date now = new Date();
+        String settleBy = StringUtils.hasText(operator.getUsername())
+                ? operator.getUsername()
+                : String.valueOf(operator.getUserId());
+        int updated = mallOrderMapper.markStoreSettled(store.getStoreId(), now, settleBy);
+        int rechargeUpdated = storeMemberService.markStoreSettled(store.getStoreId(), now, settleBy);
+        if (updated + rechargeUpdated <= 0) {
+            throw new BusinessException("该店铺暂无待结算订单");
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("storeId", String.valueOf(store.getStoreId()));
+        data.put("storeName", store.getStoreName());
+        data.put("settledOrderCount", updated + rechargeUpdated);
+        data.put("status", "已结算");
         return Response.success(data);
     }
 
@@ -628,8 +759,15 @@ public class MallOrderServiceimpl implements MallOrderService {
 
     @Override
     public String handleWxPayNotify(HttpServletRequest request, String body) {
+        return handleWxPayNotify(request, body, null);
+    }
+
+    @Override
+    public String handleWxPayNotify(HttpServletRequest request, String body, Long storeId) {
         try {
+            WxTenantContext tenant = wxTenantResolver.byStoreIdForNotify(storeId);
             Transaction transaction = wxPayClientService.parseNotify(
+                    tenant,
                     body,
                     request.getHeader("Wechatpay-Serial"),
                     request.getHeader("Wechatpay-Nonce"),
@@ -638,7 +776,12 @@ public class MallOrderServiceimpl implements MallOrderService {
                     request.getHeader("Wechatpay-Signature-Type")
             );
             if (transaction.getTradeState() == Transaction.TradeStateEnum.SUCCESS) {
-                markOrderPaid(transaction.getOutTradeNo(), transaction.getTransactionId(), new Date());
+                String outTradeNo = transaction.getOutTradeNo();
+                if (StringUtils.hasText(outTradeNo) && outTradeNo.startsWith("S")) {
+                    storeMemberService.applyRechargePaid(outTradeNo, transaction.getTransactionId());
+                } else {
+                    markOrderPaid(outTradeNo, transaction.getTransactionId(), new Date());
+                }
             }
             return "{\"code\":\"SUCCESS\",\"message\":\"成功\"}";
         } catch (Exception e) {
@@ -711,8 +854,25 @@ public class MallOrderServiceimpl implements MallOrderService {
             throw new BusinessException("订单状态已变更，请刷新后重试");
         }
 
+        boolean balancePay = order.getPayChannel() != null && order.getPayChannel() == 2;
+        if (balancePay) {
+            applyRefundSuccess(order.getOrderNo(), outRefundNo, "BAL" + outRefundNo, refundFen, new Date(), true);
+            MallOrder latest = mallOrderMapper.selectByOrderNo(order.getOrderNo());
+            latest.setItems(mallOrderItemMapper.selectByOrderId(latest.getId()));
+            Map<String, Object> data = new HashMap<>();
+            data.put("order", latest);
+            data.put("outRefundNo", outRefundNo);
+            data.put("wxRefundId", null);
+            data.put("refundAmountFen", refundFen);
+            data.put("refundAmount", BigDecimal.valueOf(refundFen).movePointLeft(2));
+            data.put("refundStatus", "SUCCESS");
+            data.put("mock", false);
+            return Response.success(data);
+        }
+
         try {
             Refund refund = wxPayClientService.createRefund(
+                    wxTenantResolver.byOrder(order),
                     order.getOrderNo(), outRefundNo, order.getPayAmountFen(), refundFen, reason);
             Status status = refund.getStatus();
             String wxRefundId = refund.getRefundId();
@@ -747,8 +907,15 @@ public class MallOrderServiceimpl implements MallOrderService {
 
     @Override
     public String handleWxRefundNotify(HttpServletRequest request, String body) {
+        return handleWxRefundNotify(request, body, null);
+    }
+
+    @Override
+    public String handleWxRefundNotify(HttpServletRequest request, String body, Long storeId) {
         try {
+            WxTenantContext tenant = wxTenantResolver.byStoreIdForNotify(storeId);
             RefundNotification notification = wxPayClientService.parseRefundNotify(
+                    tenant,
                     body,
                     request.getHeader("Wechatpay-Serial"),
                     request.getHeader("Wechatpay-Nonce"),
@@ -806,6 +973,10 @@ public class MallOrderServiceimpl implements MallOrderService {
                 orderNo, refundFen, outRefundNo, wxRefundId, refundTime, allowDirect ? 1 : 0);
         if (rows <= 0) {
             return;
+        }
+        if (before.getPayChannel() != null && before.getPayChannel() == 2) {
+            BigDecimal refundYuan = BigDecimal.valueOf(refundFen).movePointLeft(2);
+            storeMemberService.credit(before.getStoreId(), before.getUserId(), refundYuan);
         }
         // 全额退款成功后回滚库存/销量
         if (willFull) {
@@ -898,6 +1069,9 @@ public class MallOrderServiceimpl implements MallOrderService {
             product.setUpdateTime(paidTime);
             productMapper.updateProduct(product);
         }
+        if (order.getPayChannel() != null && order.getPayChannel() == 2) {
+            return;
+        }
         scheduleWxShippingAfterCommit(orderNo);
     }
 
@@ -954,10 +1128,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     }
 
     private CheckoutQuote quoteCheckout(MallCheckoutRequest request, User user, boolean preview) {
-        List<MallOrderItem> itemEntities = new ArrayList<>();
-        BigDecimal goodsAmount = BigDecimal.ZERO;
+        List<QuotedLine> lines = new ArrayList<>();
         Long storeId = null;
-        Date now = new Date();
 
         for (MallCheckoutItemRequest line : request.getItems()) {
             if (line == null || line.getProductId() == null || line.getQuantity() == null || line.getQuantity() <= 0) {
@@ -987,23 +1159,10 @@ public class MallOrderServiceimpl implements MallOrderService {
                     throw new BusinessException("暂不支持跨店结算，请分店铺下单");
                 }
             }
-
-            BigDecimal lineAmount = product.getPrice()
-                    .multiply(BigDecimal.valueOf(line.getQuantity()))
-                    .setScale(2, RoundingMode.HALF_UP);
-            goodsAmount = goodsAmount.add(lineAmount);
-
-            itemEntities.add(MallOrderItem.builder()
-                    .id(IdWorker.getId())
-                    .productId(product.getProductId())
-                    .productName(product.getProductName())
-                    .productImg(product.getProductImg())
-                    .price(product.getPrice())
-                    .quantity(line.getQuantity())
-                    .amount(lineAmount)
-                    .createdTime(now)
-                    .deleted(0)
-                    .build());
+            QuotedLine quoted = new QuotedLine();
+            quoted.product = product;
+            quoted.quantity = line.getQuantity();
+            lines.add(quoted);
         }
 
         Store store = null;
@@ -1015,6 +1174,58 @@ public class MallOrderServiceimpl implements MallOrderService {
             if (storeBlacklistService.isBlacklisted(storeId, user.getId(), user.getPhone(), request.getContact())) {
                 throw new BusinessException("您已被该店铺限制下单");
             }
+        }
+
+        StoreMember member = storeMemberService.find(storeId, user.getId());
+        boolean isMember = member != null && Integer.valueOf(1).equals(member.getIsMember());
+        BigDecimal balance = member == null || member.getBalance() == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : member.getBalance().setScale(2, RoundingMode.HALF_UP);
+
+        Date now = new Date();
+        CheckoutQuote regular = buildQuote(lines, request, user, preview, storeId, store, false, now);
+        CheckoutQuote chosen = regular;
+        chosen.payChannel = 1;
+        chosen.memberPriced = false;
+        chosen.memberPriceUnavailable = false;
+        if (isMember) {
+            CheckoutQuote memberQuote = buildQuote(lines, request, user, preview, storeId, store, true, now);
+            chosen.memberPayAmount = memberQuote.discount.getPayAmount();
+            if (memberQuote.discount.getPayAmount().compareTo(balance) <= 0) {
+                chosen = memberQuote;
+                chosen.payChannel = 2;
+                chosen.memberPriced = true;
+                chosen.memberPriceUnavailable = false;
+                chosen.memberPayAmount = memberQuote.discount.getPayAmount();
+            } else {
+                chosen.memberPriceUnavailable = true;
+            }
+        }
+        chosen.isMember = isMember;
+        chosen.memberBalance = balance;
+        return chosen;
+    }
+
+    private CheckoutQuote buildQuote(List<QuotedLine> lines, MallCheckoutRequest request, User user,
+                                     boolean preview, Long storeId, Store store, boolean useMemberPrice, Date now) {
+        List<MallOrderItem> itemEntities = new ArrayList<>();
+        BigDecimal goodsAmount = BigDecimal.ZERO;
+        for (QuotedLine line : lines) {
+            BigDecimal unit = unitPrice(line.product, useMemberPrice);
+            BigDecimal lineAmount = unit.multiply(BigDecimal.valueOf(line.quantity))
+                    .setScale(2, RoundingMode.HALF_UP);
+            goodsAmount = goodsAmount.add(lineAmount);
+            itemEntities.add(MallOrderItem.builder()
+                    .id(IdWorker.getId())
+                    .productId(line.product.getProductId())
+                    .productName(line.product.getProductName())
+                    .productImg(line.product.getProductImg())
+                    .price(unit)
+                    .quantity(line.quantity)
+                    .amount(lineAmount)
+                    .createdTime(now)
+                    .deleted(0)
+                    .build());
         }
 
         BigDecimal deliveryFee = resolveStoreDeliveryFee(store);
@@ -1054,7 +1265,26 @@ public class MallOrderServiceimpl implements MallOrderService {
         quote.coupon = coupon;
         quote.discount = discount;
         quote.couponError = couponError;
+        quote.payChannel = 1;
+        quote.memberPriced = false;
         return quote;
+    }
+
+    private static BigDecimal unitPrice(Product product, boolean useMemberPrice) {
+        if (useMemberPrice && validMemberPrice(product)) {
+            return product.getMemberPrice().setScale(2, RoundingMode.HALF_UP);
+        }
+        return product.getPrice().setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static boolean validMemberPrice(Product product) {
+        if (product == null || product.getMemberPrice() == null) {
+            return false;
+        }
+        if (product.getMemberPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return false;
+        }
+        return product.getPrice() == null || product.getMemberPrice().compareTo(product.getPrice()) < 0;
     }
 
     private MallCheckoutPreviewVO toPreviewVO(CheckoutQuote quote, User user) {
@@ -1075,6 +1305,12 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .discountAmount(discount.getDiscountAmount())
                 .discountDesc(discount.getDiscountDesc())
                 .payAmount(discount.getPayAmount())
+                .payChannel(quote.payChannel)
+                .memberPriced(quote.memberPriced)
+                .member(quote.isMember)
+                .memberBalance(quote.memberBalance)
+                .memberPayAmount(quote.memberPayAmount)
+                .memberPriceUnavailable(quote.memberPriceUnavailable)
                 .couponError(quote.couponError)
                 .coupons(coupons)
                 .build();
@@ -1114,6 +1350,11 @@ public class MallOrderServiceimpl implements MallOrderService {
         return usable;
     }
 
+    private static class QuotedLine {
+        private Product product;
+        private int quantity;
+    }
+
     private static class CheckoutQuote {
         private List<MallOrderItem> itemEntities;
         private BigDecimal goodsAmount;
@@ -1124,6 +1365,12 @@ public class MallOrderServiceimpl implements MallOrderService {
         private MallUserCoupon coupon;
         private MallDiscountSnapshot discount;
         private String couponError;
+        private int payChannel;
+        private boolean memberPriced;
+        private boolean isMember;
+        private BigDecimal memberBalance;
+        private BigDecimal memberPayAmount;
+        private boolean memberPriceUnavailable;
     }
 
     private Claims parseClaims(HttpServletRequest request) {

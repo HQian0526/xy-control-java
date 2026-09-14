@@ -27,6 +27,9 @@ public class MallPayPrepareVO {
     @ApiModelProperty(value = "支付状态 0待支付 1已支付 2已关闭")
     private Integer payStatus;
 
+    @ApiModelProperty(value = "支付渠道 1微信 2会员余额")
+    private Integer payChannel;
+
     @ApiModelProperty(value = "小程序 appId")
     private String appId;
 

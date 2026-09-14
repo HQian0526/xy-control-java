@@ -9,4 +9,7 @@ import lombok.Data;
 public class WxLoginRequest {
     @ApiModelProperty(value = "wx.login 获取的临时登录凭证 code", required = true)
     private String code;
+
+    @ApiModelProperty(value = "当前小程序 AppID，买断包必传；空则走平台默认")
+    private String appId;
 }

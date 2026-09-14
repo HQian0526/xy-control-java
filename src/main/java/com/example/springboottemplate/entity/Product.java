@@ -56,6 +56,13 @@ public class Product {
     @ApiModelProperty(value = "价格", required = false)
     private BigDecimal price;
 
+    @ApiModelProperty(value = "会员价（可空，须低于常规价）", required = false)
+    private BigDecimal memberPrice;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "更新时清空会员价", hidden = true)
+    private Boolean clearMemberPrice;
+
     @ApiModelProperty(value = "库存", required = false)
     private Integer productNum;
 

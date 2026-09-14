@@ -51,6 +51,24 @@ public class MallCheckoutPreviewVO {
     @ApiModelProperty(value = "应付金额")
     private BigDecimal payAmount;
 
+    @ApiModelProperty(value = "支付渠道 1微信 2会员余额")
+    private Integer payChannel;
+
+    @ApiModelProperty(value = "本单是否按会员价")
+    private Boolean memberPriced;
+
+    @ApiModelProperty(value = "是否本店会员")
+    private Boolean member;
+
+    @ApiModelProperty(value = "本店会员余额")
+    private BigDecimal memberBalance;
+
+    @ApiModelProperty(value = "按会员价应付（余额不足时仍返回，便于提示）")
+    private BigDecimal memberPayAmount;
+
+    @ApiModelProperty(value = "会员余额不足，本单按原价微信")
+    private Boolean memberPriceUnavailable;
+
     @ApiModelProperty(value = "选券失败原因")
     private String couponError;
 

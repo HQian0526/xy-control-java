@@ -113,17 +113,18 @@ public class WxShippingService {
             log.error("微信发货缺少 openid orderNo={}", orderNo);
             return;
         }
-        if (!StringUtils.hasText(wxPayProperties.getMchId())) {
+        String mchId = StringUtils.hasText(order.getMchId()) ? order.getMchId() : wxPayProperties.getMchId();
+        if (!StringUtils.hasText(mchId)) {
             saveSync(orderNo, STATUS_FAILED, null, "未配置微信支付商户号 mch-id", maxRetry, now);
             return;
         }
 
         List<MallOrderItem> items = mallOrderItemMapper.selectByOrderId(order.getId());
         String itemDesc = buildItemDesc(items);
-        Map<String, Object> payload = buildPayload(order, logisticsType, itemDesc);
+        Map<String, Object> payload = buildPayload(order, logisticsType, itemDesc, mchId);
 
         try {
-            JsonNode node = wxApiService.postWithAccessToken(UPLOAD_SHIPPING_URL, payload);
+            JsonNode node = wxApiService.postWithAccessToken(UPLOAD_SHIPPING_URL, payload, order.getAppId());
             int errcode = node.path("errcode").asInt(0);
             String errmsg = node.path("errmsg").asText("ok");
             if (errcode == 0 || ALREADY_SHIPPED_CODES.contains(errcode)) {
@@ -154,10 +155,10 @@ public class WxShippingService {
         return !wxPayClientService.isMock();
     }
 
-    private Map<String, Object> buildPayload(MallOrder order, int logisticsType, String itemDesc) {
+    private Map<String, Object> buildPayload(MallOrder order, int logisticsType, String itemDesc, String mchId) {
         Map<String, Object> orderKey = new LinkedHashMap<>();
         orderKey.put("order_number_type", 1);
-        orderKey.put("mchid", wxPayProperties.getMchId());
+        orderKey.put("mchid", mchId);
         orderKey.put("out_trade_no", order.getOrderNo());
 
         Map<String, Object> shippingItem = new LinkedHashMap<>();

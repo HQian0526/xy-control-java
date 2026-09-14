@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreMemberMapper">
+    <resultMap id="storeMemberResultMap" type="StoreMember">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="isMember" column="is_member"/>
+        <result property="balance" column="balance"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <select id="selectByStoreAndUser" resultMap="storeMemberResultMap">
+        select * from store_member
+        where store_id = #{storeId}
+          and user_id = #{userId}
+          and deleted = 0
+        limit 1
+    </select>
+
+    <insert id="insertMember" parameterType="StoreMember">
+        insert into store_member (
+            id, store_id, user_id, is_member, balance, created_time, update_time, deleted
+        ) values (
+            #{id}, #{storeId}, #{userId}, #{isMember}, #{balance}, #{createdTime}, #{updateTime}, #{deleted}
+        )
+    </insert>
+
+    <update id="updateMemberStatus">
+        update store_member
+        set is_member = #{isMember},
+            update_time = #{updateTime}
+        where store_id = #{storeId}
+          and user_id = #{userId}
+          and deleted = 0
+    </update>
+
+    <update id="debitBalance">
+        update store_member
+        set balance = balance - #{amount},
+            update_time = #{updateTime}
+        where store_id = #{storeId}
+          and user_id = #{userId}
+          and deleted = 0
+          and is_member = 1
+          and balance &gt;= #{amount}
+    </update>
+
+    <update id="creditBalance">
+        update store_member
+        set balance = balance + #{amount},
+            update_time = #{updateTime}
+        where store_id = #{storeId}
+          and user_id = #{userId}
+          and deleted = 0
+    </update>
+
+    <update id="addBalanceAndJoin">
+        update store_member
+        set is_member = 1,
+            balance = balance + #{amount},
+            update_time = #{updateTime}
+        where store_id = #{storeId}
+          and user_id = #{userId}
+          and deleted = 0
+    </update>
+</mapper>

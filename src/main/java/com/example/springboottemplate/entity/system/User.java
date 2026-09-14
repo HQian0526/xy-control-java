@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -77,11 +78,22 @@ public class User {
     @ApiModelProperty(value = "所属店铺名", required = false)
     private String storeName;
 
+    @TableField(exist = false)
+    @ApiModelProperty(value = "是否本店会员 0否 1是")
+    private Integer isMember;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "本店会员余额")
+    private BigDecimal memberBalance;
+
     @ApiModelProperty(value = "微信小程序 openid", required = false)
     private String openid;
 
     @ApiModelProperty(value = "微信 unionid（同一开放平台下打通多端）", required = false)
     private String unionid;
+
+    @ApiModelProperty(value = "注册来源小程序 AppID", required = false)
+    private String appId;
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;

@@ -24,6 +24,14 @@ public class StoreAuthHelper {
     @Autowired
     private StoreMapper storeMapper;
 
+    public Operator requireAdmin(HttpServletRequest request) {
+        Operator operator = requireMerchantOrAdmin(request);
+        if (!operator.isAdmin()) {
+            throw new BusinessException("仅管理员可操作");
+        }
+        return operator;
+    }
+
     public Operator requireMerchantOrAdmin(HttpServletRequest request) {
         Claims claims = parseClaims(request);
         Long userId = jwtUtil.getUserId(claims);

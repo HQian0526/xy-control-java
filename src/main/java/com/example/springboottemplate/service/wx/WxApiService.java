@@ -1,6 +1,5 @@
 package com.example.springboottemplate.service.wx;
 
-import com.example.springboottemplate.config.WxProperties;
 import com.example.springboottemplate.dto.WxSessionResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class WxApiService {
@@ -25,20 +25,23 @@ public class WxApiService {
     private static final String GET_PHONE_NUMBER_URL = "https://api.weixin.qq.com/wxa/business/getuserphonenumber";
 
     @Autowired
-    private WxProperties wxProperties;
+    private WxTenantResolver wxTenantResolver;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private volatile String cachedAccessToken;
-    private volatile long accessTokenExpireAtMs;
+    private final ConcurrentHashMap<String, CachedToken> tokenCache = new ConcurrentHashMap<>();
 
     public WxSessionResult code2Session(String code) {
-        ensureWxConfigured();
+        return code2Session(code, null);
+    }
+
+    public WxSessionResult code2Session(String code, String appId) {
+        WxTenantContext tenant = wxTenantResolver.byAppId(appId);
+        ensureMiniappReady(tenant);
 
         String url = UriComponentsBuilder.fromHttpUrl(JSCODE2SESSION_URL)
-                .queryParam("appid", wxProperties.getAppId())
-                .queryParam("secret", wxProperties.getAppSecret())
+                .queryParam("appid", tenant.getAppId())
+                .queryParam("secret", tenant.getAppSecret())
                 .queryParam("js_code", code)
                 .queryParam("grant_type", "authorization_code")
                 .toUriString();
@@ -65,23 +68,23 @@ public class WxApiService {
         }
     }
 
-    /**
-     * 用 getPhoneNumber 返回的 code 换取用户手机号（新版接口）
-     */
     public String getPhoneNumber(String phoneCode) {
-        ensureWxConfigured();
+        return getPhoneNumber(phoneCode, null);
+    }
+
+    public String getPhoneNumber(String phoneCode, String appId) {
+        WxTenantContext tenant = wxTenantResolver.byAppId(appId);
+        ensureMiniappReady(tenant);
         if (!StringUtils.hasText(phoneCode)) {
             throw new RuntimeException("手机号授权 code 不能为空");
         }
 
         try {
-            return doGetPhoneNumber(phoneCode.trim(), getAccessToken(false));
+            return doGetPhoneNumber(phoneCode.trim(), tenant, getAccessToken(tenant, false));
         } catch (HttpClientErrorException e) {
-            // access_token 偶发失效时清缓存重试一次
             if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
-                cachedAccessToken = null;
-                accessTokenExpireAtMs = 0;
-                return doGetPhoneNumber(phoneCode.trim(), getAccessToken(true));
+                clearToken(tenant.getAppId());
+                return doGetPhoneNumber(phoneCode.trim(), tenant, getAccessToken(tenant, true));
             }
             throw new RuntimeException("调用微信手机号接口失败: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
         } catch (RuntimeException e) {
@@ -91,13 +94,12 @@ public class WxApiService {
         }
     }
 
-    private String doGetPhoneNumber(String phoneCode, String accessToken) {
+    private String doGetPhoneNumber(String phoneCode, WxTenantContext tenant, String accessToken) {
         try {
             String url = UriComponentsBuilder.fromUriString(GET_PHONE_NUMBER_URL)
                     .queryParam("access_token", accessToken)
                     .toUriString();
 
-            // Spring 6.1+ 默认不再缓冲请求体、不带 Content-Length；微信会因此返回 412
             String jsonBody = objectMapper.writeValueAsString(Map.of("code", phoneCode));
             byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
 
@@ -115,8 +117,7 @@ public class WxApiService {
             int errcode = node.path("errcode").asInt(0);
             if (errcode != 0) {
                 if (errcode == 40001 || errcode == 42001) {
-                    cachedAccessToken = null;
-                    accessTokenExpireAtMs = 0;
+                    clearToken(tenant.getAppId());
                 }
                 throw new RuntimeException("获取微信手机号失败: " + text(node, "errmsg") + "(" + errcode + ")");
             }
@@ -144,25 +145,25 @@ public class WxApiService {
         }
     }
 
-    /**
-     * POST 微信 JSON 接口；access_token 失效时清缓存重试一次。
-     */
     public JsonNode postWithAccessToken(String url, Object payload) {
-        ensureWxConfigured();
+        return postWithAccessToken(url, payload, null);
+    }
+
+    public JsonNode postWithAccessToken(String url, Object payload, String appId) {
+        WxTenantContext tenant = wxTenantResolver.byAppId(appId);
+        ensureMiniappReady(tenant);
         try {
-            JsonNode node = doPostJson(url, payload, getAccessToken(false));
+            JsonNode node = doPostJson(url, payload, getAccessToken(tenant, false));
             int errcode = node.path("errcode").asInt(0);
             if (errcode == 40001 || errcode == 42001) {
-                cachedAccessToken = null;
-                accessTokenExpireAtMs = 0;
-                return doPostJson(url, payload, getAccessToken(true));
+                clearToken(tenant.getAppId());
+                return doPostJson(url, payload, getAccessToken(tenant, true));
             }
             return node;
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 400) {
-                cachedAccessToken = null;
-                accessTokenExpireAtMs = 0;
-                return doPostJson(url, payload, getAccessToken(true));
+                clearToken(tenant.getAppId());
+                return doPostJson(url, payload, getAccessToken(tenant, true));
             }
             throw new RuntimeException("调用微信接口失败: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
         }
@@ -188,8 +189,7 @@ public class WxApiService {
             JsonNode node = objectMapper.readTree(body);
             int errcode = node.path("errcode").asInt(0);
             if (errcode == 40001 || errcode == 42001) {
-                cachedAccessToken = null;
-                accessTokenExpireAtMs = 0;
+                // caller will refresh
             }
             return node;
         } catch (HttpClientErrorException e) {
@@ -202,20 +202,28 @@ public class WxApiService {
     }
 
     public String getAccessToken() {
-        return getAccessToken(false);
+        return getAccessToken(wxTenantResolver.platform(), false);
     }
 
     public synchronized String getAccessToken(boolean forceRefresh) {
+        return getAccessToken(wxTenantResolver.platform(), forceRefresh);
+    }
+
+    private String getAccessToken(WxTenantContext tenant, boolean forceRefresh) {
+        String cacheKey = tenant.getAppId();
         long now = System.currentTimeMillis();
-        if (!forceRefresh && StringUtils.hasText(cachedAccessToken) && now < accessTokenExpireAtMs) {
-            return cachedAccessToken;
+        if (!forceRefresh) {
+            CachedToken cached = tokenCache.get(cacheKey);
+            if (cached != null && StringUtils.hasText(cached.token) && now < cached.expireAtMs) {
+                return cached.token;
+            }
         }
 
-        ensureWxConfigured();
+        ensureMiniappReady(tenant);
         String url = UriComponentsBuilder.fromUriString(ACCESS_TOKEN_URL)
                 .queryParam("grant_type", "client_credential")
-                .queryParam("appid", wxProperties.getAppId())
-                .queryParam("secret", wxProperties.getAppSecret())
+                .queryParam("appid", tenant.getAppId())
+                .queryParam("secret", tenant.getAppSecret())
                 .toUriString();
 
         try {
@@ -233,10 +241,9 @@ public class WxApiService {
             if (!StringUtils.hasText(token)) {
                 throw new RuntimeException("获取微信 access_token 失败: token 为空");
             }
-            cachedAccessToken = token;
-            // 提前 5 分钟过期，避免临界失效
-            accessTokenExpireAtMs = now + Math.max(60, expiresIn - 300) * 1000L;
-            return cachedAccessToken;
+            long expireAtMs = now + Math.max(60, expiresIn - 300) * 1000L;
+            tokenCache.put(cacheKey, new CachedToken(token, expireAtMs));
+            return token;
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -244,18 +251,34 @@ public class WxApiService {
         }
     }
 
-    private void ensureWxConfigured() {
-        if (!StringUtils.hasText(wxProperties.getAppId()) || !StringUtils.hasText(wxProperties.getAppSecret())) {
+    private void clearToken(String appId) {
+        if (StringUtils.hasText(appId)) {
+            tokenCache.remove(appId);
+        }
+    }
+
+    private void ensureMiniappReady(WxTenantContext tenant) {
+        if (tenant == null || !tenant.miniappReady()) {
             throw new RuntimeException("未配置微信小程序 appId/appSecret");
         }
-        if ("your-miniapp-appid".equals(wxProperties.getAppId())
-                || "your-miniapp-appsecret".equals(wxProperties.getAppSecret())) {
-            throw new RuntimeException("请先在 application.yml 中配置真实的微信小程序 appId/appSecret");
+        if ("your-miniapp-appid".equals(tenant.getAppId())
+                || "your-miniapp-appsecret".equals(tenant.getAppSecret())) {
+            throw new RuntimeException("请先配置真实的微信小程序 appId/appSecret");
         }
     }
 
     private String text(JsonNode node, String field) {
         JsonNode value = node.get(field);
         return value == null || value.isNull() ? null : value.asText();
+    }
+
+    private static class CachedToken {
+        private final String token;
+        private final long expireAtMs;
+
+        private CachedToken(String token, long expireAtMs) {
+            this.token = token;
+            this.expireAtMs = expireAtMs;
+        }
     }
 }

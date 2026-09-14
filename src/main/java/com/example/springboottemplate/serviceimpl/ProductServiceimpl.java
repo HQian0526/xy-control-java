@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -98,6 +99,7 @@ public class ProductServiceimpl implements ProductService {
         product.setDeleted(0);
         product.setCreatedTime(new Date());
         product.setCreatedBy(username);
+        normalizeMemberPrice(product);
         productMapper.addProduct(product);
         return new Response(200, null, "操作成功");
     }
@@ -166,6 +168,25 @@ public class ProductServiceimpl implements ProductService {
         return new Response(200, data, "操作成功");
     }
 
+    private void normalizeMemberPrice(Product product) {
+        if (product == null) {
+            return;
+        }
+        BigDecimal memberPrice = product.getMemberPrice();
+        if (memberPrice == null) {
+            return;
+        }
+        if (memberPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            product.setMemberPrice(null);
+            product.setClearMemberPrice(true);
+            return;
+        }
+        if (product.getPrice() != null && memberPrice.compareTo(product.getPrice()) >= 0) {
+            throw new BusinessException("会员价须低于常规价");
+        }
+        product.setClearMemberPrice(false);
+    }
+
     @Override
     public Response updateProduct(Product product, HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
@@ -175,6 +196,7 @@ public class ProductServiceimpl implements ProductService {
         String username = claims.getSubject();
         product.setUpdateBy(username);
         product.setUpdateTime(new Date());
+        normalizeMemberPrice(product);
         productMapper.updateProduct(product);
         return new Response(200, null, "操作成功");
     }

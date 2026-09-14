@@ -5,6 +5,7 @@ import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallCheckoutRequest;
 import com.example.springboottemplate.dto.mall.MallRefundRequest;
+import com.example.springboottemplate.dto.mall.MallSettleStoreRequest;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.service.MallOrderService;
 import io.swagger.annotations.Api;
@@ -107,12 +108,19 @@ public class MallOrderController {
     @ResponseBody
     @ApiOperation(value = "微信支付回调", notes = "微信服务器回调，无需登录")
     public String wxPayNotify(HttpServletRequest request) {
+        return wxPayNotifyByStore(null, request);
+    }
+
+    @PostMapping(value = "/wxPayNotify/{storeId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    @ApiOperation(value = "店铺微信支付回调", notes = "买断店回调地址为平台 notify-url/{storeId}")
+    public String wxPayNotifyByStore(@PathVariable Long storeId, HttpServletRequest request) {
         try {
             String body;
             try (BufferedReader reader = request.getReader()) {
                 body = reader.lines().collect(Collectors.joining("\n"));
             }
-            return mallOrderService.handleWxPayNotify(request, body);
+            return mallOrderService.handleWxPayNotify(request, body, storeId);
         } catch (Exception e) {
             return "{\"code\":\"FAIL\",\"message\":\"notify error\"}";
         }
@@ -136,12 +144,19 @@ public class MallOrderController {
     @ResponseBody
     @ApiOperation(value = "微信退款回调", notes = "微信服务器回调，无需登录")
     public String wxRefundNotify(HttpServletRequest request) {
+        return wxRefundNotifyByStore(null, request);
+    }
+
+    @PostMapping(value = "/wxRefundNotify/{storeId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    @ApiOperation(value = "店铺微信退款回调")
+    public String wxRefundNotifyByStore(@PathVariable Long storeId, HttpServletRequest request) {
         try {
             String body;
             try (BufferedReader reader = request.getReader()) {
                 body = reader.lines().collect(Collectors.joining("\n"));
             }
-            return mallOrderService.handleWxRefundNotify(request, body);
+            return mallOrderService.handleWxRefundNotify(request, body, storeId);
         } catch (Exception e) {
             return "{\"code\":\"FAIL\",\"message\":\"refund notify error\"}";
         }
@@ -181,6 +196,53 @@ public class MallOrderController {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {
             return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/settlementSummary")
+    @ResponseBody
+    @ApiOperation(value = "待结算金额与今日收入", notes = "商家查本店；管理员须传 storeId")
+    public Response settlementSummary(@RequestParam(required = false) Long storeId,
+                                      HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.settlementSummary(storeId, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/pendingSettlementStores")
+    @ResponseBody
+    @ApiOperation(value = "待结算店铺列表", notes = "仅管理员。settleStatus: pending 待结算（默认）/ settled 已结算")
+    public Response pendingSettlementStores(@RequestParam(required = false) Long storeId,
+                                            @RequestParam(required = false) String storeName,
+                                            @RequestParam(required = false) String settleStatus,
+                                            @RequestParam(required = false) Integer pageNum,
+                                            @RequestParam(required = false) Integer pageSize,
+                                            HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.pendingSettlementStores(storeId, storeName, settleStatus,
+                    pageNum, pageSize, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/settleStore")
+    @ResponseBody
+    @ApiOperation(value = "标记店铺已结算", notes = "仅管理员；资金打款线下进行，此处只改结算状态")
+    @OperLog(module = "店铺结算", type = OperTypes.UPDATE, remark = "标记店铺已结算")
+    public Response settleStore(@RequestBody MallSettleStoreRequest request, HttpServletRequest httpRequest) {
+        try {
+            return mallOrderService.settleStore(request, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("结算失败: " + e.getMessage());
         }
     }
 

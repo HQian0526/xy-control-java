@@ -7,6 +7,7 @@ import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.system.AuthService;
 import com.example.springboottemplate.service.wx.WxApiService;
+import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.PasswordUtil;
 import io.jsonwebtoken.Claims;
@@ -34,6 +35,8 @@ public class AuthServiceimpl implements AuthService {
     private JwtUtil jwtUtil;
     @Autowired
     private WxApiService wxApiService;
+    @Autowired
+    private WxTenantResolver wxTenantResolver;
 
     @Override
     public Response login(String username, String password) {
@@ -71,12 +74,13 @@ public class AuthServiceimpl implements AuthService {
     }
 
     @Override
-    public Response wxLogin(String code) {
+    public Response wxLogin(String code, String appId) {
         if (!StringUtils.hasText(code)) {
             throw new RuntimeException("微信登录 code 不能为空");
         }
+        String resolvedAppId = resolveLoginAppId(appId);
 
-        WxSessionResult session = wxApiService.code2Session(code.trim());
+        WxSessionResult session = wxApiService.code2Session(code.trim(), resolvedAppId);
         if (session.getErrcode() != null && session.getErrcode() != 0) {
             throw new RuntimeException("微信登录失败: " + session.getErrmsg() + "(" + session.getErrcode() + ")");
         }
@@ -86,11 +90,21 @@ public class AuthServiceimpl implements AuthService {
 
         User user = userMapper.selectByOpenid(session.getOpenid());
         if (user == null) {
-            user = createWxUser(session);
-        } else if (StringUtils.hasText(session.getUnionid())
-                && !session.getUnionid().equals(user.getUnionid())) {
-            user.setUnionid(session.getUnionid());
-            userMapper.updateUser(user);
+            user = createWxUser(session, resolvedAppId);
+        } else {
+            boolean dirty = false;
+            if (StringUtils.hasText(session.getUnionid())
+                    && !session.getUnionid().equals(user.getUnionid())) {
+                user.setUnionid(session.getUnionid());
+                dirty = true;
+            }
+            if (!StringUtils.hasText(user.getAppId()) && StringUtils.hasText(resolvedAppId)) {
+                user.setAppId(resolvedAppId);
+                dirty = true;
+            }
+            if (dirty) {
+                userMapper.updateUser(user);
+            }
         }
 
         if (user.getDeleted() != null && user.getDeleted() == 1) {
@@ -118,7 +132,8 @@ public class AuthServiceimpl implements AuthService {
             throw new RuntimeException("当前账号未绑定微信，无法通过微信授权手机号");
         }
 
-        String phone = normalizePhone(wxApiService.getPhoneNumber(phoneCode.trim()));
+        String appId = resolveRequestAppId(request, current);
+        String phone = normalizePhone(wxApiService.getPhoneNumber(phoneCode.trim(), appId));
         if (!StringUtils.hasText(phone)) {
             throw new RuntimeException("未能获取到有效手机号");
         }
@@ -128,11 +143,15 @@ public class AuthServiceimpl implements AuthService {
             return buildLoginResponse(current, false);
         }
 
-        User phoneOwner = userMapper.selectByPhone(phone);
+        boolean includeNullAppId = wxTenantResolver.isPlatformAppId(appId);
+        User phoneOwner = userMapper.selectByPhoneAndAppId(phone, appId, includeNullAppId);
 
         // 手机号未被占用：只给当前微信用户补手机号
         if (phoneOwner == null) {
             current.setPhone(phone);
+            if (!StringUtils.hasText(current.getAppId()) && StringUtils.hasText(appId)) {
+                current.setAppId(appId);
+            }
             userMapper.updateUser(current);
             return buildLoginResponse(current, false);
         }
@@ -142,14 +161,13 @@ public class AuthServiceimpl implements AuthService {
             return buildLoginResponse(current, false);
         }
 
-        // 该手机号已绑定其他微信
-        if (StringUtils.hasText(phoneOwner.getOpenid())
-                && !phoneOwner.getOpenid().equals(current.getOpenid())) {
-            throw new RuntimeException("该手机号已绑定其他微信账号，请联系管理员处理");
+        // 微信 getPhoneNumber 已证明当前操作者拥有该号。
+        // 当前微信还没有手机号时，合并进手机号账号，并换绑 openid（换微信 / 审核重复授权）。
+        if (!StringUtils.hasText(current.getPhone())) {
+            return mergeWxUserIntoPhoneOwner(current, phoneOwner, appId);
         }
 
-        // 合并：以手机号对应的后台账号为主账号，挂上当前 openid，清理临时 wx 用户
-        return mergeWxUserIntoPhoneOwner(current, phoneOwner);
+        return Response.fail(400, "该手机号已绑定其他账号");
     }
 
     /**
@@ -182,20 +200,56 @@ public class AuthServiceimpl implements AuthService {
         return jwtUtil.getUserId(jwtUtil.parseToken(token));
     }
 
+    private String resolveLoginAppId(String appId) {
+        if (StringUtils.hasText(appId)) {
+            return wxTenantResolver.byAppId(appId.trim()).getAppId();
+        }
+        return wxTenantResolver.platform().getAppId();
+    }
+
+    private String resolveRequestAppId(HttpServletRequest request, User current) {
+        Object attr = request == null ? null : request.getAttribute("appId");
+        if (attr instanceof String && StringUtils.hasText((String) attr)) {
+            return ((String) attr).trim();
+        }
+        if (request != null) {
+            String authorization = request.getHeader("Authorization");
+            if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
+                try {
+                    String token = authorization.substring(7);
+                    if (jwtUtil.validateToken(token)) {
+                        String fromJwt = jwtUtil.getAppId(jwtUtil.parseToken(token));
+                        if (StringUtils.hasText(fromJwt)) {
+                            return fromJwt;
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // fall through
+                }
+            }
+        }
+        if (current != null && StringUtils.hasText(current.getAppId())) {
+            return current.getAppId();
+        }
+        return wxTenantResolver.platform().getAppId();
+    }
+
     /**
-     * 将临时微信用户合并进已有手机号账号
+     * 将临时微信用户合并进已有手机号账号。
+     * 主账号若已有其他 openid，替换为当前微信（同一手机号换绑）。
      */
-    private Response mergeWxUserIntoPhoneOwner(User wxUser, User phoneOwner) {
+    private Response mergeWxUserIntoPhoneOwner(User wxUser, User phoneOwner, String appId) {
         String openid = wxUser.getOpenid();
         String unionid = StringUtils.hasText(wxUser.getUnionid()) ? wxUser.getUnionid() : phoneOwner.getUnionid();
 
-        // 1. 先从临时用户摘掉 openid，避免 uk_user_openid 冲突
         userMapper.detachWxAndSoftDelete(wxUser.getId());
 
-        // 2. 主账号挂上微信身份
         phoneOwner.setOpenid(openid);
         if (StringUtils.hasText(unionid)) {
             phoneOwner.setUnionid(unionid);
+        }
+        if (!StringUtils.hasText(phoneOwner.getAppId()) && StringUtils.hasText(appId)) {
+            phoneOwner.setAppId(appId);
         }
         userMapper.updateUser(phoneOwner);
 
@@ -219,17 +273,15 @@ public class AuthServiceimpl implements AuthService {
         return value;
     }
 
-    private User createWxUser(WxSessionResult session) {
+    private User createWxUser(WxSessionResult session, String appId) {
         String openid = session.getOpenid();
         // user_name 字段较短，不能直接存完整 openid；用 md5 截断保证唯一且长度可控
         String userName = "wx_" + DigestUtils.md5DigestAsHex(openid.getBytes(StandardCharsets.UTF_8))
                 .substring(0, 12);
 
-        // 合并账号后临时用户会逻辑删除并清空 openid，但 user_name 仍占用唯一索引。
-        // 再次登录时按 openid 查不到，需要复用/恢复同名账号，避免 Duplicate entry user_name。
         User existing = userMapper.selectByUserNameAny(userName);
         if (existing != null) {
-            return reuseOrRestoreWxUser(existing, session);
+            return reuseOrRestoreWxUser(existing, session, appId);
         }
 
         User user = User.builder()
@@ -239,6 +291,7 @@ public class AuthServiceimpl implements AuthService {
                 .identityType(1)
                 .openid(openid)
                 .unionid(session.getUnionid())
+                .appId(appId)
                 .createdTime(new Date())
                 .createdBy("wx")
                 .deleted(0)
@@ -246,12 +299,10 @@ public class AuthServiceimpl implements AuthService {
         try {
             userMapper.addUser(user);
         } catch (DuplicateKeyException e) {
-            // 并发或历史脏数据兜底：再按用户名取一次
             User conflict = userMapper.selectByUserNameAny(userName);
             if (conflict != null) {
-                return reuseOrRestoreWxUser(conflict, session);
+                return reuseOrRestoreWxUser(conflict, session, appId);
             }
-            // user_name 仍冲突则换一个后缀再插一次
             user.setId(IdWorker.getId());
             user.setUserName(userName + "_" + UUID.randomUUID().toString().substring(0, 4));
             userMapper.addUser(user);
@@ -269,9 +320,8 @@ public class AuthServiceimpl implements AuthService {
     /**
      * 复用已存在的 wx_ 用户名记录：恢复逻辑删除、重新绑定 openid
      */
-    private User reuseOrRestoreWxUser(User existing, WxSessionResult session) {
+    private User reuseOrRestoreWxUser(User existing, WxSessionResult session, String appId) {
         String openid = session.getOpenid();
-        // 已是正常账号且 openid 属于别人：不应抢绑，换新用户名新建
         if (existing.getDeleted() != null && existing.getDeleted() == 0
                 && StringUtils.hasText(existing.getOpenid())
                 && !openid.equals(existing.getOpenid())) {
@@ -283,6 +333,7 @@ public class AuthServiceimpl implements AuthService {
                     .identityType(1)
                     .openid(openid)
                     .unionid(session.getUnionid())
+                    .appId(appId)
                     .createdTime(new Date())
                     .createdBy("wx")
                     .deleted(0)
@@ -301,6 +352,9 @@ public class AuthServiceimpl implements AuthService {
         existing.setOpenid(openid);
         if (StringUtils.hasText(session.getUnionid())) {
             existing.setUnionid(session.getUnionid());
+        }
+        if (!StringUtils.hasText(existing.getAppId()) && StringUtils.hasText(appId)) {
+            existing.setAppId(appId);
         }
         existing.setDeleted(0);
         if (!StringUtils.hasText(existing.getRealName())) {
@@ -325,8 +379,8 @@ public class AuthServiceimpl implements AuthService {
         if (user == null || user.getId() == null) {
             throw new RuntimeException("登录失败：用户ID为空");
         }
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUserName());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUserName());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUserName(), user.getAppId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUserName(), user.getAppId());
 
         Map<String, Object> userInfo = new HashMap<>();
         userInfo.put("id", user.getId());
@@ -337,6 +391,7 @@ public class AuthServiceimpl implements AuthService {
         userInfo.put("identityType", user.getIdentityType());
         userInfo.put("bindStoreId", user.getBindStoreId());
         userInfo.put("openid", user.getOpenid());
+        userInfo.put("appId", user.getAppId());
         userInfo.put("needBindPhone", !StringUtils.hasText(user.getPhone()));
 
         Map<String, Object> data = new HashMap<>();
@@ -365,7 +420,7 @@ public class AuthServiceimpl implements AuthService {
         }
 
         // 3. 生成新的accessToken
-        String newAccessToken = jwtUtil.generateAccessToken(userId, username);
+        String newAccessToken = jwtUtil.generateAccessToken(userId, username, jwtUtil.getAppId(claims));
 
         // 4. 返回新的accessToken
         Map<String, String> result = new HashMap<>();

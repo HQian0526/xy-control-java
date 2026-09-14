@@ -29,14 +29,33 @@ public class WxController {
     @ApiOperation(value = "微信小程序登录", notes = "用 wx.login 的 code 换取系统 JWT")
     @OperLog(module = "登录认证", type = OperTypes.QUERY, remark = "微信小程序登录")
     public Response login(@RequestBody WxLoginRequest request) {
-        return authService.wxLogin(request == null ? null : request.getCode());
+        try {
+            return authService.wxLogin(
+                    request == null ? null : request.getCode(),
+                    request == null ? null : request.getAppId());
+        } catch (Exception e) {
+            return wxFail(e);
+        }
     }
 
     @PostMapping("/bindPhone")
     @ResponseBody
-    @ApiOperation(value = "绑定微信手机号", notes = "需登录；用 getPhoneNumber 的 code 绑定手机号，若已有后台账号则合并")
+    @ApiOperation(value = "绑定微信手机号", notes = "需登录；用 getPhoneNumber 的 code 绑定手机号，若已有后台账号则合并并换绑微信")
     @OperLog(module = "微信用户", type = OperTypes.UPDATE)
     public Response bindPhone(@RequestBody WxBindPhoneRequest request, HttpServletRequest httpRequest) {
-        return authService.bindPhone(request == null ? null : request.getCode(), httpRequest);
+        try {
+            return authService.bindPhone(request == null ? null : request.getCode(), httpRequest);
+        } catch (Exception e) {
+            return wxFail(e);
+        }
+    }
+
+    /** 业务失败返回 400，避免未捕获异常变成 HTTP 500 Internal Server Error */
+    private Response wxFail(Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "操作失败，请稍后重试";
+        }
+        return Response.fail(400, message);
     }
 }

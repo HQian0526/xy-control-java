@@ -1,21 +1,17 @@
 package com.example.springboottemplate.service.wx;
 
 import com.example.springboottemplate.config.WxPayProperties;
-import com.example.springboottemplate.config.WxProperties;
 import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
 import com.example.springboottemplate.exception.BusinessException;
 import com.wechat.pay.java.core.exception.ServiceException;
 import com.wechat.pay.java.core.notification.NotificationParser;
 import com.wechat.pay.java.core.notification.RequestParam;
-import com.wechat.pay.java.service.payments.jsapi.JsapiService;
-import com.wechat.pay.java.service.payments.jsapi.JsapiServiceExtension;
 import com.wechat.pay.java.service.payments.jsapi.model.Amount;
 import com.wechat.pay.java.service.payments.jsapi.model.Payer;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayRequest;
 import com.wechat.pay.java.service.payments.jsapi.model.PrepayWithRequestPaymentResponse;
 import com.wechat.pay.java.service.payments.jsapi.model.QueryOrderByOutTradeNoRequest;
 import com.wechat.pay.java.service.payments.model.Transaction;
-import com.wechat.pay.java.service.refund.RefundService;
 import com.wechat.pay.java.service.refund.model.AmountReq;
 import com.wechat.pay.java.service.refund.model.CreateRequest;
 import com.wechat.pay.java.service.refund.model.Refund;
@@ -43,31 +39,34 @@ public class WxPayClientService {
     @Autowired
     private WxPayProperties wxPayProperties;
     @Autowired
-    private WxProperties wxProperties;
-    @Autowired(required = false)
-    private JsapiServiceExtension jsapiServiceExtension;
-    @Autowired(required = false)
-    private JsapiService jsapiService;
-    @Autowired(required = false)
-    private NotificationParser notificationParser;
-    @Autowired(required = false)
-    private RefundService refundService;
+    private WxPayClientFactory wxPayClientFactory;
+    @Autowired
+    private WxTenantResolver wxTenantResolver;
 
     public boolean isMock() {
         return wxPayProperties.isMock() || !wxPayProperties.isEnabled();
     }
 
     public MallPayPrepareVO createJsapiPrepay(String orderNo, String description, String openid, Integer totalFen) {
+        return createJsapiPrepay(wxTenantResolver.platform(), orderNo, description, openid, totalFen);
+    }
+
+    public MallPayPrepareVO createJsapiPrepay(WxTenantContext tenant, String orderNo, String description,
+                                              String openid, Integer totalFen) {
+        if (tenant == null) {
+            tenant = wxTenantResolver.platform();
+        }
         if (isMock()) {
             return MallPayPrepareVO.builder()
                     .mock(true)
                     .orderNo(orderNo)
                     .payAmount(fenToYuan(totalFen))
                     .payStatus(0)
-                    .appId(wxProperties.getAppId())
+                    .appId(tenant.getAppId())
                     .build();
         }
-        if (jsapiServiceExtension == null) {
+        WxPayClientFactory.Clients clients = wxPayClientFactory.clients(tenant);
+        if (clients.jsapiServiceExtension() == null) {
             throw new BusinessException("微信支付未正确初始化，请检查商户配置");
         }
         if (!StringUtils.hasText(openid)) {
@@ -75,11 +74,11 @@ public class WxPayClientService {
         }
 
         PrepayRequest request = new PrepayRequest();
-        request.setAppid(wxProperties.getAppId());
-        request.setMchid(wxPayProperties.getMchId());
+        request.setAppid(tenant.getAppId());
+        request.setMchid(tenant.getMchId());
         request.setDescription(truncate(description, 127));
         request.setOutTradeNo(orderNo);
-        request.setNotifyUrl(wxPayProperties.getNotifyUrl());
+        request.setNotifyUrl(tenant.getNotifyUrl());
         request.setTimeExpire(buildTimeExpire());
 
         Amount amount = new Amount();
@@ -92,7 +91,7 @@ public class WxPayClientService {
         request.setPayer(payer);
 
         try {
-            PrepayWithRequestPaymentResponse resp = jsapiServiceExtension.prepayWithRequestPayment(request);
+            PrepayWithRequestPaymentResponse resp = clients.jsapiServiceExtension().prepayWithRequestPayment(request);
             return MallPayPrepareVO.builder()
                     .mock(false)
                     .orderNo(orderNo)
@@ -113,7 +112,13 @@ public class WxPayClientService {
     }
 
     public Transaction parseNotify(String body, String serial, String nonce, String signature, String timestamp, String signType) {
-        if (isMock() || notificationParser == null) {
+        return parseNotify(wxTenantResolver.platform(), body, serial, nonce, signature, timestamp, signType);
+    }
+
+    public Transaction parseNotify(WxTenantContext tenant, String body, String serial, String nonce,
+                                   String signature, String timestamp, String signType) {
+        NotificationParser parser = resolveParser(tenant);
+        if (isMock() || parser == null) {
             throw new BusinessException("当前为 mock 模式，不处理微信回调");
         }
         RequestParam.Builder builder = new RequestParam.Builder()
@@ -125,18 +130,26 @@ public class WxPayClientService {
         if (StringUtils.hasText(signType)) {
             builder.signType(signType);
         }
-        return notificationParser.parse(builder.build(), Transaction.class);
+        return parser.parse(builder.build(), Transaction.class);
     }
 
     public Transaction queryByOutTradeNo(String orderNo) {
-        if (isMock() || jsapiService == null) {
+        return queryByOutTradeNo(wxTenantResolver.platform(), orderNo);
+    }
+
+    public Transaction queryByOutTradeNo(WxTenantContext tenant, String orderNo) {
+        if (isMock()) {
+            return null;
+        }
+        WxPayClientFactory.Clients clients = wxPayClientFactory.clients(tenant);
+        if (clients.jsapiService() == null) {
             return null;
         }
         QueryOrderByOutTradeNoRequest request = new QueryOrderByOutTradeNoRequest();
-        request.setMchid(wxPayProperties.getMchId());
+        request.setMchid(tenant.getMchId());
         request.setOutTradeNo(orderNo);
         try {
-            return jsapiService.queryOrderByOutTradeNo(request);
+            return clients.jsapiService().queryOrderByOutTradeNo(request);
         } catch (ServiceException e) {
             throw new BusinessException("查询微信支付单失败: " + e.getErrorCode() + " " + e.getErrorMessage());
         }
@@ -159,6 +172,14 @@ public class WxPayClientService {
      * @param reason       退款原因
      */
     public Refund createRefund(String outTradeNo, String outRefundNo, int totalFen, int refundFen, String reason) {
+        return createRefund(wxTenantResolver.platform(), outTradeNo, outRefundNo, totalFen, refundFen, reason);
+    }
+
+    public Refund createRefund(WxTenantContext tenant, String outTradeNo, String outRefundNo,
+                               int totalFen, int refundFen, String reason) {
+        if (tenant == null) {
+            tenant = wxTenantResolver.platform();
+        }
         if (isMock()) {
             Refund mock = new Refund();
             mock.setOutTradeNo(outTradeNo);
@@ -173,21 +194,21 @@ public class WxPayClientService {
             mock.setAmount(amount);
             return mock;
         }
-        if (refundService == null) {
+        WxPayClientFactory.Clients clients = wxPayClientFactory.clients(tenant);
+        if (clients.refundService() == null) {
             throw new BusinessException("微信支付退款未正确初始化，请检查商户配置");
         }
-        if (!StringUtils.hasText(wxPayProperties.getRefundNotifyUrl())) {
-            throw new BusinessException("未配置 wechat.pay.refund-notify-url");
+        if (!StringUtils.hasText(tenant.getRefundNotifyUrl())) {
+            throw new BusinessException("未配置退款回调地址");
         }
 
         CreateRequest request = new CreateRequest();
         request.setOutTradeNo(outTradeNo);
         request.setOutRefundNo(outRefundNo);
-        request.setNotifyUrl(wxPayProperties.getRefundNotifyUrl());
+        request.setNotifyUrl(tenant.getRefundNotifyUrl());
         if (StringUtils.hasText(reason)) {
             request.setReason(truncate(reason, 80));
         }
-        // 优先从可用余额退（提现后未结算资金可能不足）
         request.setFundsAccount(ReqFundsAccount.AVAILABLE);
 
         AmountReq amount = new AmountReq();
@@ -197,7 +218,7 @@ public class WxPayClientService {
         request.setAmount(amount);
 
         try {
-            return refundService.create(request);
+            return clients.refundService().create(request);
         } catch (ServiceException e) {
             throw new BusinessException("微信退款失败: " + e.getErrorMessage());
         } catch (Exception e) {
@@ -207,7 +228,13 @@ public class WxPayClientService {
 
     public RefundNotification parseRefundNotify(String body, String serial, String nonce,
                                                 String signature, String timestamp, String signType) {
-        if (isMock() || notificationParser == null) {
+        return parseRefundNotify(wxTenantResolver.platform(), body, serial, nonce, signature, timestamp, signType);
+    }
+
+    public RefundNotification parseRefundNotify(WxTenantContext tenant, String body, String serial, String nonce,
+                                                String signature, String timestamp, String signType) {
+        NotificationParser parser = resolveParser(tenant);
+        if (isMock() || parser == null) {
             throw new BusinessException("当前为 mock 模式，不处理微信退款回调");
         }
         RequestParam.Builder builder = new RequestParam.Builder()
@@ -219,7 +246,14 @@ public class WxPayClientService {
         if (StringUtils.hasText(signType)) {
             builder.signType(signType);
         }
-        return notificationParser.parse(builder.build(), RefundNotification.class);
+        return parser.parse(builder.build(), RefundNotification.class);
+    }
+
+    private NotificationParser resolveParser(WxTenantContext tenant) {
+        if (tenant == null) {
+            tenant = wxTenantResolver.platform();
+        }
+        return wxPayClientFactory.clients(tenant).notificationParser();
     }
 
     private static String truncate(String text, int max) {

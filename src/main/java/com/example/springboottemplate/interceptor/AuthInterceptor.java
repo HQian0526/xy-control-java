@@ -61,6 +61,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         request.setAttribute("userId", userId);
         request.setAttribute("username", username);
+        request.setAttribute("appId", jwtUtil.getAppId(claims));
 
         return true;
     }

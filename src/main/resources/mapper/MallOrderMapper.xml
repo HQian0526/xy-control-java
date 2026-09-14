@@ -8,6 +8,8 @@
         <result property="storeId" column="store_id"/>
         <result property="userId" column="user_id"/>
         <result property="openid" column="openid"/>
+        <result property="appId" column="app_id"/>
+        <result property="mchId" column="mch_id"/>
         <result property="contact" column="contact"/>
         <result property="address" column="address"/>
         <result property="remark" column="remark"/>
@@ -21,6 +23,8 @@
         <result property="discountDesc" column="discount_desc"/>
         <result property="payAmount" column="pay_amount"/>
         <result property="payAmountFen" column="pay_amount_fen"/>
+        <result property="payChannel" column="pay_channel"/>
+        <result property="memberPriced" column="member_priced"/>
         <result property="payStatus" column="pay_status"/>
         <result property="prepayId" column="prepay_id"/>
         <result property="transactionId" column="transaction_id"/>
@@ -33,6 +37,9 @@
         <result property="refundReason" column="refund_reason"/>
         <result property="refundBy" column="refund_by"/>
         <result property="refundTime" column="refund_time"/>
+        <result property="settleStatus" column="settle_status"/>
+        <result property="settleTime" column="settle_time"/>
+        <result property="settleBy" column="settle_by"/>
         <result property="wxShippingStatus" column="wx_shipping_status"/>
         <result property="wxShippingErrcode" column="wx_shipping_errcode"/>
         <result property="wxShippingErrmsg" column="wx_shipping_errmsg"/>
@@ -47,16 +54,16 @@
 
     <insert id="addMallOrder" parameterType="MallOrder">
         INSERT into mall_order (
-            id, order_no, store_id, user_id, openid, contact, address, remark,
+            id, order_no, store_id, user_id, openid, app_id, mch_id, contact, address, remark,
             goods_amount, delivery_fee, promo_id, promo_discount, user_coupon_id,
             coupon_discount, discount_amount, discount_desc,
-            pay_amount, pay_amount_fen, pay_status,
+            pay_amount, pay_amount_fen, pay_channel, member_priced, pay_status,
             prepay_id, created_by, created_time, deleted
         ) value (
-            #{id}, #{orderNo}, #{storeId}, #{userId}, #{openid}, #{contact}, #{address}, #{remark},
+            #{id}, #{orderNo}, #{storeId}, #{userId}, #{openid}, #{appId}, #{mchId}, #{contact}, #{address}, #{remark},
             #{goodsAmount}, #{deliveryFee}, #{promoId}, #{promoDiscount}, #{userCouponId},
             #{couponDiscount}, #{discountAmount}, #{discountDesc},
-            #{payAmount}, #{payAmountFen}, #{payStatus},
+            #{payAmount}, #{payAmountFen}, #{payChannel}, #{memberPriced}, #{payStatus},
             #{prepayId}, #{createdBy}, #{createdTime}, #{deleted}
         )
     </insert>
@@ -208,28 +215,57 @@
         select * from mall_order where out_refund_no = #{outRefundNo} and deleted = 0 limit 1
     </select>
 
-    <!-- 已支付订单按支付成功时间聚合；退款冲减原支付账期 -->
+    <!-- 已支付微信订单 + 储值按支付成功时间聚合；余额支付的商城单不计入（钱在储值时已入账） -->
     <select id="sumIncomeFlow" resultType="com.example.springboottemplate.dto.mall.MallIncomeFlowRow">
-        select
-            case
-                when #{periodType} = 'year' then date_format(paid_time, '%Y')
-                when #{periodType} = 'quarter' then concat(year(paid_time), '-Q', quarter(paid_time))
-                when #{periodType} = 'month' then date_format(paid_time, '%Y-%m')
-                else date_format(paid_time, '%Y-%m-%d')
-            end as period,
-            count(*) as orderCount,
-            ifnull(sum(pay_amount), 0) as payAmount,
-            ifnull(sum(ifnull(refund_amount, 0)), 0) as refundAmount,
-            ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as netAmount
-        from mall_order
-        where deleted = 0
-          and store_id = #{storeId}
-          and paid_time is not null
-          and paid_time &gt;= #{startTime}
-          and paid_time &lt; #{endTime}
-          and pay_status in (1, 3, 4, 5)
-        group by 1
-        order by 1
+        select period,
+               sum(orderCount) as orderCount,
+               sum(payAmount) as payAmount,
+               sum(refundAmount) as refundAmount,
+               sum(netAmount) as netAmount
+        from (
+            select
+                case
+                    when #{periodType} = 'year' then date_format(paid_time, '%Y')
+                    when #{periodType} = 'quarter' then concat(year(paid_time), '-Q', quarter(paid_time))
+                    when #{periodType} = 'month' then date_format(paid_time, '%Y-%m')
+                    else date_format(paid_time, '%Y-%m-%d')
+                end as period,
+                count(*) as orderCount,
+                ifnull(sum(pay_amount), 0) as payAmount,
+                ifnull(sum(ifnull(refund_amount, 0)), 0) as refundAmount,
+                ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as netAmount
+            from mall_order
+            where deleted = 0
+              and store_id = #{storeId}
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+              and pay_status in (1, 3, 4, 5)
+              and ifnull(pay_channel, 1) = 1
+            group by 1
+            union all
+            select
+                case
+                    when #{periodType} = 'year' then date_format(paid_time, '%Y')
+                    when #{periodType} = 'quarter' then concat(year(paid_time), '-Q', quarter(paid_time))
+                    when #{periodType} = 'month' then date_format(paid_time, '%Y-%m')
+                    else date_format(paid_time, '%Y-%m-%d')
+                end as period,
+                count(*) as orderCount,
+                ifnull(sum(amount), 0) as payAmount,
+                0 as refundAmount,
+                ifnull(sum(amount), 0) as netAmount
+            from store_member_recharge
+            where deleted = 0
+              and store_id = #{storeId}
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+              and pay_status = 1
+            group by 1
+        ) t
+        group by period
+        order by period
     </select>
 
     <!-- 一单一收入 + 有退款再记一笔退款；多次部分退款目前只有累计金额和最近退款时间 -->
@@ -248,6 +284,27 @@
               and store_id = #{storeId}
               and paid_time is not null
               and pay_status in (1, 3, 4, 5)
+              and ifnull(pay_channel, 1) = 1
+              <if test="startTime != null">
+                  and paid_time &gt;= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  and paid_time &lt; #{endTime}
+              </if>
+            union all
+            select
+                concat(recharge_no, '-in') as id,
+                'income' as type,
+                '会员储值' as title,
+                recharge_no as orderNo,
+                amount as amount,
+                date_format(paid_time, '%Y-%m-%d %H:%i:%s') as time,
+                '已到账' as status
+            from store_member_recharge
+            where deleted = 0
+              and store_id = #{storeId}
+              and paid_time is not null
+              and pay_status = 1
               <if test="startTime != null">
                   and paid_time &gt;= #{startTime}
               </if>
@@ -270,6 +327,7 @@
             from mall_order
             where deleted = 0
               and store_id = #{storeId}
+              and ifnull(pay_channel, 1) = 1
               and ifnull(refund_amount, 0) &gt; 0
               <if test="startTime != null">
                   and ifnull(refund_time, update_time) &gt;= #{startTime}
@@ -295,6 +353,20 @@
                   and store_id = #{storeId}
                   and paid_time is not null
                   and pay_status in (1, 3, 4, 5)
+                  and ifnull(pay_channel, 1) = 1
+                  <if test="startTime != null">
+                      and paid_time &gt;= #{startTime}
+                  </if>
+                  <if test="endTime != null">
+                      and paid_time &lt; #{endTime}
+                  </if>
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_member_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status = 1
                   <if test="startTime != null">
                       and paid_time &gt;= #{startTime}
                   </if>
@@ -307,6 +379,7 @@
                 from mall_order
                 where deleted = 0
                   and store_id = #{storeId}
+                  and ifnull(pay_channel, 1) = 1
                   and ifnull(refund_amount, 0) &gt; 0
                   <if test="startTime != null">
                       and ifnull(refund_time, update_time) &gt;= #{startTime}
@@ -316,4 +389,155 @@
                   </if>
             ), 0) as expense
     </select>
+
+    <select id="sumSettlementSummary" resultType="com.example.springboottemplate.dto.mall.MallSettlementSummary">
+        select
+            ifnull((
+                select sum(pay_amount - ifnull(refund_amount, 0))
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status in (1, 4)
+                  and ifnull(pay_channel, 1) = 1
+                  and ifnull(settle_status, 0) = 0
+                  and (pay_amount - ifnull(refund_amount, 0)) &gt; 0
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_member_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status = 1
+                  and ifnull(settle_status, 0) = 0
+                  and amount &gt; 0
+            ), 0) as pendingAmount,
+            ifnull((
+                select sum(pay_amount - ifnull(refund_amount, 0))
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and paid_time &gt;= #{startTime}
+                  and paid_time &lt; #{endTime}
+                  and pay_status in (1, 3, 4, 5)
+                  and ifnull(pay_channel, 1) = 1
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_member_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and paid_time &gt;= #{startTime}
+                  and paid_time &lt; #{endTime}
+                  and pay_status = 1
+            ), 0) as todayIncome
+    </select>
+
+    <select id="selectPendingSettlementStores"
+            resultType="com.example.springboottemplate.dto.mall.MallPendingSettlementStore">
+        select storeId, storeName, orderCount, pendingAmount, lastPaidTime, lastSettleTime
+        from (
+            select storeId, storeName,
+                   sum(orderCount) as orderCount,
+                   sum(pendingAmount) as pendingAmount,
+                   max(lastPaidTime) as lastPaidTime,
+                   max(lastSettleTime) as lastSettleTime
+            from (
+            select
+                o.store_id as storeId,
+                s.store_name as storeName,
+                ifnull(sum(case
+                    when ifnull(o.settle_status, 0) = 0
+                         and o.pay_status in (1, 4)
+                         and ifnull(o.pay_channel, 1) = 1
+                         and (o.pay_amount - ifnull(o.refund_amount, 0)) &gt; 0
+                    then 1 else 0 end), 0) as orderCount,
+                ifnull(sum(case
+                    when ifnull(o.settle_status, 0) = 0
+                         and o.pay_status in (1, 4)
+                         and ifnull(o.pay_channel, 1) = 1
+                         and (o.pay_amount - ifnull(o.refund_amount, 0)) &gt; 0
+                    then o.pay_amount - ifnull(o.refund_amount, 0)
+                    else 0 end), 0) as pendingAmount,
+                date_format(max(case
+                    when o.pay_status in (1, 4)
+                         and ifnull(o.pay_channel, 1) = 1
+                         and (o.pay_amount - ifnull(o.refund_amount, 0)) &gt; 0
+                    then o.paid_time end), '%Y-%m-%d %H:%i:%s') as lastPaidTime,
+                date_format(max(case
+                    when o.settle_status = 1 then o.settle_time end), '%Y-%m-%d %H:%i:%s') as lastSettleTime
+            from mall_order o
+            left join store s on s.store_id = o.store_id and s.deleted = 0
+            where o.deleted = 0
+              and o.paid_time is not null
+              and o.pay_status in (1, 3, 4, 5)
+              <if test="storeId != null">
+                  and o.store_id = #{storeId}
+              </if>
+              <if test="storeName != null and storeName != ''">
+                  and s.store_name like concat('%', #{storeName}, '%')
+              </if>
+            group by o.store_id, s.store_name
+            union all
+            select
+                r.store_id as storeId,
+                s.store_name as storeName,
+                ifnull(sum(case
+                    when ifnull(r.settle_status, 0) = 0 and r.pay_status = 1
+                    then 1 else 0 end), 0) as orderCount,
+                ifnull(sum(case
+                    when ifnull(r.settle_status, 0) = 0 and r.pay_status = 1
+                    then r.amount else 0 end), 0) as pendingAmount,
+                date_format(max(case when r.pay_status = 1 then r.paid_time end), '%Y-%m-%d %H:%i:%s') as lastPaidTime,
+                date_format(max(case when r.settle_status = 1 then r.settle_time end), '%Y-%m-%d %H:%i:%s') as lastSettleTime
+            from store_member_recharge r
+            left join store s on s.store_id = r.store_id and s.deleted = 0
+            where r.deleted = 0
+              and r.paid_time is not null
+              and r.pay_status = 1
+              <if test="storeId != null">
+                  and r.store_id = #{storeId}
+              </if>
+              <if test="storeName != null and storeName != ''">
+                  and s.store_name like concat('%', #{storeName}, '%')
+              </if>
+            group by r.store_id, s.store_name
+            ) u
+            group by storeId, storeName
+        ) t
+        <where>
+            <choose>
+                <when test="settleStatus != null and settleStatus == 'settled'">
+                    t.pendingAmount &lt;= 0 and t.lastSettleTime is not null
+                </when>
+                <otherwise>
+                    t.pendingAmount &gt; 0
+                </otherwise>
+            </choose>
+        </where>
+        order by
+            <choose>
+                <when test="settleStatus != null and settleStatus == 'settled'">
+                    t.lastSettleTime desc, t.storeId desc
+                </when>
+                <otherwise>
+                    t.pendingAmount desc, t.storeId desc
+                </otherwise>
+            </choose>
+    </select>
+
+    <update id="markStoreSettled">
+        update mall_order
+        set settle_status = 1,
+            settle_time = #{settleTime},
+            settle_by = #{settleBy},
+            update_time = #{settleTime},
+            update_by = #{settleBy}
+        where deleted = 0
+          and store_id = #{storeId}
+          and ifnull(settle_status, 0) = 0
+          and ifnull(pay_channel, 1) = 1
+          and pay_status in (1, 4, 5)
+    </update>
 </mapper>

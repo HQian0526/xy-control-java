@@ -5,6 +5,7 @@ import com.example.springboottemplate.entity.MallOrder;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.MallOrderMapper;
 import com.example.springboottemplate.service.MallOrderService;
+import com.example.springboottemplate.service.StoreMemberService;
 import com.wechat.pay.java.service.payments.model.Transaction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +31,15 @@ public class MallOrderTimeoutService {
     @Autowired
     private WxPayClientService wxPayClientService;
     @Autowired
+    private WxTenantResolver wxTenantResolver;
+    @Autowired
     private WxPayProperties wxPayProperties;
     @Autowired
     @Lazy
     private MallOrderService mallOrderService;
+    @Autowired
+    @Lazy
+    private StoreMemberService storeMemberService;
 
     @Scheduled(fixedDelayString = "${wechat.pay.unpaid.scan-interval-ms:120000}", initialDelay = 45000)
     public void scanExpiredUnpaid() {
@@ -44,15 +50,19 @@ public class MallOrderTimeoutService {
         Date expireBefore = expireBefore();
         int batch = unpaid.resolvedScanBatchSize();
         List<MallOrder> pending = mallOrderMapper.selectExpiredUnpaid(expireBefore, batch);
-        if (pending == null || pending.isEmpty()) {
-            return;
-        }
-        for (MallOrder order : pending) {
-            try {
-                reconcileUnpaid(order, false);
-            } catch (Exception e) {
-                log.error("超时关单扫尾异常 orderNo={}", order == null ? null : order.getOrderNo(), e);
+        if (pending != null && !pending.isEmpty()) {
+            for (MallOrder order : pending) {
+                try {
+                    reconcileUnpaid(order, false);
+                } catch (Exception e) {
+                    log.error("超时关单扫尾异常 orderNo={}", order == null ? null : order.getOrderNo(), e);
+                }
             }
+        }
+        try {
+            storeMemberService.closeExpiredUnpaid(expireBefore, batch);
+        } catch (Exception e) {
+            log.error("超时关闭储值单异常", e);
         }
     }
 
@@ -77,7 +87,7 @@ public class MallOrderTimeoutService {
 
         Transaction tx;
         try {
-            tx = wxPayClientService.queryByOutTradeNo(order.getOrderNo());
+            tx = wxPayClientService.queryByOutTradeNo(wxTenantResolver.byOrder(order), order.getOrderNo());
         } catch (BusinessException e) {
             if (expired && isOrderNotExist(e)) {
                 mallOrderService.closeIfUnpaid(order.getOrderNo());

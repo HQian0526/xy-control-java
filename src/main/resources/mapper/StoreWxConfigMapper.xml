@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreWxConfigMapper">
+    <resultMap id="storeWxConfigMap" type="com.example.springboottemplate.entity.StoreWxConfig">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="appId" column="app_id"/>
+        <result property="appSecret" column="app_secret"/>
+        <result property="mchId" column="mch_id"/>
+        <result property="apiV3Key" column="api_v3_key"/>
+        <result property="merchantSerialNumber" column="merchant_serial_number"/>
+        <result property="privateKey" column="private_key"/>
+        <result property="publicKey" column="public_key"/>
+        <result property="publicKeyId" column="public_key_id"/>
+        <result property="notifyUrl" column="notify_url"/>
+        <result property="refundNotifyUrl" column="refund_notify_url"/>
+        <result property="enabled" column="enabled"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addStoreWxConfig" parameterType="com.example.springboottemplate.entity.StoreWxConfig">
+        INSERT into store_wx_config (
+            id, store_id, app_id, app_secret, mch_id, api_v3_key, merchant_serial_number,
+            private_key, public_key, public_key_id, notify_url, refund_notify_url,
+            enabled, created_time, created_by, deleted
+        ) value (
+            #{id}, #{storeId}, #{appId}, #{appSecret}, #{mchId}, #{apiV3Key}, #{merchantSerialNumber},
+            #{privateKey}, #{publicKey}, #{publicKeyId}, #{notifyUrl}, #{refundNotifyUrl},
+            #{enabled}, #{createdTime}, #{createdBy}, #{deleted}
+        )
+    </insert>
+
+    <update id="updateStoreWxConfig" parameterType="com.example.springboottemplate.entity.StoreWxConfig">
+        update store_wx_config
+        <set>
+            app_id = #{appId},
+            mch_id = #{mchId},
+            merchant_serial_number = #{merchantSerialNumber},
+            public_key_id = #{publicKeyId},
+            notify_url = #{notifyUrl},
+            refund_notify_url = #{refundNotifyUrl},
+            <if test="appSecret != null">app_secret = #{appSecret},</if>
+            <if test="apiV3Key != null">api_v3_key = #{apiV3Key},</if>
+            <if test="privateKey != null">private_key = #{privateKey},</if>
+            <if test="publicKey != null">public_key = #{publicKey},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </set>
+        where id = #{id} and deleted = 0
+    </update>
+
+    <select id="selectByStoreId" resultMap="storeWxConfigMap">
+        select * from store_wx_config where store_id = #{storeId} and deleted = 0 limit 1
+    </select>
+
+    <select id="selectByAppId" resultMap="storeWxConfigMap">
+        select * from store_wx_config
+        where app_id = #{appId} and deleted = 0 and enabled = 1
+        limit 1
+    </select>
+
+    <select id="selectAnyByAppId" resultMap="storeWxConfigMap">
+        select * from store_wx_config
+        where app_id = #{appId} and deleted = 0
+        limit 1
+    </select>
+
+    <select id="selectByMchId" resultMap="storeWxConfigMap">
+        select * from store_wx_config
+        where mch_id = #{mchId} and deleted = 0 and enabled = 1
+        limit 1
+    </select>
+
+    <select id="selectAnyByMchId" resultMap="storeWxConfigMap">
+        select * from store_wx_config
+        where mch_id = #{mchId} and deleted = 0
+        limit 1
+    </select>
+
+    <select id="findStoreWxConfig" resultMap="storeWxConfigMap">
+        select * from store_wx_config
+        where deleted = 0
+        <if test="storeId != null">and store_id = #{storeId}</if>
+        order by id desc
+    </select>
+</mapper>

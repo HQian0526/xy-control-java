@@ -4,6 +4,7 @@ import io.jsonwebtoken.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
 
@@ -17,26 +18,50 @@ public class JwtUtil {
     @Value("${jwt.refresh-token-expire}")
     private long REFRESH_EXPIRE;
 
-    // 生成accessToken（userId 以字符串写入，避免 JJWT/Jackson 反序列化成 Integer 后取值异常）
     public String generateAccessToken(long userId, String username) {
-        return Jwts.builder()
+        return generateAccessToken(userId, username, null);
+    }
+
+    public String generateAccessToken(long userId, String username, String appId) {
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(username)
                 .claim("userId", String.valueOf(userId))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRE))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY);
+        if (StringUtils.hasText(appId)) {
+            builder.claim("appId", appId.trim());
+        }
+        return builder.compact();
     }
 
-    // 生成refreshToken
     public String generateRefreshToken(long userId, String username) {
-        return Jwts.builder()
+        return generateRefreshToken(userId, username, null);
+    }
+
+    public String generateRefreshToken(long userId, String username, String appId) {
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(username)
                 .claim("userId", String.valueOf(userId))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRE))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY);
+        if (StringUtils.hasText(appId)) {
+            builder.claim("appId", appId.trim());
+        }
+        return builder.compact();
+    }
+
+    public String getAppId(Claims claims) {
+        if (claims == null) {
+            return null;
+        }
+        Object raw = claims.get("appId");
+        if (raw == null) {
+            return null;
+        }
+        String text = raw.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 
     // 解析token获取claims
