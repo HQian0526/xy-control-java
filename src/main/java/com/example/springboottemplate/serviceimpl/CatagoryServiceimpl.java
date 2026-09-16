@@ -13,6 +13,7 @@ import com.example.springboottemplate.service.CatagoryService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.BrowseStoreHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -116,6 +117,9 @@ public class CatagoryServiceimpl implements CatagoryService {
             catagory.setStoreId(browseStoreId);
         }
         // 管理员(3)：不额外过滤，返回全部
+        if (StoreExpireHelper.shouldHidePublicCatalog(identityType, storeMapper, catagory.getStoreId())) {
+            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+        }
 
         // 传了分页参数才开启分页，否则返回全部数据
         if (pageNum != null && pageSize != null) {

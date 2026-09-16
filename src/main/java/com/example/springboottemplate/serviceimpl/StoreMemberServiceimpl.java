@@ -17,6 +17,7 @@ import com.example.springboottemplate.mapper.StoreMemberRechargeMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreMemberService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
+import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.service.wx.WxTenantContext;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.StoreAuthHelper;
@@ -24,6 +25,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -56,6 +59,8 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     private WxPayClientService wxPayClientService;
     @Autowired
     private WxTenantResolver wxTenantResolver;
+    @Autowired
+    private WxShippingService wxShippingService;
 
     @Override
     public Response mine(Long storeId, HttpServletRequest request) {
@@ -259,6 +264,21 @@ public class StoreMemberServiceimpl implements StoreMemberService {
             return;
         }
         creditAndJoin(recharge.getStoreId(), recharge.getUserId(), recharge.getAmount(), paidTime);
+        scheduleWxShippingAfterCommit(recharge.getRechargeNo());
+    }
+
+    /** 事务提交后再报虚拟发货，避免挡住支付回调、也避免未提交充值单被微信查不到 */
+    private void scheduleWxShippingAfterCommit(String rechargeNo) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            wxShippingService.uploadRechargeShippingAsync(rechargeNo);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                wxShippingService.uploadRechargeShippingAsync(rechargeNo);
+            }
+        });
     }
 
     @Override

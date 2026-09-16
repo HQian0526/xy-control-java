@@ -73,6 +73,11 @@ public class Store {
     private Boolean openUntilCleared;
 
     @TableField(exist = false)
+    @JsonIgnore
+    @ApiModelProperty(hidden = true)
+    private Boolean storeTimeCleared;
+
+    @TableField(exist = false)
     @ApiModelProperty(value = "当前是否可下单（计算字段）", required = false)
     private Boolean acceptingOrders;
 
@@ -110,6 +115,10 @@ public class Store {
 
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "租用是否已到期（计算字段）", required = false)
+    private Boolean subscriptionExpired;
 
     @ApiModelProperty(value = "法人姓名", required = true)
     private String identityName;

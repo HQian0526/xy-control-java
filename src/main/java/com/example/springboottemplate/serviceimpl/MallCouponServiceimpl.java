@@ -14,6 +14,7 @@ import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.MallDiscountCalculator;
 import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.StoreAuthHelper.Operator;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -201,6 +202,9 @@ public class MallCouponServiceimpl implements MallCouponService {
         if (storeId == null) {
             throw new BusinessException("店铺不能为空");
         }
+        if (storeAuthHelper.isStoreExpired(storeId)) {
+            return Response.success(Collections.emptyList());
+        }
         Date now = new Date();
         List<MallCouponTemplate> list = mallCouponTemplateMapper.selectClaimableByStoreId(storeId, now);
         if (list == null) {
@@ -237,6 +241,9 @@ public class MallCouponServiceimpl implements MallCouponService {
         MallCouponTemplate template = mallCouponTemplateMapper.selectTemplateById(templateId);
         if (template == null) {
             throw new BusinessException("优惠券不存在");
+        }
+        if (storeAuthHelper.isStoreExpired(template.getStoreId())) {
+            throw new BusinessException(StoreExpireHelper.EXPIRED_BROWSE_MSG);
         }
         if (template.getStatus() == null || template.getStatus() != 1) {
             throw new BusinessException("优惠券已停止领取");

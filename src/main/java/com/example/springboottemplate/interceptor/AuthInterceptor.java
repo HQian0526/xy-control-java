@@ -1,6 +1,10 @@
 package com.example.springboottemplate.interceptor;
 
+import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.mapper.StoreMapper;
+import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +18,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AuthInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtUtil jwtUtil;  // 注入 JwtUtil
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private StoreMapper storeMapper;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -62,6 +70,18 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("userId", userId);
         request.setAttribute("username", username);
         request.setAttribute("appId", jwtUtil.getAppId(claims));
+
+        // PC 后台拉菜单：租用到期的商家踢回登录。小程序不走 /menu，不受影响。
+        if (uri.contains("/menu/")) {
+            User user = userId == null ? null : userMapper.selectById(userId);
+            if (StoreExpireHelper.isMerchantAccountExpired(user, storeMapper)) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setCharacterEncoding("UTF-8");
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"msg\":\"" + StoreExpireHelper.EXPIRED_LOGIN_MSG + "\"}");
+                return false;
+            }
+        }
 
         return true;
     }

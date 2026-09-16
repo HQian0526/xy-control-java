@@ -140,6 +140,10 @@ public class StoreAuthHelper {
         setter.setStoreName(store == null ? null : store.getStoreName());
     }
 
+    public boolean isStoreExpired(Long storeId) {
+        return StoreExpireHelper.isExpired(storeMapper, storeId);
+    }
+
     private Claims parseClaims(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
         if (!StringUtils.hasText(auth) || !auth.startsWith("Bearer ")) {

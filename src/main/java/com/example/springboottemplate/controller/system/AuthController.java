@@ -24,7 +24,11 @@ public class AuthController {
     @ApiOperation(value = "登录", notes = "获取登录token")
     @OperLog(module = "登录认证", type = OperTypes.QUERY, remark = "账号密码登录")
     public Response login(@RequestBody User user) {
-        return authService.login(user.getUserName(), user.getPassword());
+        try {
+            return authService.login(user.getUserName(), user.getPassword());
+        } catch (RuntimeException e) {
+            return Response.fail(400, e.getMessage());
+        }
     }
 
     @PostMapping("/refreshToken")

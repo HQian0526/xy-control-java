@@ -44,6 +44,7 @@ import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.MallDiscountCalculator;
 import com.example.springboottemplate.utils.StoreAuthHelper;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -1168,6 +1169,9 @@ public class MallOrderServiceimpl implements MallOrderService {
         Store store = null;
         if (storeId != null) {
             store = storeMapper.selectByStoreId(storeId);
+            if (store != null && StoreExpireHelper.isExpired(store)) {
+                throw new BusinessException(StoreExpireHelper.EXPIRED_BROWSE_MSG);
+            }
             if (store != null && !StoreOpenHelper.isAcceptingOrders(store)) {
                 throw new BusinessException(StoreOpenHelper.rejectMessage(store));
             }

@@ -79,6 +79,10 @@ public class User {
     private String storeName;
 
     @TableField(exist = false)
+    @ApiModelProperty(value = "商家店铺租期是否已到期（计算字段）", required = false)
+    private Boolean storeExpired;
+
+    @TableField(exist = false)
     @ApiModelProperty(value = "是否本店会员 0否 1是")
     private Integer isMember;
 

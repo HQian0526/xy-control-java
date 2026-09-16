@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.WxSessionResult;
 import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.system.AuthService;
 import com.example.springboottemplate.service.wx.WxApiService;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.PasswordUtil;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,8 @@ import java.util.UUID;
 public class AuthServiceimpl implements AuthService {
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private StoreMapper storeMapper;
     @Autowired
     private JwtUtil jwtUtil;
     @Autowired
@@ -67,6 +71,9 @@ public class AuthServiceimpl implements AuthService {
         // 3. 验证账号状态
         if (user.getDeleted() != null && user.getDeleted() == 1) {
             throw new RuntimeException("账号已被冻结");
+        }
+        if (StoreExpireHelper.isMerchantAccountExpired(user, storeMapper)) {
+            throw new RuntimeException(StoreExpireHelper.EXPIRED_LOGIN_MSG);
         }
 
         // 4. 生成token

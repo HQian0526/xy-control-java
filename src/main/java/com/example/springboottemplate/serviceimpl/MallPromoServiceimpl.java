@@ -171,6 +171,9 @@ public class MallPromoServiceimpl implements MallPromoService {
         if (storeId == null) {
             throw new BusinessException("店铺不能为空");
         }
+        if (storeAuthHelper.isStoreExpired(storeId)) {
+            return Response.success(null);
+        }
         MallPromo promo = findActiveByStoreId(storeId);
         if (promo == null) {
             return Response.success(null);

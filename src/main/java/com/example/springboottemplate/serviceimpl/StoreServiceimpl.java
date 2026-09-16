@@ -10,8 +10,10 @@ import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
+import org.springframework.util.StringUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import io.jsonwebtoken.Claims;
@@ -58,6 +60,10 @@ public class StoreServiceimpl implements StoreService {
         }
         if (store.getDeleted() == null) {
             store.setDeleted(0);
+        }
+        Response subscriptionError = applySubscriptionFields(store, true);
+        if (subscriptionError != null) {
+            return subscriptionError;
         }
 
         storeMapper.addStore(store);
@@ -110,6 +116,10 @@ public class StoreServiceimpl implements StoreService {
                 ? store.getBusinessHours()
                 : (exist == null ? null : exist.getBusinessHours());
         applyStatusChangeIfNeeded(store, exist, hoursJson);
+        Response subscriptionError = applySubscriptionFields(store, false);
+        if (subscriptionError != null) {
+            return subscriptionError;
+        }
         store.setUpdateBy(username);
         storeMapper.updateStore(store);
         return Response.success(refreshStore(store.getId(), exist != null ? exist : store));
@@ -326,6 +336,35 @@ public class StoreServiceimpl implements StoreService {
                 StoreOpenHelper.nextOpenTime(store.getBusinessHours(), now), now));
         store.setNextCloseText(StoreOpenHelper.formatMoment(
                 StoreOpenHelper.nextCloseTime(store.getBusinessHours(), now), now));
+        store.setSubscriptionExpired(StoreExpireHelper.isExpired(store));
+    }
+
+    private Response applySubscriptionFields(Store store, boolean creating) {
+        if (store == null) {
+            return Response.fail(400, "参数不能为空");
+        }
+        Integer type = store.getStoreType();
+        if (creating && type == null) {
+            return Response.fail(400, "请选择商户类型");
+        }
+        if (type == null) {
+            return null;
+        }
+        if (type == StoreExpireHelper.TYPE_FOREVER) {
+            store.setStoreTime(null);
+            store.setStoreTimeCleared(true);
+            return null;
+        }
+        if (type == StoreExpireHelper.TYPE_RENT) {
+            String normalized = StoreExpireHelper.normalizeStoreTime(store.getStoreTime());
+            if (!StringUtils.hasText(normalized)) {
+                return Response.fail(400, "租用商户请选择到期时间");
+            }
+            store.setStoreTime(normalized);
+            store.setStoreTimeCleared(false);
+            return null;
+        }
+        return Response.fail(400, "商户类型无效");
     }
 
     private Long resolveCurrentUserId(HttpServletRequest request) {

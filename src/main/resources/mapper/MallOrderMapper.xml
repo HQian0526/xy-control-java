@@ -151,6 +151,7 @@
         select * from mall_order
         where deleted = 0
           and pay_status = 1
+          and ifnull(pay_channel, 1) = 1
           and (wx_shipping_status is null or wx_shipping_status in (0, 2))
           and ifnull(wx_shipping_retry, 0) &lt; #{maxRetry}
         order by paid_time asc, id asc

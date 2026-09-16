@@ -28,4 +28,14 @@ public interface StoreMemberRechargeMapper extends BaseMapper<StoreMemberRecharg
     int markStoreSettled(@Param("storeId") Long storeId,
                          @Param("settleTime") Date settleTime,
                          @Param("settleBy") String settleBy);
+
+    int updateWxShippingSync(@Param("rechargeNo") String rechargeNo,
+                             @Param("status") Integer status,
+                             @Param("errcode") Integer errcode,
+                             @Param("errmsg") String errmsg,
+                             @Param("retry") Integer retry,
+                             @Param("shippingTime") Date shippingTime);
+
+    List<StoreMemberRecharge> selectPendingWxShipping(@Param("maxRetry") int maxRetry,
+                                                      @Param("limit") int limit);
 }

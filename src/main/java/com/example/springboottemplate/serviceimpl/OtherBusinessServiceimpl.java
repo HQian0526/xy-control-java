@@ -13,6 +13,7 @@ import com.example.springboottemplate.service.OtherBusinessService;
 import com.example.springboottemplate.utils.BrowseStoreHelper;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -99,6 +100,9 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
             otherBusiness.setStoreId(Long.parseLong(browseStoreId));
         }
         // 管理员(3)：不额外过滤，可用入参 storeId 过滤
+        if (StoreExpireHelper.shouldHidePublicCatalog(identityType, storeMapper, otherBusiness.getStoreId())) {
+            return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
+        }
 
         if (pageNum != null && pageSize != null) {
             PageHelper.startPage(pageNum, pageSize);

@@ -115,6 +115,7 @@
             <if test="openUntilCleared != null and openUntilCleared">open_until = null,</if>
             <if test="deliveryFee != null">delivery_fee = #{deliveryFee},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
+            <if test="storeTimeCleared != null and storeTimeCleared">store_time = null,</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
             <if test="businessLicense != null">business_license = #{businessLicense},</if>

@@ -20,6 +20,7 @@ import com.example.springboottemplate.config.UserProperties;
 import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.PasswordUtil;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import org.springframework.util.StringUtils;
 
@@ -275,6 +276,7 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
             return new Response(200, null, "操作成功");
         }
         user.setPassword(null); // 不返回密码
+        user.setStoreExpired(StoreExpireHelper.isMerchantAccountExpired(user, storeMapper));
         return new Response(200, user, "操作成功");
     }
 

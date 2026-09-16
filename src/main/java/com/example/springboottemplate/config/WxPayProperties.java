@@ -64,8 +64,8 @@ public class WxPayProperties {
         /** 是否在支付成功后自动报发货 */
         private boolean enabled = true;
         /**
-         * 物流模式：2同城配送 4用户自提。
-         * 社区实物不要填 3（虚拟/无需物流），也不要填 1（快递，需运单号）。
+         * 仅商城实物单使用。微信枚举：1快递 2同城配送 3虚拟商品 4用户自提。
+         * 储值单不读此值，固定报 3。
          */
         private int logisticsType = 2;
         /** 失败最大重试次数 */
