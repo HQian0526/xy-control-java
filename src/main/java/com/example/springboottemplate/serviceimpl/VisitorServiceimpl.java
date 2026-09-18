@@ -81,7 +81,7 @@ public class VisitorServiceimpl implements VisitorService {
             return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
         }
         // 商户用户：仅返回本账号绑定商户下的来客
-        if (identityType == 2) {
+        if (identityType != null && identityType == 2) {
             Store storeQuery = new Store();
             storeQuery.setUserId(userId);
             storeQuery.setDeleted(0);

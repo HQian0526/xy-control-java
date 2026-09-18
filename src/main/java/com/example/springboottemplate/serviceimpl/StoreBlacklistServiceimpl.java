@@ -110,7 +110,7 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
         if (identityType == null || identityType == 1) {
             return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
         }
-        if (identityType == 2) {
+        if (identityType != null && identityType == 2) {
             Long storeId = findMerchantStoreId(operatorId);
             if (storeId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);

@@ -166,6 +166,16 @@ public class MallOrder {
     @ApiModelProperty(value = "微信发货同步时间")
     private Date wxShippingTime;
 
+    /** 0未打 1成功 2失败 3跳过 */
+    @ApiModelProperty(value = "云打印状态")
+    private Integer printStatus;
+
+    @ApiModelProperty(value = "云打印说明")
+    private String printMsg;
+
+    @ApiModelProperty(value = "最近打印时间")
+    private Date printTime;
+
     @ApiModelProperty(value = "创建人")
     private String createdBy;
 

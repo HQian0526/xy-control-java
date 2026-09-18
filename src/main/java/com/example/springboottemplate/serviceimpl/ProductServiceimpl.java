@@ -120,7 +120,7 @@ public class ProductServiceimpl implements ProductService {
             }
         }
         // 商户用户：未传 storeId 或扫的是自己店，看本店；扫别人店则按请求 storeId 逛店
-        if (identityType == 2) {
+        if (identityType != null && identityType == 2) {
             String browseStoreId = BrowseStoreHelper
                     .resolveMerchantBrowseStoreId(userId, product.getStoreId(), storeMapper);
             if (browseStoreId == null) {

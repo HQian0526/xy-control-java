@@ -27,6 +27,11 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
                              @Param("retry") Integer retry,
                              @Param("shippingTime") java.util.Date shippingTime);
 
+    int updatePrintSync(@Param("orderNo") String orderNo,
+                        @Param("status") Integer status,
+                        @Param("msg") String msg,
+                        @Param("printTime") java.util.Date printTime);
+
     int markClosed(@Param("orderNo") String orderNo,
                    @Param("closedTime") java.util.Date closedTime);
 

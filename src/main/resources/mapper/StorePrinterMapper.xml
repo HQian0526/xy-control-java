@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StorePrinterMapper">
+    <resultMap id="storePrinterMap" type="com.example.springboottemplate.entity.StorePrinter">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="printerSn" column="printer_sn"/>
+        <result property="printerKey" column="printer_key"/>
+        <result property="printerName" column="printer_name"/>
+        <result property="printEnabled" column="print_enabled"/>
+        <result property="voiceEnabled" column="voice_enabled"/>
+        <result property="copies" column="copies"/>
+        <result property="lastStatus" column="last_status"/>
+        <result property="lastBindMsg" column="last_bind_msg"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addStorePrinter" parameterType="com.example.springboottemplate.entity.StorePrinter">
+        INSERT into store_printer (
+            id, store_id, printer_sn, printer_key, printer_name,
+            print_enabled, voice_enabled, copies, last_status, last_bind_msg,
+            created_time, created_by, deleted
+        ) value (
+            #{id}, #{storeId}, #{printerSn}, #{printerKey}, #{printerName},
+            #{printEnabled}, #{voiceEnabled}, #{copies}, #{lastStatus}, #{lastBindMsg},
+            #{createdTime}, #{createdBy}, #{deleted}
+        )
+    </insert>
+
+    <update id="updateStorePrinter" parameterType="com.example.springboottemplate.entity.StorePrinter">
+        update store_printer
+        <set>
+            printer_sn = #{printerSn},
+            printer_key = #{printerKey},
+            printer_name = #{printerName},
+            <if test="printEnabled != null">print_enabled = #{printEnabled},</if>
+            <if test="voiceEnabled != null">voice_enabled = #{voiceEnabled},</if>
+            <if test="copies != null">copies = #{copies},</if>
+            last_status = #{lastStatus},
+            last_bind_msg = #{lastBindMsg},
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </set>
+        where id = #{id} and deleted = 0
+    </update>
+
+    <select id="selectByStoreId" resultMap="storePrinterMap">
+        select * from store_printer where store_id = #{storeId} and deleted = 0 limit 1
+    </select>
+
+    <select id="selectAnyBySn" resultMap="storePrinterMap">
+        select * from store_printer
+        where printer_sn = #{printerSn} and deleted = 0
+        limit 1
+    </select>
+
+    <select id="findStorePrinter" resultMap="storePrinterMap">
+        select * from store_printer
+        where deleted = 0
+        <if test="storeId != null">and store_id = #{storeId}</if>
+        order by id desc
+    </select>
+</mapper>

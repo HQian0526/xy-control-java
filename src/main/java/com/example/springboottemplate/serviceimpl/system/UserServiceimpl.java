@@ -121,7 +121,7 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         if (identityType == null || identityType == 1) {
             return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);
         }
-        if (identityType == 2) {
+        if (identityType != null && identityType == 2) {
             Long storeId = findMerchantStoreId(operatorId);
             if (storeId == null) {
                 return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);

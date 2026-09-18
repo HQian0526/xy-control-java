@@ -41,6 +41,7 @@ import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.service.wx.WxTenantContext;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
+import com.example.springboottemplate.service.feie.FeiePrintService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.MallDiscountCalculator;
 import com.example.springboottemplate.utils.StoreAuthHelper;
@@ -103,6 +104,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     private WxPayProperties wxPayProperties;
     @Autowired
     private WxShippingService wxShippingService;
+    @Autowired
+    private FeiePrintService feiePrintService;
     @Autowired
     private StoreBlacklistService storeBlacklistService;
     @Autowired
@@ -1070,10 +1073,24 @@ public class MallOrderServiceimpl implements MallOrderService {
             product.setUpdateTime(paidTime);
             productMapper.updateProduct(product);
         }
+        scheduleFeiePrintAfterCommit(orderNo);
         if (order.getPayChannel() != null && order.getPayChannel() == 2) {
             return;
         }
         scheduleWxShippingAfterCommit(orderNo);
+    }
+
+    private void scheduleFeiePrintAfterCommit(String orderNo) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            feiePrintService.printAfterPaidAsync(orderNo);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                feiePrintService.printAfterPaidAsync(orderNo);
+            }
+        });
     }
 
     /** 事务提交后再报发货，避免挡住支付回调、也避免未提交订单被微信查不到 */

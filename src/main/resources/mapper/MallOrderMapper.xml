@@ -45,6 +45,9 @@
         <result property="wxShippingErrmsg" column="wx_shipping_errmsg"/>
         <result property="wxShippingRetry" column="wx_shipping_retry"/>
         <result property="wxShippingTime" column="wx_shipping_time"/>
+        <result property="printStatus" column="print_status"/>
+        <result property="printMsg" column="print_msg"/>
+        <result property="printTime" column="print_time"/>
         <result property="createdBy" column="created_by"/>
         <result property="createdTime" column="created_time"/>
         <result property="updateBy" column="update_by"/>
@@ -124,6 +127,16 @@
             wx_shipping_errmsg = #{errmsg},
             wx_shipping_retry = #{retry},
             wx_shipping_time = #{shippingTime},
+            update_time = now()
+        where order_no = #{orderNo}
+          and deleted = 0
+    </update>
+
+    <update id="updatePrintSync">
+        update mall_order
+        set print_status = #{status},
+            print_msg = #{msg},
+            print_time = #{printTime},
             update_time = now()
         where order_no = #{orderNo}
           and deleted = 0
