@@ -75,6 +75,9 @@ public class Product {
     @ApiModelProperty(value = "状态：1上架 0下架", required = false)
     private Integer productStatus;
 
+    @ApiModelProperty(value = "排序号，数值越小越靠前", required = false)
+    private Integer orderNum;
+
     @ApiModelProperty(value = "创建人", required = false)
     private String createdBy;
 

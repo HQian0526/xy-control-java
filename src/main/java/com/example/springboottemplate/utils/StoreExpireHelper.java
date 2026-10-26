@@ -25,6 +25,11 @@ import java.util.regex.Pattern;
 public final class StoreExpireHelper {
     public static final int TYPE_FOREVER = 1;
     public static final int TYPE_RENT = 2;
+    public static final int EXPIRED_NO = 0;
+    public static final int EXPIRED_YES = 1;
+    public static final int SHOP_STATUS_NORMAL = 1;
+    public static final int SHOP_STATUS_EXPIRED = 2;
+    public static final int SHOP_STATUS_FROZEN = 3;
     public static final String EXPIRED_LOGIN_MSG = "店铺租期已到期，无法登录后台";
     public static final String EXPIRED_BROWSE_MSG = "店铺租期已到期";
 
@@ -53,6 +58,17 @@ public final class StoreExpireHelper {
         }
         LocalDate today = LocalDate.now(StoreOpenHelper.SHANGHAI);
         return today.isAfter(expireDate);
+    }
+
+    public static int expiredFlag(Store store) {
+        return isExpired(store) ? EXPIRED_YES : EXPIRED_NO;
+    }
+
+    public static int resolveShopStatus(Integer deleted, int expiredFlag) {
+        if (deleted != null && deleted == 1) {
+            return SHOP_STATUS_FROZEN;
+        }
+        return expiredFlag == EXPIRED_YES ? SHOP_STATUS_EXPIRED : SHOP_STATUS_NORMAL;
     }
 
     public static boolean isExpired(StoreMapper storeMapper, Long storeId) {

@@ -2,6 +2,7 @@ package com.example.springboottemplate.serviceimpl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.StoreMiniappUiSaveRequest;
 import com.example.springboottemplate.dto.StoreWxConfigSaveRequest;
 import com.example.springboottemplate.dto.StoreWxConfigVO;
 import com.example.springboottemplate.entity.Store;
@@ -13,6 +14,7 @@ import com.example.springboottemplate.service.StoreWxConfigService;
 import com.example.springboottemplate.service.wx.WxPayClientFactory;
 import com.example.springboottemplate.service.wx.WxTenantContext;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
+import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.SecretCodec;
 import com.example.springboottemplate.utils.StoreAuthHelper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -166,6 +168,42 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
         return Response.success(toVo(store, saved));
     }
 
+    @Override
+    public Response saveMiniappUi(StoreMiniappUiSaveRequest body, HttpServletRequest request) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireAdmin(request);
+        if (body == null || body.getStoreId() == null) {
+            throw new BusinessException("请选择店铺");
+        }
+        if (body.getMiniappType() == null) {
+            throw new BusinessException("请选择小程序类型");
+        }
+        Store store = storeMapper.selectByStoreId(body.getStoreId());
+        if (store == null || store.getId() == null) {
+            throw new BusinessException("店铺不存在");
+        }
+        Store patch = new Store();
+        patch.setId(store.getId());
+        MiniappUiHelper.applySave(
+                patch,
+                body.getMiniappType(),
+                body.getShowStock(),
+                body.getShowAddress(),
+                body.getShowQuantity(),
+                body.getShowCart(),
+                body.getOrderBtnText(),
+                body.getEnablePay(),
+                body.getHomeTabText(),
+                body.getListBtnText(),
+                body.getShowSaleNum(),
+                body.getShowDeliveryFee(),
+                body.getDeliveryFee());
+        patch.setUpdateBy(operator.getUsername());
+        storeMapper.updateStore(patch);
+        Store refreshed = storeMapper.selectByStoreId(body.getStoreId());
+        StoreWxConfig cfg = storeWxConfigMapper.selectByStoreId(body.getStoreId());
+        return Response.success(toVo(refreshed != null ? refreshed : store, cfg));
+    }
+
     private void assertAppIdUnique(String appId, Long storeId) {
         if (!StringUtils.hasText(appId)) {
             return;
@@ -190,6 +228,19 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
         StoreWxConfigVO vo = new StoreWxConfigVO();
         vo.setStoreId(store.getStoreId());
         vo.setStoreName(store.getStoreName());
+        MiniappUiHelper.fillDefaults(store);
+        vo.setMiniappType(store.getMiniappType());
+        vo.setShowStock(store.getShowStock());
+        vo.setShowAddress(store.getShowAddress());
+        vo.setShowQuantity(store.getShowQuantity());
+        vo.setShowCart(store.getShowCart());
+        vo.setOrderBtnText(store.getOrderBtnText());
+        vo.setEnablePay(store.getEnablePay());
+        vo.setHomeTabText(store.getHomeTabText());
+        vo.setListBtnText(store.getListBtnText());
+        vo.setShowSaleNum(store.getShowSaleNum());
+        vo.setShowDeliveryFee(store.getShowDeliveryFee());
+        vo.setDeliveryFee(store.getDeliveryFee());
         if (cfg == null) {
             vo.setEnabled(0);
             vo.setPlatformFallback(true);

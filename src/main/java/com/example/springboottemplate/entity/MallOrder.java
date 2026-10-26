@@ -96,8 +96,8 @@ public class MallOrder {
     @ApiModelProperty(value = "应付金额（分）")
     private Integer payAmountFen;
 
-    /** 1微信 2会员余额 */
-    @ApiModelProperty(value = "支付渠道 1微信 2会员余额")
+    /** 1微信 2会员余额 3无需支付 */
+    @ApiModelProperty(value = "支付渠道 1微信 2会员余额 3无需支付")
     private Integer payChannel;
 
     @ApiModelProperty(value = "本单是否按会员价 0否 1是")

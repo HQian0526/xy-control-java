@@ -97,6 +97,9 @@ public class ProductServiceimpl implements ProductService {
         if (product.getSaleNum() == null) {
             product.setSaleNum(0);
         }
+        if (product.getOrderNum() == null) {
+            product.setOrderNum(0);
+        }
         product.setDeleted(0);
         product.setCreatedTime(new Date());
         product.setCreatedBy(username);

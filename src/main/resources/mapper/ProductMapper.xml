@@ -16,6 +16,7 @@
         <result property="saleNum" column="sale_num"/>
         <result property="remark" column="remark"/>
         <result property="productStatus" column="product_status"/>
+        <result property="orderNum" column="order_num"/>
         <result property="createdBy" column="created_by"/>
         <result property="createdTime" column="created_time"/>
         <result property="updateBy" column="update_by"/>
@@ -25,8 +26,8 @@
 
     <!-- 新增商品 -->
     <insert id="addProduct" parameterType="Product">
-        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, member_price, product_num, sale_num, remark, product_status, created_by, created_time, deleted)
-        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{memberPrice}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{createdBy}, #{createdTime}, #{deleted})
+        INSERT into product (product_id, catagory_id, store_id, product_name, product_img, price, member_price, product_num, sale_num, remark, product_status, order_num, created_by, created_time, deleted)
+        value (#{productId}, #{catagoryId}, #{storeId}, #{productName}, #{productImg}, #{price}, #{memberPrice}, #{productNum}, #{saleNum}, #{remark}, #{productStatus}, #{orderNum}, #{createdBy}, #{createdTime}, #{deleted})
     </insert>
 
     <!-- 查询所有商品信息（模糊查询）-->
@@ -72,6 +73,7 @@
                 </otherwise>
             </choose>
         </where>
+        order by IFNULL(order_num, 0) asc, id asc
     </select>
 
     <!-- 修改商品信息 -->
@@ -92,6 +94,7 @@
             <if test="saleNum != null">sale_num = #{saleNum},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="productStatus != null">product_status = #{productStatus},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="deleted != null">deleted = #{deleted},</if>

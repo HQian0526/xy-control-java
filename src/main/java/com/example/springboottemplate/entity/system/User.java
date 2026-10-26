@@ -90,6 +90,10 @@ public class User {
     @ApiModelProperty(value = "本店会员余额")
     private BigDecimal memberBalance;
 
+    @TableField(exist = false)
+    @ApiModelProperty(value = "顾客列表搜索：手机号或昵称")
+    private String keyword;
+
     @ApiModelProperty(value = "微信小程序 openid", required = false)
     private String openid;
 

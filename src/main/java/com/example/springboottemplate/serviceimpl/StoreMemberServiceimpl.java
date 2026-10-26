@@ -3,8 +3,11 @@ package com.example.springboottemplate.serviceimpl;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.mall.MallPayPrepareVO;
+import com.example.springboottemplate.dto.mall.StoreMemberAssistRechargeRequest;
+import com.example.springboottemplate.dto.mall.StoreMemberCustomerVO;
 import com.example.springboottemplate.dto.mall.StoreMemberRechargeRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberStatusRequest;
+import com.example.springboottemplate.dto.mall.StoreMemberVerifyDebitRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberVO;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.StoreMember;
@@ -20,6 +23,7 @@ import com.example.springboottemplate.service.wx.WxPayClientService;
 import com.example.springboottemplate.service.wx.WxShippingService;
 import com.example.springboottemplate.service.wx.WxTenantContext;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
+import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.StoreAuthHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +48,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class StoreMemberServiceimpl implements StoreMemberService {
 
     public static final BigDecimal MIN_RECHARGE = new BigDecimal("100.00");
+    public static final BigDecimal MIN_ASSIST_RECHARGE = new BigDecimal("0.01");
+    public static final BigDecimal MAX_RECHARGE = new BigDecimal("100000");
 
     @Autowired
     private StoreMemberMapper storeMemberMapper;
@@ -88,7 +94,7 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         if (amount.compareTo(MIN_RECHARGE) < 0) {
             throw new BusinessException("每次储值至少100元");
         }
-        if (amount.compareTo(new BigDecimal("100000")) > 0) {
+        if (amount.compareTo(MAX_RECHARGE) > 0) {
             throw new BusinessException("储值金额过大");
         }
         Long storeId = resolveBrowseStoreId(request.getStoreId(), user);
@@ -247,6 +253,106 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     }
 
     @Override
+    public Response lookupByPhone(String phone, Long storeId, HttpServletRequest httpRequest) {
+        return lookupCustomer(phone, null, storeId, httpRequest);
+    }
+
+    @Override
+    public Response lookupCustomer(String phone, Long userId, Long storeId, HttpServletRequest httpRequest) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
+        Long targetStoreId = storeAuthHelper.resolveWritableStoreId(operator, storeId);
+        assertStoreEnablePay(targetStoreId);
+        if (userId == null && !StringUtils.hasText(phone)) {
+            throw new BusinessException("请选择顾客");
+        }
+        User customer = userId != null
+                ? findOrdinaryCustomerByUserId(userId)
+                : findOrdinaryCustomerByPhone(targetStoreId, phone);
+        return Response.success(toCustomerVo(targetStoreId, customer));
+    }
+
+    @Override
+    public Response assistRecharge(StoreMemberAssistRechargeRequest request, HttpServletRequest httpRequest) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
+        if (request == null || request.getUserId() == null) {
+            throw new BusinessException("请选择顾客");
+        }
+        if (request.getAmount() == null) {
+            throw new BusinessException("请输入储值金额");
+        }
+        BigDecimal amount = request.getAmount().setScale(2, RoundingMode.HALF_UP);
+        if (amount.compareTo(MIN_ASSIST_RECHARGE) < 0) {
+            throw new BusinessException("储值金额至少0.01元");
+        }
+        if (amount.compareTo(MAX_RECHARGE) > 0) {
+            throw new BusinessException("储值金额过大");
+        }
+        Long storeId = storeAuthHelper.resolveWritableStoreId(operator, request.getStoreId());
+        assertStoreEnablePay(storeId);
+        User customer = findOrdinaryCustomerByUserId(request.getUserId());
+        Date now = new Date();
+        creditAndJoin(storeId, customer.getId(), amount, now);
+
+        int amountFen = amount.movePointRight(2).setScale(0, RoundingMode.HALF_UP).intValueExact();
+        String rechargeNo = generateRechargeNo("M");
+        WxTenantContext payTenant = wxTenantResolver.byStoreIdForNotify(storeId);
+        String remark = clipRemark(request.getRemark());
+        StoreMemberRecharge recharge = StoreMemberRecharge.builder()
+                .id(IdWorker.getId())
+                .rechargeNo(rechargeNo)
+                .storeId(storeId)
+                .userId(customer.getId())
+                .openid(customer.getOpenid())
+                .appId(payTenant == null ? null : payTenant.getAppId())
+                .mchId(payTenant == null ? null : payTenant.getMchId())
+                .amount(amount)
+                .amountFen(amountFen)
+                .remark(remark)
+                .payStatus(1)
+                .transactionId("MCH" + rechargeNo)
+                .paidTime(now)
+                .wxShippingStatus(1)
+                .createdBy(operator.getUsername())
+                .createdTime(now)
+                .deleted(0)
+                .build();
+        storeMemberRechargeMapper.addRecharge(recharge);
+
+        StoreMember latest = find(storeId, customer.getId());
+        return Response.success(toCustomerVo(storeId, customer, latest));
+    }
+
+    @Override
+    public Response verifyDebit(StoreMemberVerifyDebitRequest request, HttpServletRequest httpRequest) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
+        if (request == null) {
+            throw new BusinessException("请填写核验信息");
+        }
+        Long storeId = storeAuthHelper.resolveWritableStoreId(operator, request.getStoreId());
+        assertStoreEnablePay(storeId);
+        User customer = findOrdinaryCustomerByPhone(storeId, request.getPhone());
+        BigDecimal amount = request.getAmount() == null
+                ? null
+                : request.getAmount().setScale(2, RoundingMode.HALF_UP);
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("请输入正确的核验金额");
+        }
+        StoreMember member = find(storeId, customer.getId());
+        BigDecimal balance = member == null || member.getBalance() == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : member.getBalance().setScale(2, RoundingMode.HALF_UP);
+        if (member == null || !Integer.valueOf(1).equals(member.getIsMember())
+                || balance.compareTo(amount) < 0) {
+            throw new BusinessException("余额不足");
+        }
+        if (!debit(storeId, customer.getId(), amount)) {
+            throw new BusinessException("余额不足");
+        }
+        StoreMember latest = find(storeId, customer.getId());
+        return Response.success(toCustomerVo(storeId, customer, latest));
+    }
+
+    @Override
     public void applyRechargePaid(String rechargeNo, String transactionId) {
         if (!StringUtils.hasText(rechargeNo)) {
             return;
@@ -374,8 +480,86 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     }
 
     private String generateRechargeNo() {
+        return generateRechargeNo("S");
+    }
+
+    private String generateRechargeNo(String prefix) {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         int rnd = ThreadLocalRandom.current().nextInt(100000, 999999);
-        return "S" + time + rnd;
+        return (StringUtils.hasText(prefix) ? prefix : "S") + time + rnd;
+    }
+
+    private String clipRemark(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        String remark = raw.trim();
+        return remark.length() > 200 ? remark.substring(0, 200) : remark;
+    }
+
+    private void assertStoreEnablePay(Long storeId) {
+        Store store = storeMapper.selectByStoreId(storeId);
+        if (store == null) {
+            throw new BusinessException("店铺不存在");
+        }
+        MiniappUiHelper.fillDefaults(store);
+        if (!MiniappUiHelper.enablePay(store)) {
+            throw new BusinessException("当前店铺未接入支付");
+        }
+    }
+
+    private User findOrdinaryCustomerByPhone(Long storeId, String rawPhone) {
+        String phone = rawPhone == null ? "" : rawPhone.trim();
+        if (!phone.matches("^1[3-9]\\d{9}$")) {
+            throw new BusinessException("请输入正确的手机号");
+        }
+        User customer = userMapper.selectByPhoneAndBindStore(phone, storeId);
+        if (customer == null) {
+            customer = userMapper.selectByPhone(phone);
+        }
+        if (customer == null || (customer.getDeleted() != null && customer.getDeleted() == 1)) {
+            throw new BusinessException("未找到该手机号对应的顾客");
+        }
+        if (customer.getIdentityType() == null || customer.getIdentityType() != 1) {
+            throw new BusinessException("只能操作普通顾客");
+        }
+        return customer;
+    }
+
+    private User findOrdinaryCustomerByUserId(Long userId) {
+        if (userId == null) {
+            throw new BusinessException("请选择顾客");
+        }
+        User customer = userMapper.selectById(userId);
+        if (customer == null || (customer.getDeleted() != null && customer.getDeleted() == 1)) {
+            throw new BusinessException("顾客不存在");
+        }
+        if (customer.getIdentityType() == null || customer.getIdentityType() != 1) {
+            throw new BusinessException("只能给普通顾客储值");
+        }
+        return customer;
+    }
+
+    private StoreMemberCustomerVO toCustomerVo(Long storeId, User customer) {
+        return toCustomerVo(storeId, customer, find(storeId, customer.getId()));
+    }
+
+    private StoreMemberCustomerVO toCustomerVo(Long storeId, User customer, StoreMember member) {
+        boolean isMember = member != null && Integer.valueOf(1).equals(member.getIsMember());
+        BigDecimal balance = member == null || member.getBalance() == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : member.getBalance().setScale(2, RoundingMode.HALF_UP);
+        String nickname = customer.getRealName();
+        if (!StringUtils.hasText(nickname)) {
+            nickname = "微信用户";
+        }
+        return StoreMemberCustomerVO.builder()
+                .userId(customer.getId())
+                .storeId(storeId)
+                .phone(customer.getPhone())
+                .nickname(nickname.trim())
+                .member(isMember)
+                .balance(balance)
+                .build();
     }
 }

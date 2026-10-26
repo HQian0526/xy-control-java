@@ -111,6 +111,12 @@
             <if test="phone != null and phone != ''">
                 AND u.phone LIKE CONCAT('%', #{phone}, '%')
             </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    u.phone LIKE CONCAT('%', #{keyword}, '%')
+                    OR u.real_name LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
             AND NOT EXISTS (
                 SELECT 1 FROM store_blacklist b
                 WHERE b.deleted = 0

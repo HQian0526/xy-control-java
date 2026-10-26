@@ -3,6 +3,7 @@ package com.example.springboottemplate.controller;
 import com.example.springboottemplate.annotation.OperLog;
 import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.StoreMiniappUiSaveRequest;
 import com.example.springboottemplate.dto.StoreWxConfigSaveRequest;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.service.StoreWxConfigService;
@@ -59,6 +60,20 @@ public class StoreWxConfigController {
     public Response save(@RequestBody StoreWxConfigSaveRequest body, HttpServletRequest request) {
         try {
             return storeWxConfigService.save(body, request);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("保存失败: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/miniappUi")
+    @ResponseBody
+    @ApiOperation(value = "保存店铺小程序权限配置")
+    @OperLog(module = "店铺微信配置", type = OperTypes.UPDATE)
+    public Response saveMiniappUi(@RequestBody StoreMiniappUiSaveRequest body, HttpServletRequest request) {
+        try {
+            return storeWxConfigService.saveMiniappUi(body, request);
         } catch (BusinessException e) {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {

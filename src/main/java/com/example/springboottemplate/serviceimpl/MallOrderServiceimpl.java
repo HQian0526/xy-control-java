@@ -44,6 +44,7 @@ import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.service.feie.FeiePrintService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.MallDiscountCalculator;
+import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
@@ -129,10 +130,6 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (!StringUtils.hasText(request.getContact()) || !request.getContact().matches("^1[3-9]\\d{9}$")) {
             throw new BusinessException("请输入正确的手机号码");
         }
-        if (!StringUtils.hasText(request.getAddress())) {
-            throw new BusinessException("请输入收货地址");
-        }
-
         Claims claims = parseClaims(httpRequest);
         Long userId = jwtUtil.getUserId(claims);
         String username = claims.getSubject();
@@ -146,10 +143,16 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
 
         CheckoutQuote quote = quoteCheckout(request, user, false);
-        int payChannel = quote.payChannel == 2 ? 2 : 1;
+        Store checkoutStore = StoreExpireHelper.resolveStore(storeMapper, quote.storeId);
+        MiniappUiHelper.fillDefaults(checkoutStore);
+        if (MiniappUiHelper.showAddress(checkoutStore) && !StringUtils.hasText(request.getAddress())) {
+            throw new BusinessException("请输入收货地址");
+        }
+        boolean skipPay = !MiniappUiHelper.enablePay(checkoutStore);
+        int payChannel = skipPay ? 3 : (quote.payChannel == 2 ? 2 : 1);
         int memberPriced = quote.memberPriced ? 1 : 0;
         WxTenantContext payTenant = null;
-        if (payChannel != 2) {
+        if (!skipPay && payChannel != 2) {
             if (!StringUtils.hasText(user.getOpenid()) && !wxPayClientService.isMock()) {
                 throw new BusinessException("当前账号未绑定微信，请先微信登录");
             }
@@ -184,7 +187,7 @@ public class MallOrderServiceimpl implements MallOrderService {
                 .appId(payTenant != null ? payTenant.getAppId() : user.getAppId())
                 .mchId(payTenant != null ? payTenant.getMchId() : null)
                 .contact(request.getContact().trim())
-                .address(request.getAddress().trim())
+                .address(StringUtils.hasText(request.getAddress()) ? request.getAddress().trim() : "")
                 .remark(StringUtils.hasText(request.getRemark()) ? request.getRemark().trim() : null)
                 .goodsAmount(quote.goodsAmount)
                 .deliveryFee(quote.deliveryFee)
@@ -210,6 +213,19 @@ public class MallOrderServiceimpl implements MallOrderService {
             item.setOrderNo(orderNo);
         }
         mallOrderItemMapper.batchAdd(quote.itemEntities);
+
+        if (skipPay) {
+            markOrderPaid(orderNo, "NOPAY" + orderNo, now);
+            MallPayPrepareVO skipVO = MallPayPrepareVO.builder()
+                    .mock(false)
+                    .skipPay(true)
+                    .orderNo(orderNo)
+                    .payAmount(payAmount)
+                    .payStatus(1)
+                    .payChannel(3)
+                    .build();
+            return Response.success(skipVO);
+        }
 
         if (payChannel == 2) {
             if (!storeMemberService.debit(quote.storeId, userId, payAmount)) {
@@ -858,9 +874,10 @@ public class MallOrderServiceimpl implements MallOrderService {
             throw new BusinessException("订单状态已变更，请刷新后重试");
         }
 
-        boolean balancePay = order.getPayChannel() != null && order.getPayChannel() == 2;
-        if (balancePay) {
-            applyRefundSuccess(order.getOrderNo(), outRefundNo, "BAL" + outRefundNo, refundFen, new Date(), true);
+        boolean localRefund = order.getPayChannel() != null && order.getPayChannel() != 1;
+        if (localRefund) {
+            String refundTx = (order.getPayChannel() != null && order.getPayChannel() == 2 ? "BAL" : "NOPAY") + outRefundNo;
+            applyRefundSuccess(order.getOrderNo(), outRefundNo, refundTx, refundFen, new Date(), true);
             MallOrder latest = mallOrderMapper.selectByOrderNo(order.getOrderNo());
             latest.setItems(mallOrderItemMapper.selectByOrderId(latest.getId()));
             Map<String, Object> data = new HashMap<>();
@@ -1074,7 +1091,7 @@ public class MallOrderServiceimpl implements MallOrderService {
             productMapper.updateProduct(product);
         }
         scheduleFeiePrintAfterCommit(orderNo);
-        if (order.getPayChannel() != null && order.getPayChannel() == 2) {
+        if (order.getPayChannel() == null || order.getPayChannel() != 1) {
             return;
         }
         scheduleWxShippingAfterCommit(orderNo);
@@ -1162,9 +1179,6 @@ public class MallOrderServiceimpl implements MallOrderService {
             if (product.getProductStatus() == null || product.getProductStatus() != 1) {
                 throw new BusinessException("商品已下架: " + product.getProductName());
             }
-            if (product.getProductNum() == null || product.getProductNum() < line.getQuantity()) {
-                throw new BusinessException("库存不足: " + product.getProductName());
-            }
             if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
                 throw new BusinessException("商品价格异常: " + product.getProductName());
             }
@@ -1196,6 +1210,16 @@ public class MallOrderServiceimpl implements MallOrderService {
                 throw new BusinessException("您已被该店铺限制下单");
             }
         }
+        MiniappUiHelper.fillDefaults(store);
+        if (MiniappUiHelper.showStock(store)) {
+            for (QuotedLine line : lines) {
+                Integer stock = line.product.getProductNum();
+                if (stock == null || stock < line.quantity) {
+                    throw new BusinessException("库存不足: " + line.product.getProductName());
+                }
+            }
+        }
+        boolean skipPay = !MiniappUiHelper.enablePay(store);
 
         StoreMember member = storeMemberService.find(storeId, user.getId());
         boolean isMember = member != null && Integer.valueOf(1).equals(member.getIsMember());
@@ -1206,10 +1230,10 @@ public class MallOrderServiceimpl implements MallOrderService {
         Date now = new Date();
         CheckoutQuote regular = buildQuote(lines, request, user, preview, storeId, store, false, now);
         CheckoutQuote chosen = regular;
-        chosen.payChannel = 1;
+        chosen.payChannel = skipPay ? 3 : 1;
         chosen.memberPriced = false;
         chosen.memberPriceUnavailable = false;
-        if (isMember) {
+        if (isMember && !skipPay) {
             CheckoutQuote memberQuote = buildQuote(lines, request, user, preview, storeId, store, true, now);
             chosen.memberPayAmount = memberQuote.discount.getPayAmount();
             if (memberQuote.discount.getPayAmount().compareTo(balance) <= 0) {
@@ -1403,6 +1427,9 @@ public class MallOrderServiceimpl implements MallOrderService {
     }
 
     private BigDecimal resolveStoreDeliveryFee(Store store) {
+        if (!MiniappUiHelper.showDeliveryFee(store)) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
         BigDecimal fee = store != null ? store.getDeliveryFee() : null;
         if (fee == null && wxPayProperties.getDeliveryFee() != null) {
             fee = wxPayProperties.getDeliveryFee();

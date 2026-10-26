@@ -120,7 +120,7 @@ public class WxShippingService {
         if (order == null || order.getPayStatus() == null || order.getPayStatus() != 1) {
             return;
         }
-        if (order.getPayChannel() != null && order.getPayChannel() == 2) {
+        if (order.getPayChannel() == null || order.getPayChannel() != 1) {
             return;
         }
         if (order.getWxShippingStatus() != null && order.getWxShippingStatus() == STATUS_SUCCESS) {

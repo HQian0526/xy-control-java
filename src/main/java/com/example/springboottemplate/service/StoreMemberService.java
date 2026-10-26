@@ -1,8 +1,10 @@
 package com.example.springboottemplate.service;
 
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.mall.StoreMemberAssistRechargeRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberRechargeRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberStatusRequest;
+import com.example.springboottemplate.dto.mall.StoreMemberVerifyDebitRequest;
 import com.example.springboottemplate.entity.StoreMember;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -19,6 +21,14 @@ public interface StoreMemberService {
     Response mockConfirmRecharge(String rechargeNo, HttpServletRequest httpRequest);
 
     Response updateStatus(StoreMemberStatusRequest request, HttpServletRequest httpRequest);
+
+    Response lookupByPhone(String phone, Long storeId, HttpServletRequest httpRequest);
+
+    Response lookupCustomer(String phone, Long userId, Long storeId, HttpServletRequest httpRequest);
+
+    Response verifyDebit(StoreMemberVerifyDebitRequest request, HttpServletRequest httpRequest);
+
+    Response assistRecharge(StoreMemberAssistRechargeRequest request, HttpServletRequest httpRequest);
 
     void applyRechargePaid(String rechargeNo, String transactionId);
 

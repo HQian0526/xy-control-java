@@ -18,6 +18,8 @@
         <result property="openUntil" column="open_until"/>
         <result property="deliveryFee" column="delivery_fee"/>
         <result property="storeTime" column="store_time"/>
+        <result property="expired" column="expired"/>
+        <result property="shopStatus" column="shop_status"/>
         <result property="identityName" column="identity_name"/>
         <result property="identityCompanyName" column="identity_company_name"/>
         <result property="businessLicense" column="business_license" />
@@ -30,12 +32,23 @@
         <result property="updateTime" column="update_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="remark" column="remark"/>
+        <result property="miniappType" column="miniapp_type"/>
+        <result property="showStock" column="show_stock"/>
+        <result property="showAddress" column="show_address"/>
+        <result property="showQuantity" column="show_quantity"/>
+        <result property="showCart" column="show_cart"/>
+        <result property="orderBtnText" column="order_btn_text"/>
+        <result property="enablePay" column="enable_pay"/>
+        <result property="homeTabText" column="home_tab_text"/>
+        <result property="listBtnText" column="list_btn_text"/>
+        <result property="showSaleNum" column="show_sale_num"/>
+        <result property="showDeliveryFee" column="show_delivery_fee"/>
         <result property="deleted" column="deleted"/>
     </resultMap>
 
     <insert id="addStore" parameterType="Store">
-        INSERT into store (id, store_id, store_name, avatar, address, user_id, store_type, store_status, store_time, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark, deleted)
-        value (#{id}, #{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeStatus}, #{storeTime}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark}, #{deleted})
+        INSERT into store (id, store_id, store_name, avatar, address, user_id, store_type, store_status, store_time, expired, shop_status, identity_name, identity_company_name, business_license, identity_no, identity_photo, identity_phone, identity_email, created_time, created_by, remark, deleted)
+        value (#{id}, #{storeId}, #{storeName}, #{avatar}, #{address}, #{userId}, #{storeType}, #{storeStatus}, #{storeTime}, #{expired}, #{shopStatus}, #{identityName}, #{identityCompanyName}, #{businessLicense}, #{identityNo}, #{identityPhoto}, #{identityPhone}, #{identityEmail}, #{createdTime}, #{createdBy}, #{remark}, #{deleted})
     </insert>
 
     <!-- 查询所有商户信息（模糊查询）-->
@@ -62,6 +75,12 @@
             </if>
             <if test="storeTime != null and storeTime != ''">
                 and store_time = #{storeTime}
+            </if>
+            <if test="expired != null">
+                and expired = #{expired}
+            </if>
+            <if test="shopStatus != null">
+                and shop_status = #{shopStatus}
             </if>
             <if test="address != null and address != ''">
                 and address like CONCAT('%', #{address}, '%')
@@ -116,6 +135,19 @@
             <if test="deliveryFee != null">delivery_fee = #{deliveryFee},</if>
             <if test="storeTime != null">store_time = #{storeTime},</if>
             <if test="storeTimeCleared != null and storeTimeCleared">store_time = null,</if>
+            <if test="expired != null">expired = #{expired},</if>
+            <if test="shopStatus != null">shop_status = #{shopStatus},</if>
+            <if test="miniappType != null">miniapp_type = #{miniappType},</if>
+            <if test="showStock != null">show_stock = #{showStock},</if>
+            <if test="showAddress != null">show_address = #{showAddress},</if>
+            <if test="showQuantity != null">show_quantity = #{showQuantity},</if>
+            <if test="showCart != null">show_cart = #{showCart},</if>
+            <if test="orderBtnText != null">order_btn_text = #{orderBtnText},</if>
+            <if test="enablePay != null">enable_pay = #{enablePay},</if>
+            <if test="homeTabText != null">home_tab_text = #{homeTabText},</if>
+            <if test="listBtnText != null">list_btn_text = #{listBtnText},</if>
+            <if test="showSaleNum != null">show_sale_num = #{showSaleNum},</if>
+            <if test="showDeliveryFee != null">show_delivery_fee = #{showDeliveryFee},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
             <if test="businessLicense != null">business_license = #{businessLicense},</if>

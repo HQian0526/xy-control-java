@@ -10,6 +10,7 @@ import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
+import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -61,10 +62,12 @@ public class StoreServiceimpl implements StoreService {
         if (store.getDeleted() == null) {
             store.setDeleted(0);
         }
+        MiniappUiHelper.fillDefaults(store);
         Response subscriptionError = applySubscriptionFields(store, true);
         if (subscriptionError != null) {
             return subscriptionError;
         }
+        applyLifeStatusFields(store, null, true);
 
         storeMapper.addStore(store);
         return new Response(200, null, "操作成功");
@@ -106,11 +109,15 @@ public class StoreServiceimpl implements StoreService {
         Claims claims = jwtUtil.parseToken(token);
         String username = claims.getSubject();
         Store exist = findById(store.getId());
+        MiniappUiHelper.fillDefaults(exist);
         if (store.getDeliveryFee() != null) {
-            if (store.getDeliveryFee().compareTo(BigDecimal.ZERO) < 0) {
+            if (!MiniappUiHelper.showDeliveryFee(exist)) {
+                store.setDeliveryFee(null);
+            } else if (store.getDeliveryFee().compareTo(BigDecimal.ZERO) < 0) {
                 return Response.fail(400, "配送费不能小于0");
+            } else {
+                store.setDeliveryFee(store.getDeliveryFee().setScale(2, RoundingMode.HALF_UP));
             }
-            store.setDeliveryFee(store.getDeliveryFee().setScale(2, RoundingMode.HALF_UP));
         }
         String hoursJson = store.getBusinessHours() != null
                 ? store.getBusinessHours()
@@ -120,6 +127,7 @@ public class StoreServiceimpl implements StoreService {
         if (subscriptionError != null) {
             return subscriptionError;
         }
+        applyLifeStatusFields(store, exist, false);
         store.setUpdateBy(username);
         storeMapper.updateStore(store);
         return Response.success(refreshStore(store.getId(), exist != null ? exist : store));
@@ -337,6 +345,7 @@ public class StoreServiceimpl implements StoreService {
         store.setNextCloseText(StoreOpenHelper.formatMoment(
                 StoreOpenHelper.nextCloseTime(store.getBusinessHours(), now), now));
         store.setSubscriptionExpired(StoreExpireHelper.isExpired(store));
+        MiniappUiHelper.fillDefaults(store);
     }
 
     private Response applySubscriptionFields(Store store, boolean creating) {
@@ -367,6 +376,56 @@ public class StoreServiceimpl implements StoreService {
         return Response.fail(400, "商户类型无效");
     }
 
+    private void applyLifeStatusFields(Store store, Store exist, boolean creating) {
+        if (store == null) {
+            return;
+        }
+        Store snapshot = new Store();
+        snapshot.setStoreType(store.getStoreType() != null
+                ? store.getStoreType()
+                : (exist == null ? null : exist.getStoreType()));
+        if (Boolean.TRUE.equals(store.getStoreTimeCleared())) {
+            snapshot.setStoreTime(null);
+        } else if (store.getStoreTime() != null) {
+            snapshot.setStoreTime(store.getStoreTime());
+        } else {
+            snapshot.setStoreTime(exist == null ? null : exist.getStoreTime());
+        }
+        int expiredFlag = StoreExpireHelper.expiredFlag(snapshot);
+        boolean subscriptionChanged = creating
+                || store.getStoreType() != null
+                || store.getStoreTime() != null
+                || Boolean.TRUE.equals(store.getStoreTimeCleared());
+        if (creating) {
+            if (store.getExpired() == null) {
+                store.setExpired(expiredFlag);
+            }
+        } else if (store.getExpired() == null && subscriptionChanged) {
+            store.setExpired(expiredFlag);
+        }
+        Integer deleted = store.getDeleted() != null
+                ? store.getDeleted()
+                : (exist == null ? Integer.valueOf(0) : exist.getDeleted());
+        boolean unlocking = store.getDeleted() != null && store.getDeleted() == 0;
+        if (creating) {
+            if (store.getShopStatus() == null) {
+                store.setShopStatus(StoreExpireHelper.resolveShopStatus(
+                        deleted,
+                        store.getExpired() == null ? expiredFlag : store.getExpired()));
+            }
+            return;
+        }
+        if (Integer.valueOf(1).equals(deleted)) {
+            store.setShopStatus(StoreExpireHelper.SHOP_STATUS_FROZEN);
+            return;
+        }
+        if (unlocking && store.getShopStatus() == null) {
+            store.setShopStatus(StoreExpireHelper.resolveShopStatus(
+                    0,
+                    store.getExpired() == null ? expiredFlag : store.getExpired()));
+        }
+    }
+
     private Long resolveCurrentUserId(HttpServletRequest request) {
         Long userId = null;
         Object attr = request.getAttribute("userId");
@@ -394,6 +453,15 @@ public class StoreServiceimpl implements StoreService {
         }
         int affectedRows = logicDeleteHelper.deleteByIds("store", idList);
         if (affectedRows > 0) {
+            for (Long id : idList) {
+                if (id == null) {
+                    continue;
+                }
+                Store patch = new Store();
+                patch.setId(id);
+                patch.setShopStatus(StoreExpireHelper.SHOP_STATUS_FROZEN);
+                storeMapper.updateStore(patch);
+            }
             return new Response(200, null, "操作成功");
         } else {
             return new Response(400, null, "操作失败，未找到需要删除的记录");

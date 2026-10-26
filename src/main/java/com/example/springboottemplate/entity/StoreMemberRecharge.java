@@ -54,6 +54,9 @@ public class StoreMemberRecharge {
     @ApiModelProperty(value = "充值金额（分）")
     private Integer amountFen;
 
+    @ApiModelProperty(value = "储值备注")
+    private String remark;
+
     /** 0待支付 1已支付 2已关闭 */
     @ApiModelProperty(value = "支付状态")
     private Integer payStatus;

@@ -47,7 +47,7 @@ public class Store {
     @ApiModelProperty(value = "商户类型 1永久 2租用", required = true)
     private Integer storeType;
 
-    @ApiModelProperty(value = "商户状态 1营业中 2打烊", required = false)
+    @ApiModelProperty(value = "营业状态 1正常 2打烊", required = false)
     private Integer storeStatus;
 
     @ApiModelProperty(value = "营业时间JSON", required = false)
@@ -116,6 +116,12 @@ public class Store {
     @ApiModelProperty(value = "商户到期时间", required = false)
     private String storeTime;
 
+    @ApiModelProperty(value = "是否到期 0否 1是", required = false)
+    private Integer expired;
+
+    @ApiModelProperty(value = "店铺状态 1正常 2已到期 3已冻结", required = false)
+    private Integer shopStatus;
+
     @TableField(exist = false)
     @ApiModelProperty(value = "租用是否已到期（计算字段）", required = false)
     private Boolean subscriptionExpired;
@@ -143,6 +149,39 @@ public class Store {
 
     @ApiModelProperty(value = "备注", required = false)
     private String remark;
+
+    @ApiModelProperty(value = "小程序类型 1商城类 2预约服务类", required = false)
+    private Integer miniappType;
+
+    @ApiModelProperty(value = "是否展示库存 0否 1是", required = false)
+    private Integer showStock;
+
+    @ApiModelProperty(value = "是否展示收货地址 0否 1是", required = false)
+    private Integer showAddress;
+
+    @ApiModelProperty(value = "是否展示购买数量 0否 1是", required = false)
+    private Integer showQuantity;
+
+    @ApiModelProperty(value = "是否展示购物车 0否 1是", required = false)
+    private Integer showCart;
+
+    @ApiModelProperty(value = "下单按钮文字", required = false)
+    private String orderBtnText;
+
+    @ApiModelProperty(value = "是否接入支付 0否 1是", required = false)
+    private Integer enablePay;
+
+    @ApiModelProperty(value = "底部首页Tab文字", required = false)
+    private String homeTabText;
+
+    @ApiModelProperty(value = "逛店列表按钮文字", required = false)
+    private String listBtnText;
+
+    @ApiModelProperty(value = "是否展示销量 0否 1是", required = false)
+    private Integer showSaleNum;
+
+    @ApiModelProperty(value = "是否展示配送费 0否 1是", required = false)
+    private Integer showDeliveryFee;
 
     @ApiModelProperty(value = "店铺创建时间", required = false)
     private Date createdTime;

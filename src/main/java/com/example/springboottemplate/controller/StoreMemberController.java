@@ -3,8 +3,10 @@ package com.example.springboottemplate.controller;
 import com.example.springboottemplate.annotation.OperLog;
 import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
+import com.example.springboottemplate.dto.mall.StoreMemberAssistRechargeRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberRechargeRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberStatusRequest;
+import com.example.springboottemplate.dto.mall.StoreMemberVerifyDebitRequest;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.service.StoreMemberService;
 import io.swagger.annotations.Api;
@@ -75,6 +77,50 @@ public class StoreMemberController {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {
             return Response.fail("确认失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/lookup")
+    @ResponseBody
+    @ApiOperation(value = "按手机号查询本店顾客昵称和储值余额", notes = "仅商家/管理员")
+    public Response lookup(@RequestParam(required = false) String phone,
+                           @RequestParam(required = false) Long userId,
+                           @RequestParam(required = false) Long storeId,
+                           HttpServletRequest request) {
+        try {
+            return storeMemberService.lookupCustomer(phone, userId, storeId, request);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/assistRecharge")
+    @ResponseBody
+    @ApiOperation(value = "商家代顾客储值", notes = "入本店余额并成为储值会员；仅商家/管理员")
+    @OperLog(module = "店铺会员", type = OperTypes.ADD, remark = "商家代储值")
+    public Response assistRecharge(@RequestBody StoreMemberAssistRechargeRequest request, HttpServletRequest httpRequest) {
+        try {
+            return storeMemberService.assistRecharge(request, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("储值失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/verifyDebit")
+    @ResponseBody
+    @ApiOperation(value = "核验扣减本店顾客储值余额", notes = "仅商家/管理员；余额不足时提示")
+    @OperLog(module = "店铺会员", type = OperTypes.UPDATE, remark = "核验扣减储值")
+    public Response verifyDebit(@RequestBody StoreMemberVerifyDebitRequest request, HttpServletRequest httpRequest) {
+        try {
+            return storeMemberService.verifyDebit(request, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("核验失败: " + e.getMessage());
         }
     }
 

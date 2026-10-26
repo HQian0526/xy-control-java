@@ -12,6 +12,7 @@
         <result property="mchId" column="mch_id"/>
         <result property="amount" column="amount"/>
         <result property="amountFen" column="amount_fen"/>
+        <result property="remark" column="remark"/>
         <result property="payStatus" column="pay_status"/>
         <result property="prepayId" column="prepay_id"/>
         <result property="transactionId" column="transaction_id"/>
@@ -33,10 +34,12 @@
     <insert id="addRecharge" parameterType="StoreMemberRecharge">
         insert into store_member_recharge (
             id, recharge_no, store_id, user_id, openid, app_id, mch_id,
-            amount, amount_fen, pay_status, prepay_id, created_by, created_time, deleted
+            amount, amount_fen, remark, pay_status, prepay_id, transaction_id, paid_time,
+            wx_shipping_status, created_by, created_time, deleted
         ) values (
             #{id}, #{rechargeNo}, #{storeId}, #{userId}, #{openid}, #{appId}, #{mchId},
-            #{amount}, #{amountFen}, #{payStatus}, #{prepayId}, #{createdBy}, #{createdTime}, #{deleted}
+            #{amount}, #{amountFen}, #{remark}, #{payStatus}, #{prepayId}, #{transactionId}, #{paidTime},
+            #{wxShippingStatus}, #{createdBy}, #{createdTime}, #{deleted}
         )
     </insert>
 
