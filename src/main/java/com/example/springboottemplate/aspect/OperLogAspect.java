@@ -5,6 +5,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.system.OperLogRecordService;
 import com.example.springboottemplate.utils.IpUtils;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.OperLogPayloadHelper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -32,6 +33,9 @@ public class OperLogAspect {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private OperLogPayloadHelper operLogPayloadHelper;
 
     @Around("@annotation(operLogAnno)")
     public Object around(ProceedingJoinPoint joinPoint, OperLog operLogAnno) throws Throwable {
@@ -106,6 +110,10 @@ public class OperLogAspect {
                         .operResult(operResult)
                         .operTime(new Date())
                         .remark(remark)
+                        .requestMethod(operLogPayloadHelper.requestMethod(request))
+                        .requestUri(operLogPayloadHelper.requestUri(request))
+                        .requestParams(operLogPayloadHelper.captureRequestParams(request, joinPoint.getArgs()))
+                        .responseBody(operLogPayloadHelper.captureResponse(result, error))
                         .createdTime(new Date())
                         .createdBy(operUser)
                         .deleted(0)

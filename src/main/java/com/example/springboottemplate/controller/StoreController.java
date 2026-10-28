@@ -56,6 +56,14 @@ public class StoreController {
         return storeService.updateStoreProfile(store, request);
     }
 
+    @PutMapping("/updateStoreIntro")
+    @ResponseBody
+    @ApiOperation(value = "修改本店介绍", notes = "商户改本店、管理员按 storeId 改：简介、联系电话、活动公告、展示开关")
+    @OperLog(module = "商户管理", type = OperTypes.UPDATE)
+    public Response updateStoreIntro(@RequestBody Store store, HttpServletRequest request) {
+        return storeService.updateStoreIntro(store, request);
+    }
+
     @PutMapping("/updateBusinessHours")
     @ResponseBody
     @ApiOperation(value = "设置营业时间", notes = "仅更新当前登录商家的营业时间；rules 为空视为全天可下单")

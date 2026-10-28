@@ -10,8 +10,8 @@ import com.example.springboottemplate.mapper.OtherBusinessMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.OtherBusinessService;
-import com.example.springboottemplate.utils.BrowseStoreHelper;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -44,6 +44,8 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
     private UserMapper userMapper;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addOtherBusiness(OtherBusiness otherBusiness, HttpServletRequest request) {
@@ -52,18 +54,11 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
         String username = claims.getSubject();
         Long userId = jwtUtil.getUserId(claims);
 
-        Store query = new Store();
-        query.setUserId(userId == null ? null : userId);
-        query.setDeleted(0);
-        List<Store> storeList = storeMapper.findStore(query);
-        if (ValidateUtil.isEmpty(storeList)) {
+        Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(userId, storeAuthHelper.parseHeaderStoreId(request));
+        if (currentStoreId == null) {
             throw new BusinessException("您不是商户类型的用户，暂时无法添加其他业务");
         }
-
-        Store store = storeList.get(0);
-        if (store.getStoreId() != null) {
-            otherBusiness.setStoreId(store.getStoreId());
-        }
+        otherBusiness.setStoreId(currentStoreId);
 
         otherBusiness.setId(IdWorker.getId());
         otherBusiness.setDeleted(0);
@@ -92,8 +87,7 @@ public class OtherBusinessServiceimpl implements OtherBusinessService {
         // 商户用户：未传 storeId 或扫的是自己店，看本店；扫别人店则按请求 storeId 逛店
         if (identityType != null && identityType == 2) {
             String requested = otherBusiness.getStoreId() == null ? null : String.valueOf(otherBusiness.getStoreId());
-            String browseStoreId = BrowseStoreHelper
-                    .resolveMerchantBrowseStoreId(userId, requested, storeMapper);
+            String browseStoreId = storeAuthHelper.resolveMerchantBrowseStoreId(userId, requested);
             if (browseStoreId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }

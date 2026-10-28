@@ -15,6 +15,9 @@ public class StoreMemberVerifyDebitRequest {
     @ApiModelProperty(value = "核验金额（元）", required = true)
     private BigDecimal amount;
 
+    @ApiModelProperty(value = "备注")
+    private String remark;
+
     @ApiModelProperty(value = "店铺id（管理员必填；商户可不传，取本店）")
     private Long storeId;
 }

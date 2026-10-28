@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.DashboardMapper">
+
+    <sql id="paidOrderScope">
+        deleted = 0
+        and paid_time is not null
+        and paid_time &gt;= #{startTime}
+        and paid_time &lt; #{endTime}
+        and pay_status in (1, 3, 4, 5)
+        and ifnull(pay_channel, 1) in (1, 2)
+        <if test="storeId != null">
+            and store_id = #{storeId}
+        </if>
+    </sql>
+
+    <select id="sumNetSales" resultType="java.math.BigDecimal">
+        select ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0)
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+    </select>
+
+    <select id="countPaidOrders" resultType="java.lang.Integer">
+        select count(1)
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+    </select>
+
+    <select id="sumRefund" resultType="java.math.BigDecimal">
+        select ifnull(sum(ifnull(refund_amount, 0)), 0)
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+    </select>
+
+    <select id="sumRecharge" resultType="java.math.BigDecimal">
+        select ifnull(sum(amount), 0)
+        from store_member_recharge
+        where deleted = 0
+          and pay_status = 1
+          and paid_time is not null
+          and paid_time &gt;= #{startTime}
+          and paid_time &lt; #{endTime}
+        <if test="storeId != null">
+            and store_id = #{storeId}
+        </if>
+    </select>
+
+    <select id="countCustomers" resultType="java.lang.Integer">
+        select count(distinct uid) from (
+            select user_id as uid
+            from mall_order
+            where deleted = 0
+              and user_id is not null
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+              and pay_status in (1, 3, 4, 5)
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+            union
+            select customer_user_id as uid
+            from store_verify_log
+            where customer_user_id is not null
+              and created_time &gt;= #{startTime}
+              and created_time &lt; #{endTime}
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+            union
+            select user_id as uid
+            from store_member_recharge
+            where deleted = 0
+              and pay_status = 1
+              and user_id is not null
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+        ) t
+    </select>
+
+    <select id="countNewCustomers" resultType="java.lang.Integer">
+        select count(distinct user_id)
+        from store_member
+        where deleted = 0
+          and user_id is not null
+          and created_time &gt;= #{startTime}
+          and created_time &lt; #{endTime}
+        <if test="storeId != null">
+          and store_id = #{storeId}
+        </if>
+    </select>
+
+    <select id="listSalesTrend" resultType="com.example.springboottemplate.dto.dashboard.DashboardDayRow">
+        select date_format(paid_time, '%Y-%m-%d') as day,
+               ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as sales,
+               count(1) as orderCount
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+        group by date_format(paid_time, '%Y-%m-%d')
+        order by day
+    </select>
+
+    <select id="listCustomerTrend" resultType="com.example.springboottemplate.dto.dashboard.DashboardDayRow">
+        select day, count(distinct uid) as customers
+        from (
+            select date_format(paid_time, '%Y-%m-%d') as day, user_id as uid
+            from mall_order
+            where deleted = 0
+              and user_id is not null
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+              and pay_status in (1, 3, 4, 5)
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+            union
+            select date_format(created_time, '%Y-%m-%d') as day, customer_user_id as uid
+            from store_verify_log
+            where customer_user_id is not null
+              and created_time &gt;= #{startTime}
+              and created_time &lt; #{endTime}
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+            union
+            select date_format(paid_time, '%Y-%m-%d') as day, user_id as uid
+            from store_member_recharge
+            where deleted = 0
+              and pay_status = 1
+              and user_id is not null
+              and paid_time is not null
+              and paid_time &gt;= #{startTime}
+              and paid_time &lt; #{endTime}
+            <if test="storeId != null">
+              and store_id = #{storeId}
+            </if>
+        ) t
+        group by day
+        order by day
+    </select>
+
+    <select id="listNewCustomerTrend" resultType="com.example.springboottemplate.dto.dashboard.DashboardDayRow">
+        select date_format(created_time, '%Y-%m-%d') as day,
+               count(distinct user_id) as newCustomers
+        from store_member
+        where deleted = 0
+          and user_id is not null
+          and created_time &gt;= #{startTime}
+          and created_time &lt; #{endTime}
+        <if test="storeId != null">
+          and store_id = #{storeId}
+        </if>
+        group by date_format(created_time, '%Y-%m-%d')
+        order by day
+    </select>
+
+    <select id="listHourSales" resultType="com.example.springboottemplate.dto.dashboard.DashboardHourRow">
+        select date_format(paid_time, '%H') as hour,
+               ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as sales,
+               count(1) as orderCount
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+        group by date_format(paid_time, '%H')
+        order by hour
+    </select>
+
+    <select id="listPayChannels" resultType="com.example.springboottemplate.dto.dashboard.DashboardChannelRow">
+        select ifnull(pay_channel, 1) as channel,
+               ifnull(sum(pay_amount - ifnull(refund_amount, 0)), 0) as amount,
+               count(1) as orderCount
+        from mall_order
+        <where>
+            <include refid="paidOrderScope"/>
+        </where>
+        group by ifnull(pay_channel, 1)
+        order by amount desc
+    </select>
+
+    <select id="listTopStores" resultType="com.example.springboottemplate.dto.dashboard.DashboardStoreRow">
+        select o.store_id as storeId,
+               ifnull(s.store_name, '未知店铺') as storeName,
+               ifnull(sum(o.pay_amount - ifnull(o.refund_amount, 0)), 0) as sales,
+               count(1) as orderCount
+        from mall_order o
+        left join store s on s.store_id = o.store_id and s.deleted = 0
+        where o.deleted = 0
+          and o.paid_time is not null
+          and o.paid_time &gt;= #{startTime}
+          and o.paid_time &lt; #{endTime}
+          and o.pay_status in (1, 3, 4, 5)
+          and ifnull(o.pay_channel, 1) in (1, 2)
+          and o.store_id is not null
+        group by o.store_id, s.store_name
+        order by sales desc
+        limit #{limit}
+    </select>
+</mapper>

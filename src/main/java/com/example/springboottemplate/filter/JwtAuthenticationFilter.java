@@ -35,9 +35,9 @@ public class JwtAuthenticationFilter implements Filter {
             chain.doFilter(request, response);
 
         } catch (ExpiredJwtException ex) {
-            sendErrorResponse(httpResponse, 401, "Token expired");
+            sendErrorResponse(httpResponse, 401, "登录信息已过期，请重新登录");
         } catch (JwtException ex) {
-            sendErrorResponse(httpResponse, 403, "Invalid token");
+            sendErrorResponse(httpResponse, 403, "登录信息无效，请重新登录");
         }
     }
 
@@ -52,7 +52,8 @@ public class JwtAuthenticationFilter implements Filter {
     private void sendErrorResponse(HttpServletResponse response, int code, String message)
             throws IOException {
         response.setStatus(code);
-        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(
                 String.format("{\"code\":%d,\"msg\":\"%s\"}", code, message)
         );

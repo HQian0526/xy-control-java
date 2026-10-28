@@ -5,12 +5,14 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.dto.StoreBusinessHours;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreService;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.MiniappUiHelper;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.StoreOpenHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -43,6 +45,8 @@ public class StoreServiceimpl implements StoreService {
     private JwtUtil jwtUtil;  // 注入 JwtUtil
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addStore(Store store, HttpServletRequest request) {
@@ -147,14 +151,7 @@ public class StoreServiceimpl implements StoreService {
             return Response.fail(400, "店铺名称不能超过64个字符");
         }
 
-        Store query = new Store();
-        query.setUserId(userId);
-        query.setDeleted(0);
-        List list = storeMapper.findStore(query);
-        if (list == null || list.isEmpty()) {
-            return Response.fail(400, "未找到店铺信息");
-        }
-        Store exist = (Store) list.get(0);
+        Store exist = findCurrentOwnedStore(userId, request);
         if (exist == null || exist.getId() == null) {
             return Response.fail(400, "未找到店铺信息");
         }
@@ -192,6 +189,75 @@ public class StoreServiceimpl implements StoreService {
     }
 
     @Override
+    public Response updateStoreIntro(Store body, HttpServletRequest request) {
+        try {
+            StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(request);
+            if (body == null) {
+                return Response.fail(400, "参数不能为空");
+            }
+            Long storeId = storeAuthHelper.resolveWritableStoreId(operator, body.getStoreId());
+            Store exist = storeMapper.selectByStoreId(storeId);
+            if (exist == null || (exist.getDeleted() != null && exist.getDeleted() == 1)) {
+                return Response.fail(400, "未找到店铺信息");
+            }
+            if (!StringUtils.hasText(body.getStoreName())) {
+                return Response.fail(400, "店铺名称不能为空");
+            }
+            String storeName = body.getStoreName().trim();
+            if (storeName.length() > 64) {
+                return Response.fail(400, "店铺名称不能超过64个字符");
+            }
+            String intro = body.getIntro() == null ? "" : body.getIntro().trim();
+            if (intro.length() > 500) {
+                return Response.fail(400, "店铺简介不能超过500个字符");
+            }
+            String notice = body.getActivityNotice() == null ? "" : body.getActivityNotice().trim();
+            if (notice.length() > 200) {
+                return Response.fail(400, "活动公告不能超过200个字符");
+            }
+            String phone = body.getContactPhone() == null
+                    ? ""
+                    : body.getContactPhone().replaceAll("\\s+", "").trim();
+            if (StringUtils.hasText(phone) && !phone.matches("^[0-9+\\-]{5,20}$")) {
+                return Response.fail(400, "请输入正确的联系电话");
+            }
+            String avatar = body.getAvatar();
+            if (avatar != null) {
+                avatar = avatar.trim();
+                if (avatar.length() > 255) {
+                    return Response.fail(400, "店铺照片路径过长");
+                }
+            }
+
+            Store patch = new Store();
+            patch.setId(exist.getId());
+            patch.setStoreName(storeName);
+            patch.setIntro(intro);
+            patch.setActivityNotice(notice);
+            patch.setContactPhone(phone);
+            patch.setShowHours(normalizeIntroFlag(body.getShowHours()));
+            patch.setShowActivity(normalizeIntroFlag(body.getShowActivity()));
+            patch.setShowContact(normalizeIntroFlag(body.getShowContact()));
+            patch.setShowOtherBusiness(normalizeIntroFlag(body.getShowOtherBusiness()));
+            patch.setUpdateBy(operator.getUsername());
+            if (avatar != null) {
+                patch.setAvatar(avatar);
+            }
+            storeMapper.updateStore(patch);
+            return Response.success(refreshStore(exist.getId(), exist));
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        }
+    }
+
+    private Integer normalizeIntroFlag(Integer value) {
+        if (value == null) {
+            return 1;
+        }
+        return value == 1 ? 1 : 0;
+    }
+
+    @Override
     public Response updateBusinessHours(StoreBusinessHours hours, HttpServletRequest request) {
         Long userId = resolveCurrentUserId(request);
         if (userId == null) {
@@ -211,7 +277,7 @@ public class StoreServiceimpl implements StoreService {
                 return Response.fail(400, "未找到店铺信息");
             }
         } else {
-            exist = findOwnStore(userId);
+            exist = findCurrentOwnedStore(userId, request);
             if (exist == null) {
                 return Response.fail(400, "未找到店铺信息");
             }
@@ -301,16 +367,14 @@ public class StoreServiceimpl implements StoreService {
         return (Store) list.get(0);
     }
 
-    private Store findOwnStore(Long userId) {
-        Store query = new Store();
-        query.setUserId(userId);
-        query.setDeleted(0);
-        List list = storeMapper.findStore(query);
-        if (list == null || list.isEmpty()) {
+    private Store findCurrentOwnedStore(Long userId, HttpServletRequest request) {
+        Long storeId = storeAuthHelper.resolveCurrentOwnedStoreId(
+                userId, storeAuthHelper.parseHeaderStoreId(request));
+        if (storeId == null) {
             return null;
         }
-        Store exist = (Store) list.get(0);
-        if (exist == null || exist.getId() == null) {
+        Store exist = storeMapper.selectByStoreId(storeId);
+        if (exist == null || exist.getId() == null || (exist.getDeleted() != null && exist.getDeleted() == 1)) {
             return null;
         }
         return exist;

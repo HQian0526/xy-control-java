@@ -34,6 +34,8 @@ public interface StoreMemberService {
 
     StoreMember find(Long storeId, Long userId);
 
+    void touchCustomer(Long storeId, Long userId);
+
     boolean debit(Long storeId, Long userId, BigDecimal amount);
 
     void credit(Long storeId, Long userId, BigDecimal amount);

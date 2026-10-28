@@ -29,7 +29,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Service
 @Transactional
@@ -103,8 +102,6 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
 
         String appId = trimToNull(body.getAppId());
         String mchId = trimToNull(body.getMchId());
-        assertAppIdUnique(appId, body.getStoreId());
-        assertMchIdUnique(mchId, body.getStoreId());
 
         StoreWxConfig existing = storeWxConfigMapper.selectByStoreId(body.getStoreId());
         String oldMchId = existing == null ? null : existing.getMchId();
@@ -159,7 +156,7 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
                 storeWxConfigMapper.updateStoreWxConfig(existing);
             }
         } catch (DuplicateKeyException e) {
-            throw new BusinessException("AppID 或商户号已被其他店铺占用");
+            throw new BusinessException("该店铺已配置过微信支付");
         }
 
         wxPayClientFactory.evict(oldMchId);
@@ -202,26 +199,6 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
         Store refreshed = storeMapper.selectByStoreId(body.getStoreId());
         StoreWxConfig cfg = storeWxConfigMapper.selectByStoreId(body.getStoreId());
         return Response.success(toVo(refreshed != null ? refreshed : store, cfg));
-    }
-
-    private void assertAppIdUnique(String appId, Long storeId) {
-        if (!StringUtils.hasText(appId)) {
-            return;
-        }
-        StoreWxConfig other = storeWxConfigMapper.selectAnyByAppId(appId);
-        if (other != null && !Objects.equals(other.getStoreId(), storeId)) {
-            throw new BusinessException("该小程序 AppID 已绑定其他店铺");
-        }
-    }
-
-    private void assertMchIdUnique(String mchId, Long storeId) {
-        if (!StringUtils.hasText(mchId)) {
-            return;
-        }
-        StoreWxConfig other = storeWxConfigMapper.selectAnyByMchId(mchId);
-        if (other != null && !Objects.equals(other.getStoreId(), storeId)) {
-            throw new BusinessException("该微信商户号已绑定其他店铺");
-        }
     }
 
     private StoreWxConfigVO toVo(Store store, StoreWxConfig cfg) {

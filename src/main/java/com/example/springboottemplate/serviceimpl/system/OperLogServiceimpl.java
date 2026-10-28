@@ -5,6 +5,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.OperLog;
 import com.example.springboottemplate.mapper.system.OperLogMapper;
 import com.example.springboottemplate.service.system.OperLogService;
+import com.example.springboottemplate.utils.IpUtils;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -61,6 +62,14 @@ public class OperLogServiceimpl implements OperLogService {
             PageHelper.startPage(pageNum, pageSize);
         }
         List<OperLog> list = operLogMapper.findOperLog(operLog == null ? new OperLog() : operLog);
+        if (list != null) {
+            for (OperLog item : list) {
+                if (item == null || StringUtils.hasText(item.getIpLocation()) || !StringUtils.hasText(item.getIpAddress())) {
+                    continue;
+                }
+                item.setIpLocation(IpUtils.resolveLocation(item.getIpAddress()));
+            }
+        }
         PageInfo<OperLog> pageInfo = new PageInfo<>(list);
         Map<String, Object> data = new HashMap<>();
         data.put("list", pageInfo.getList());

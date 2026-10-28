@@ -1,16 +1,30 @@
 package com.example.springboottemplate.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.lionsoul.ip2region.service.Config;
+import org.lionsoul.ip2region.service.Ip2Region;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 获取客户端真实 IP（仅返回 IPv4；兼容 Nginx 反代）。
+ * 获取客户端真实 IP（仅返回 IPv4；兼容 Nginx 反代），并用离线库解析属地。
  */
 public final class IpUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(IpUtils.class);
+    private static final String XDB_RESOURCE = "/ip2region/ip2region_v4.xdb";
+    private static final int LOCATION_MAX = 128;
+
+    private static volatile Ip2Region ip2Region;
+    private static volatile boolean ip2RegionTried;
 
     private IpUtils() {
     }
@@ -96,7 +110,7 @@ public final class IpUtils {
         return "";
     }
 
-    /** 暂无属地库：内网标记，外网留空（后续可接 ip2region） */
+    /** 内网标记；公网用 ip2region 离线解析到省/市/运营商 */
     public static String resolveLocation(String ip) {
         String ipv4 = toIpv4(ip);
         if (!StringUtils.hasText(ipv4)) {
@@ -105,7 +119,16 @@ public final class IpUtils {
         if (isInternalIp(ipv4)) {
             return "内网IP";
         }
-        return "";
+        Ip2Region searcher = ip2Region();
+        if (searcher == null) {
+            return "";
+        }
+        try {
+            return formatRegion(searcher.search(ipv4));
+        } catch (Exception e) {
+            log.debug("解析 IP 属地失败 {}: {}", ipv4, e.getMessage());
+            return "";
+        }
     }
 
     public static boolean isInternalIp(String ip) {
@@ -117,5 +140,105 @@ public final class IpUtils {
                 || value.startsWith("10.")
                 || value.startsWith("192.168.")
                 || value.matches("^172\\.(1[6-9]|2\\d|3[0-1])\\..*");
+    }
+
+    private static Ip2Region ip2Region() {
+        if (ip2RegionTried) {
+            return ip2Region;
+        }
+        synchronized (IpUtils.class) {
+            if (ip2RegionTried) {
+                return ip2Region;
+            }
+            ip2RegionTried = true;
+            InputStream in = IpUtils.class.getResourceAsStream(XDB_RESOURCE);
+            if (in == null) {
+                log.warn("未找到 IP 属地库 {}", XDB_RESOURCE);
+                return null;
+            }
+            try {
+                Config v4 = Config.custom()
+                        .setCachePolicy(Config.BufferCache)
+                        .setXdbInputStream(in)
+                        .asV4();
+                ip2Region = Ip2Region.create(v4, null);
+            } catch (Exception e) {
+                log.warn("初始化 IP 属地库失败: {}", e.getMessage());
+                ip2Region = null;
+            } finally {
+                try {
+                    in.close();
+                } catch (Exception ignored) {
+                    // ignore
+                }
+            }
+            return ip2Region;
+        }
+    }
+
+    /**
+     * 兼容 ip2region 3.x「国家|省份|城市|ISP|CN」和 2.x「国家|区域|省份|城市|ISP」。
+     * 中国有省市时省略国家，例如：广东省 广州市 腾讯云
+     */
+    static String formatRegion(String region) {
+        if (!StringUtils.hasText(region)) {
+            return "";
+        }
+        String[] parts = region.split("\\|", -1);
+        String country;
+        String province;
+        String city;
+        String isp;
+        boolean v3 = parts.length >= 5 && parts[parts.length - 1].matches("^[A-Z]{2}$");
+        if (v3) {
+            country = cleanPart(parts[0]);
+            province = cleanPart(parts[1]);
+            city = cleanPart(parts[2]);
+            isp = cleanPart(parts[3]);
+        } else if (parts.length >= 5) {
+            country = cleanPart(parts[0]);
+            province = cleanPart(parts[2]);
+            city = cleanPart(parts[3]);
+            isp = cleanPart(parts[4]);
+        } else {
+            country = parts.length > 0 ? cleanPart(parts[0]) : "";
+            province = parts.length > 1 ? cleanPart(parts[1]) : "";
+            city = parts.length > 2 ? cleanPart(parts[2]) : "";
+            isp = parts.length > 3 ? cleanPart(parts[3]) : "";
+        }
+
+        List<String> tokens = new ArrayList<>();
+        boolean china = "中国".equals(country) || "CN".equalsIgnoreCase(country);
+        if (!china && StringUtils.hasText(country)) {
+            tokens.add(country);
+        }
+        if (StringUtils.hasText(province)) {
+            tokens.add(province);
+        }
+        if (StringUtils.hasText(city) && !city.equals(province)) {
+            tokens.add(city);
+        }
+        if (china && tokens.isEmpty() && StringUtils.hasText(country)) {
+            tokens.add(country);
+        }
+        if (StringUtils.hasText(isp) && !isp.equals(city) && !isp.equals(province)) {
+            tokens.add(isp);
+        }
+        if (tokens.isEmpty()) {
+            return "";
+        }
+        String text = String.join(" ", tokens);
+        return text.length() > LOCATION_MAX ? text.substring(0, LOCATION_MAX) : text;
+    }
+
+    private static String cleanPart(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return "";
+        }
+        String value = raw.trim();
+        if ("0".equals(value) || "内网IP".equals(value) || "*".equals(value)) {
+            return "";
+        }
+        return value;
     }
 }

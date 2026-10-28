@@ -51,6 +51,14 @@ public class Visitor {
     @ApiModelProperty(value = "创建时间", required = false)
     private Date createdTime;
 
+    @TableField(exist = false)
+    @ApiModelProperty(value = "创建时间起", required = false)
+    private String createdTimeStart;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "创建时间止", required = false)
+    private String createdTimeEnd;
+
     @ApiModelProperty(value = "更新人", required = false)
     private String updateBy;
 

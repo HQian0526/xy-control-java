@@ -10,13 +10,16 @@ import com.example.springboottemplate.dto.mall.StoreMemberStatusRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberVerifyDebitRequest;
 import com.example.springboottemplate.dto.mall.StoreMemberVO;
 import com.example.springboottemplate.entity.Store;
+import com.example.springboottemplate.entity.MerchantMember;
 import com.example.springboottemplate.entity.StoreMember;
 import com.example.springboottemplate.entity.StoreMemberRecharge;
+import com.example.springboottemplate.entity.StoreVerifyLog;
 import com.example.springboottemplate.entity.system.User;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.StoreMemberMapper;
 import com.example.springboottemplate.mapper.StoreMemberRechargeMapper;
+import com.example.springboottemplate.mapper.StoreVerifyLogMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreMemberService;
 import com.example.springboottemplate.service.wx.WxPayClientService;
@@ -25,6 +28,7 @@ import com.example.springboottemplate.service.wx.WxTenantContext;
 import com.example.springboottemplate.service.wx.WxTenantResolver;
 import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.StoreAuthHelper;
+import com.example.springboottemplate.utils.StoreExpireHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -54,11 +58,15 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     @Autowired
     private StoreMemberMapper storeMemberMapper;
     @Autowired
+    private com.example.springboottemplate.mapper.MerchantMemberMapper merchantMemberMapper;
+    @Autowired
     private StoreMemberRechargeMapper storeMemberRechargeMapper;
     @Autowired
     private StoreMapper storeMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private StoreVerifyLogMapper storeVerifyLogMapper;
     @Autowired
     private StoreAuthHelper storeAuthHelper;
     @Autowired
@@ -101,6 +109,7 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         if (storeId == null) {
             throw new BusinessException("请选择店铺");
         }
+        assertStoreCanVerify(storeId);
         Store store = storeMapper.selectByStoreId(storeId);
         if (store == null || (store.getDeleted() != null && store.getDeleted() == 1)) {
             throw new BusinessException("未找到店铺信息");
@@ -227,7 +236,12 @@ public class StoreMemberServiceimpl implements StoreMemberService {
                 throw new BusinessException("该顾客仍有会员余额，无法降为基础用户");
             }
         }
-        if (member == null) {
+        touchStoreMember(storeId, customer.getId(), now);
+        Long merchantUserId = storeAuthHelper.findMerchantUserId(storeId);
+        if (merchantUserId != null) {
+            ensureMerchantMember(merchantUserId, customer.getId(), now);
+            merchantMemberMapper.updateMemberStatus(merchantUserId, customer.getId(), request.getIsMember(), now);
+        } else if (member == null) {
             storeMemberMapper.insertMember(StoreMember.builder()
                     .id(IdWorker.getId())
                     .storeId(storeId)
@@ -259,9 +273,9 @@ public class StoreMemberServiceimpl implements StoreMemberService {
 
     @Override
     public Response lookupCustomer(String phone, Long userId, Long storeId, HttpServletRequest httpRequest) {
-        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
-        Long targetStoreId = storeAuthHelper.resolveWritableStoreId(operator, storeId);
-        assertStoreEnablePay(targetStoreId);
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireVerifyOperator(httpRequest);
+        Long targetStoreId = storeAuthHelper.resolveVerifyStoreId(operator, storeId);
+        assertStoreCanVerify(targetStoreId);
         if (userId == null && !StringUtils.hasText(phone)) {
             throw new BusinessException("请选择顾客");
         }
@@ -274,7 +288,7 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     @Override
     public Response assistRecharge(StoreMemberAssistRechargeRequest request, HttpServletRequest httpRequest) {
         StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
-        if (request == null || request.getUserId() == null) {
+        if (request == null || (request.getUserId() == null && !StringUtils.hasText(request.getPhone()))) {
             throw new BusinessException("请选择顾客");
         }
         if (request.getAmount() == null) {
@@ -288,8 +302,10 @@ public class StoreMemberServiceimpl implements StoreMemberService {
             throw new BusinessException("储值金额过大");
         }
         Long storeId = storeAuthHelper.resolveWritableStoreId(operator, request.getStoreId());
-        assertStoreEnablePay(storeId);
-        User customer = findOrdinaryCustomerByUserId(request.getUserId());
+        assertStoreCanVerify(storeId);
+        User customer = request.getUserId() != null
+                ? findOrdinaryCustomerByUserId(request.getUserId())
+                : findOrdinaryCustomerByPhone(storeId, request.getPhone());
         Date now = new Date();
         creditAndJoin(storeId, customer.getId(), amount, now);
 
@@ -324,12 +340,12 @@ public class StoreMemberServiceimpl implements StoreMemberService {
 
     @Override
     public Response verifyDebit(StoreMemberVerifyDebitRequest request, HttpServletRequest httpRequest) {
-        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(httpRequest);
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireVerifyOperator(httpRequest);
         if (request == null) {
             throw new BusinessException("请填写核验信息");
         }
-        Long storeId = storeAuthHelper.resolveWritableStoreId(operator, request.getStoreId());
-        assertStoreEnablePay(storeId);
+        Long storeId = storeAuthHelper.resolveVerifyStoreId(operator, request.getStoreId());
+        assertStoreCanVerify(storeId);
         User customer = findOrdinaryCustomerByPhone(storeId, request.getPhone());
         BigDecimal amount = request.getAmount() == null
                 ? null
@@ -348,6 +364,21 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         if (!debit(storeId, customer.getId(), amount)) {
             throw new BusinessException("余额不足");
         }
+        User operatorUser = userMapper.selectById(operator.getUserId());
+        storeVerifyLogMapper.addStoreVerifyLog(StoreVerifyLog.builder()
+                .id(IdWorker.getId())
+                .storeId(storeId)
+                .customerUserId(customer.getId())
+                .customerPhone(customer.getPhone())
+                .customerName(resolveOperatorName(customer))
+                .amount(amount)
+                .remark(clipRemark(request.getRemark()))
+                .operatorUserId(operator.getUserId())
+                .operatorType(resolveOperatorType(operator))
+                .operatorName(resolveOperatorName(operatorUser, operator.getUsername()))
+                .createdBy(operator.getUsername())
+                .createdTime(new Date())
+                .build());
         StoreMember latest = find(storeId, customer.getId());
         return Response.success(toCustomerVo(storeId, customer, latest));
     }
@@ -392,6 +423,19 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         if (storeId == null || userId == null) {
             return null;
         }
+        Long merchantUserId = storeAuthHelper.findMerchantUserId(storeId);
+        if (merchantUserId != null) {
+            MerchantMember chain = merchantMemberMapper.selectByMerchantAndUser(merchantUserId, userId);
+            if (chain == null) {
+                return storeMemberMapper.selectByStoreAndUser(storeId, userId);
+            }
+            return StoreMember.builder()
+                    .storeId(storeId)
+                    .userId(userId)
+                    .isMember(chain.getIsMember())
+                    .balance(chain.getBalance())
+                    .build();
+        }
         return storeMemberMapper.selectByStoreAndUser(storeId, userId);
     }
 
@@ -403,7 +447,19 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             return true;
         }
-        return storeMemberMapper.debitBalance(storeId, userId, amount.setScale(2, RoundingMode.HALF_UP), new Date()) > 0;
+        Date now = new Date();
+        BigDecimal money = amount.setScale(2, RoundingMode.HALF_UP);
+        Long merchantUserId = storeAuthHelper.findMerchantUserId(storeId);
+        boolean ok;
+        if (merchantUserId != null) {
+            ok = merchantMemberMapper.debitBalance(merchantUserId, userId, money, now) > 0;
+        } else {
+            ok = storeMemberMapper.debitBalance(storeId, userId, money, now) > 0;
+        }
+        if (ok) {
+            touchStoreMember(storeId, userId, now);
+        }
+        return ok;
     }
 
     @Override
@@ -413,6 +469,15 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         }
         Date now = new Date();
         BigDecimal money = amount.setScale(2, RoundingMode.HALF_UP);
+        Long merchantUserId = storeAuthHelper.findMerchantUserId(storeId);
+        if (merchantUserId != null) {
+            int rows = merchantMemberMapper.creditBalance(merchantUserId, userId, money, now);
+            if (rows <= 0) {
+                creditChainAndJoin(merchantUserId, userId, money, now);
+            }
+            touchStoreMember(storeId, userId, now);
+            return;
+        }
         int rows = storeMemberMapper.creditBalance(storeId, userId, money, now);
         if (rows <= 0) {
             creditAndJoin(storeId, userId, money, now);
@@ -452,6 +517,12 @@ public class StoreMemberServiceimpl implements StoreMemberService {
             return;
         }
         BigDecimal money = amount.setScale(2, RoundingMode.HALF_UP);
+        Long merchantUserId = storeAuthHelper.findMerchantUserId(storeId);
+        if (merchantUserId != null) {
+            creditChainAndJoin(merchantUserId, userId, money, now);
+            touchStoreMember(storeId, userId, now);
+            return;
+        }
         int rows = storeMemberMapper.addBalanceAndJoin(storeId, userId, money, now);
         if (rows > 0) {
             return;
@@ -469,6 +540,75 @@ public class StoreMemberServiceimpl implements StoreMemberService {
                     .build());
         } catch (Exception e) {
             storeMemberMapper.addBalanceAndJoin(storeId, userId, money, now);
+        }
+    }
+
+    private void creditChainAndJoin(Long merchantUserId, Long userId, BigDecimal money, Date now) {
+        int rows = merchantMemberMapper.addBalanceAndJoin(merchantUserId, userId, money, now);
+        if (rows > 0) {
+            return;
+        }
+        try {
+            merchantMemberMapper.insertMember(MerchantMember.builder()
+                    .id(IdWorker.getId())
+                    .merchantUserId(merchantUserId)
+                    .userId(userId)
+                    .isMember(1)
+                    .balance(money)
+                    .createdTime(now)
+                    .updateTime(now)
+                    .deleted(0)
+                    .build());
+        } catch (Exception e) {
+            merchantMemberMapper.addBalanceAndJoin(merchantUserId, userId, money, now);
+        }
+    }
+
+    private void ensureMerchantMember(Long merchantUserId, Long userId, Date now) {
+        if (merchantMemberMapper.selectByMerchantAndUser(merchantUserId, userId) != null) {
+            return;
+        }
+        try {
+            merchantMemberMapper.insertMember(MerchantMember.builder()
+                    .id(IdWorker.getId())
+                    .merchantUserId(merchantUserId)
+                    .userId(userId)
+                    .isMember(0)
+                    .balance(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
+                    .createdTime(now)
+                    .updateTime(now)
+                    .deleted(0)
+                    .build());
+        } catch (Exception ignored) {
+            // 并发插入
+        }
+    }
+
+    @Override
+    public void touchCustomer(Long storeId, Long userId) {
+        touchStoreMember(storeId, userId, new Date());
+    }
+
+    private void touchStoreMember(Long storeId, Long userId, Date now) {
+        if (storeId == null || userId == null) {
+            return;
+        }
+        if (storeMemberMapper.selectByStoreAndUser(storeId, userId) != null) {
+            return;
+        }
+        try {
+            storeMemberMapper.insertMember(StoreMember.builder()
+                    .id(IdWorker.getId())
+                    .storeId(storeId)
+                    .userId(userId)
+                    .isMember(0)
+                    .balance(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP))
+                    .createdTime(now)
+                    .updateTime(now)
+                    .deleted(0)
+                    .build());
+        } catch (Exception ignored) {
+            // 并发插入
         }
     }
 
@@ -497,15 +637,45 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         return remark.length() > 200 ? remark.substring(0, 200) : remark;
     }
 
-    private void assertStoreEnablePay(Long storeId) {
+    private void assertStoreCanVerify(Long storeId) {
         Store store = storeMapper.selectByStoreId(storeId);
         if (store == null) {
             throw new BusinessException("店铺不存在");
+        }
+        if (StoreExpireHelper.isExpired(store)) {
+            throw new BusinessException(StoreExpireHelper.EXPIRED_BROWSE_MSG);
         }
         MiniappUiHelper.fillDefaults(store);
         if (!MiniappUiHelper.enablePay(store)) {
             throw new BusinessException("当前店铺未接入支付");
         }
+    }
+
+    private int resolveOperatorType(StoreAuthHelper.Operator operator) {
+        if (operator.isAdmin()) {
+            return 3;
+        }
+        if (operator.isStaff()) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private String resolveOperatorName(User user) {
+        return resolveOperatorName(user, null);
+    }
+
+    private String resolveOperatorName(User user, String fallback) {
+        if (user != null && StringUtils.hasText(user.getRealName())) {
+            return user.getRealName().trim();
+        }
+        if (user != null && StringUtils.hasText(user.getUserName())) {
+            return user.getUserName().trim();
+        }
+        if (user != null && StringUtils.hasText(user.getPhone())) {
+            return user.getPhone().trim();
+        }
+        return StringUtils.hasText(fallback) ? fallback.trim() : "未知";
     }
 
     private User findOrdinaryCustomerByPhone(Long storeId, String rawPhone) {

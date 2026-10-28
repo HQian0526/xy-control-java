@@ -183,6 +183,27 @@ public class Store {
     @ApiModelProperty(value = "是否展示配送费 0否 1是", required = false)
     private Integer showDeliveryFee;
 
+    @ApiModelProperty(value = "店铺简介", required = false)
+    private String intro;
+
+    @ApiModelProperty(value = "本店介绍联系电话", required = false)
+    private String contactPhone;
+
+    @ApiModelProperty(value = "店铺活动公告", required = false)
+    private String activityNotice;
+
+    @ApiModelProperty(value = "本店介绍展示营业时间 0否 1是", required = false)
+    private Integer showHours;
+
+    @ApiModelProperty(value = "本店介绍展示店铺活动 0否 1是", required = false)
+    private Integer showActivity;
+
+    @ApiModelProperty(value = "本店介绍展示联系电话 0否 1是", required = false)
+    private Integer showContact;
+
+    @ApiModelProperty(value = "本店介绍展示其他业务 0否 1是", required = false)
+    private Integer showOtherBusiness;
+
     @ApiModelProperty(value = "店铺创建时间", required = false)
     private Date createdTime;
 

@@ -121,6 +121,7 @@ public class MallCouponController {
     @PostMapping("/receive")
     @ResponseBody
     @ApiOperation(value = "领取优惠券")
+    @OperLog(module = "优惠券", type = OperTypes.ADD, remark = "用户领取")
     public Response receiveCoupon(@RequestBody Map<String, Object> body, HttpServletRequest request) {
         try {
             Long templateId = parseLongId(body == null ? null : body.get("templateId"));

@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.Store;
 import com.example.springboottemplate.entity.system.User;
+import com.example.springboottemplate.entity.StoreStaff;
 import com.example.springboottemplate.mapper.StoreMapper;
+import com.example.springboottemplate.mapper.StoreStaffMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.system.UserService;
 import com.example.springboottemplate.utils.JwtUtil;
@@ -20,6 +22,7 @@ import com.example.springboottemplate.config.UserProperties;
 import com.example.springboottemplate.dto.ChangePasswordRequest;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.PasswordUtil;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import org.springframework.util.StringUtils;
@@ -39,6 +42,8 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private StoreMapper storeMapper;
     @Autowired
+    private StoreStaffMapper storeStaffMapper;
+    @Autowired
     private LogicDeleteHelper logicDeleteHelper;
 
     @Autowired
@@ -46,6 +51,8 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private UserProperties userProperties;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addUser(User user, HttpServletRequest request) {
@@ -122,7 +129,8 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
             return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);
         }
         if (identityType != null && identityType == 2) {
-            Long storeId = findMerchantStoreId(operatorId);
+            StoreAuthHelper.Operator op = storeAuthHelper.requireMerchantOrAdmin(request);
+            Long storeId = storeAuthHelper.applyListStoreScope(op, user.getBindStoreId());
             if (storeId == null) {
                 return buildUserPageResponse(Collections.emptyList(), pageNum, pageSize);
             }
@@ -140,18 +148,25 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
         return buildUserPageResponse(list, pageNum, pageSize);
     }
 
-    private Long findMerchantStoreId(Long userId) {
-        if (userId == null) {
-            return null;
+    private void fillOwnedStores(User user) {
+        if (user == null || user.getId() == null || user.getIdentityType() == null || user.getIdentityType() != 2) {
+            return;
         }
-        Store query = new Store();
-        query.setUserId(userId);
-        query.setDeleted(0);
-        List<Store> storeList = storeMapper.findStore(query);
-        if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
-            return null;
+        java.util.List<Store> owned = storeAuthHelper.listOwnedStores(user.getId());
+        user.setOwnedStores(storeAuthHelper.toOwnedStoreVos(owned));
+        try {
+            Long current = storeAuthHelper.resolveCurrentOwnedStoreId(user.getId(), null);
+            if (current != null && !current.equals(user.getLastStoreId())) {
+                User patch = new User();
+                patch.setId(user.getId());
+                patch.setLastStoreId(current);
+                userMapper.updateUser(patch);
+            }
+            user.setLastStoreId(current);
+            user.setStoreExpired(current != null && StoreExpireHelper.isExpired(storeMapper, current));
+        } catch (Exception ignored) {
+            // ignore
         }
-        return storeList.get(0).getStoreId();
     }
 
     private Response buildUserPageResponse(List<User> list, Integer pageNum, Integer pageSize) {
@@ -276,8 +291,34 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
             return new Response(200, null, "操作成功");
         }
         user.setPassword(null); // 不返回密码
-        user.setStoreExpired(StoreExpireHelper.isMerchantAccountExpired(user, storeMapper));
+        user.setStoreExpired(false);
+        fillStaffStore(user);
+        fillOwnedStores(user);
         return new Response(200, user, "操作成功");
+    }
+
+    @Override
+    public Response switchStore(Long storeId, HttpServletRequest request) {
+        StoreAuthHelper.Operator operator = storeAuthHelper.requireMerchantOrAdmin(request);
+        if (!operator.isMerchant()) {
+            throw new com.example.springboottemplate.exception.BusinessException("仅商家可切换门店");
+        }
+        if (storeId == null || !storeAuthHelper.ownsStore(operator.getUserId(), storeId)) {
+            throw new com.example.springboottemplate.exception.BusinessException("无权操作其他店铺");
+        }
+        User patch = new User();
+        patch.setId(operator.getUserId());
+        patch.setLastStoreId(storeId);
+        patch.setUpdateBy(operator.getUsername());
+        userMapper.updateUser(patch);
+        User user = userMapper.selectById(operator.getUserId());
+        if (user != null) {
+            user.setPassword(null);
+            user.setStoreExpired(false);
+            fillStaffStore(user);
+            fillOwnedStores(user);
+        }
+        return Response.success(user);
     }
 
     @Override
@@ -391,5 +432,22 @@ public class UserServiceimpl extends ServiceImpl<UserMapper, User> implements Us
             userId = jwtUtil.tryGetUserId(request);
         }
         return userId;
+    }
+
+    private void fillStaffStore(User user) {
+        if (user == null || user.getId() == null) {
+            return;
+        }
+        if (user.getIdentityType() != null && user.getIdentityType() == 2) {
+            return;
+        }
+        StoreStaff staff = storeStaffMapper.selectEnabledByUserId(user.getId());
+        if (staff == null || staff.getStoreId() == null) {
+            return;
+        }
+        user.setStaffStoreId(staff.getStoreId());
+        Store store = storeMapper.selectByStoreId(staff.getStoreId());
+        user.setStaffStoreName(store == null ? null : store.getStoreName());
+        user.setStaffStoreExpired(StoreExpireHelper.isExpired(store));
     }
 }

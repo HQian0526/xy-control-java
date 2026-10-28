@@ -256,8 +256,7 @@ public class MallCouponServiceimpl implements MallCouponService {
             throw new BusinessException("该优惠券由商家发放，无法自行领取");
         }
         if (user.getIdentityType() != null && user.getIdentityType() == 2) {
-            Long mine = storeAuthHelper.findMerchantStoreId(user.getId());
-            if (mine != null && mine.equals(template.getStoreId())) {
+            if (storeAuthHelper.ownsStore(user.getId(), template.getStoreId())) {
                 throw new BusinessException("商家不能领取本店优惠券");
             }
         }

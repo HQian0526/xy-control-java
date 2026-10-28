@@ -93,11 +93,36 @@ public final class StoreExpireHelper {
         return isExpired(storeMapper, storeId);
     }
 
+    /** 名下全部门店都到期才拦截 PC 登录；有一家未到期即可进后台再切店。 */
     public static boolean isMerchantAccountExpired(User user, StoreMapper storeMapper) {
         if (user == null || user.getIdentityType() == null || user.getIdentityType() != 2) {
             return false;
         }
-        return isExpired(findOwnStore(storeMapper, user.getId()));
+        if (storeMapper == null || user.getId() == null) {
+            return false;
+        }
+        Store query = new Store();
+        query.setUserId(user.getId());
+        query.setDeleted(0);
+        List<?> list = storeMapper.findStore(query);
+        if (list == null || list.isEmpty()) {
+            return false;
+        }
+        boolean anyStore = false;
+        for (Object item : list) {
+            if (!(item instanceof Store)) {
+                continue;
+            }
+            Store store = (Store) item;
+            if (store.getStoreId() == null) {
+                continue;
+            }
+            anyStore = true;
+            if (!isExpired(store)) {
+                return false;
+            }
+        }
+        return anyStore;
     }
 
     public static Store findOwnStore(StoreMapper storeMapper, Long userId) {

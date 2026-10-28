@@ -9,8 +9,11 @@ import java.math.BigDecimal;
 @Data
 @ApiModel(description = "商家代顾客储值")
 public class StoreMemberAssistRechargeRequest {
-    @ApiModelProperty(value = "顾客用户id", required = true)
+    @ApiModelProperty(value = "顾客用户id（与手机号二选一）")
     private Long userId;
+
+    @ApiModelProperty(value = "顾客手机号（与用户id二选一）")
+    private String phone;
 
     @ApiModelProperty(value = "储值金额（元）", required = true)
     private BigDecimal amount;

@@ -82,7 +82,7 @@ public class StoreMemberController {
 
     @GetMapping("/lookup")
     @ResponseBody
-    @ApiOperation(value = "按手机号查询本店顾客昵称和储值余额", notes = "仅商家/管理员")
+    @ApiOperation(value = "按手机号查询本店顾客昵称和储值余额", notes = "商家/管理员/本店启用员工")
     public Response lookup(@RequestParam(required = false) String phone,
                            @RequestParam(required = false) Long userId,
                            @RequestParam(required = false) Long storeId,
@@ -112,7 +112,7 @@ public class StoreMemberController {
 
     @PostMapping("/verifyDebit")
     @ResponseBody
-    @ApiOperation(value = "核验扣减本店顾客储值余额", notes = "仅商家/管理员；余额不足时提示")
+    @ApiOperation(value = "核验扣减本店顾客储值余额", notes = "商家/管理员/本店启用员工；余额不足时提示")
     @OperLog(module = "店铺会员", type = OperTypes.UPDATE, remark = "核验扣减储值")
     public Response verifyDebit(@RequestBody StoreMemberVerifyDebitRequest request, HttpServletRequest httpRequest) {
         try {

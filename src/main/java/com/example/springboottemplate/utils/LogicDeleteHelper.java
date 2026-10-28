@@ -36,7 +36,8 @@ public class LogicDeleteHelper {
             "store_blacklist",
             "mall_promo",
             "mall_coupon_template",
-            "mall_user_coupon"
+            "mall_user_coupon",
+            "store_staff"
     );
 
     @Autowired

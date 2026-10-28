@@ -44,6 +44,12 @@
             <if test="createdTime != null and createdTime != ''">
                 and created_time = #{createdTime}
             </if>
+            <if test="createdTimeStart != null and createdTimeStart != ''">
+                and created_time &gt;= #{createdTimeStart}
+            </if>
+            <if test="createdTimeEnd != null and createdTimeEnd != ''">
+                and created_time &lt;= #{createdTimeEnd}
+            </if>
             <if test="updateBy != null and updateBy != ''">
                 and update_by = #{updateBy}
             </if>

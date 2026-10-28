@@ -17,6 +17,9 @@ public interface StoreService {
     // 当前登录商家修改自己的店铺资料（名称/头像/位置，不改手机号）
     Response updateStoreProfile(Store store, HttpServletRequest request);
 
+    // 商户/管理员维护本店介绍（简介、联系电话、活动公告、模块展示开关）
+    Response updateStoreIntro(Store store, HttpServletRequest request);
+
     // 当前登录商家设置营业时间
     Response updateBusinessHours(StoreBusinessHours hours, HttpServletRequest request);
 

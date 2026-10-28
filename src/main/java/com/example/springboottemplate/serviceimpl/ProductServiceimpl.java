@@ -12,8 +12,8 @@ import com.example.springboottemplate.mapper.ProductMapper;
 import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.ProductService;
-import com.example.springboottemplate.utils.BrowseStoreHelper;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
@@ -49,6 +49,8 @@ public class ProductServiceimpl implements ProductService {
     private UserMapper userMapper;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addProduct(Product product, HttpServletRequest request) {
@@ -74,17 +76,15 @@ public class ProductServiceimpl implements ProductService {
                 throw new BusinessException("店铺不存在");
             }
         } else {
-            Store query = new Store();
-            query.setUserId(userId == null ? null : userId);
-            query.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(query);
-            if (ValidateUtil.isEmpty(storeList)) {
+            Long requested = storeAuthHelper.parseStoreId(product.getStoreId());
+            if (requested == null) {
+                requested = storeAuthHelper.parseHeaderStoreId(request);
+            }
+            Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(userId, requested);
+            if (currentStoreId == null) {
                 throw new BusinessException("您不是商户类型的用户，暂时无法上架商品/商品分类");
             }
-            Store store = storeList.get(0);
-            if (store.getStoreId() != null) {
-                product.setStoreId(String.valueOf(store.getStoreId()));
-            }
+            product.setStoreId(String.valueOf(currentStoreId));
         }
         // 5. 雪花算法自动生成商品id，默认上架
         product.setProductId(IdWorker.getId());
@@ -124,8 +124,7 @@ public class ProductServiceimpl implements ProductService {
         }
         // 商户用户：未传 storeId 或扫的是自己店，看本店；扫别人店则按请求 storeId 逛店
         if (identityType != null && identityType == 2) {
-            String browseStoreId = BrowseStoreHelper
-                    .resolveMerchantBrowseStoreId(userId, product.getStoreId(), storeMapper);
+            String browseStoreId = storeAuthHelper.resolveMerchantBrowseStoreId(userId, product.getStoreId());
             if (browseStoreId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }

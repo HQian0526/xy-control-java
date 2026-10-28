@@ -1,5 +1,6 @@
 package com.example.springboottemplate.controller.system;
 
+import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.OperLog;
 import com.example.springboottemplate.service.system.OperLogService;
@@ -37,6 +38,7 @@ public class OperLogController {
     @PutMapping("/updateOperLog")
     @ResponseBody
     @ApiOperation(value = "修改操作日志", notes = "根据id更新操作日志")
+    @com.example.springboottemplate.annotation.OperLog(module = "操作日志", type = OperTypes.UPDATE)
     public Response updateOperLog(@RequestBody OperLog operLog, HttpServletRequest request) {
         return operLogService.updateOperLog(operLog, request);
     }
@@ -44,6 +46,7 @@ public class OperLogController {
     @DeleteMapping("/deleteOperLog")
     @ResponseBody
     @ApiOperation(value = "删除操作日志", notes = "根据id列表逻辑删除")
+    @com.example.springboottemplate.annotation.OperLog(module = "操作日志", type = OperTypes.DELETE)
     public Response deleteOperLog(@RequestBody List<Long> idList) {
         return operLogService.deleteOperLog(idList);
     }

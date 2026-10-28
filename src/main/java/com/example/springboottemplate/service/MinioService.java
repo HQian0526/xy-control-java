@@ -6,12 +6,14 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 
 @Service
+@ConditionalOnProperty(name = "minio.enabled", havingValue = "true")
 public class MinioService {
 
     private final MinioClient minioClient;

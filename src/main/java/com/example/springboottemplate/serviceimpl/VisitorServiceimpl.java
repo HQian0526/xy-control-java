@@ -10,6 +10,7 @@ import com.example.springboottemplate.mapper.VisitorMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.VisitorService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -41,6 +42,8 @@ public class VisitorServiceimpl implements VisitorService {
     private UserMapper userMapper;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addVisitor(Visitor visitor, HttpServletRequest request) {
@@ -51,12 +54,9 @@ public class VisitorServiceimpl implements VisitorService {
 
         // 已绑定店铺则关联 storeId；普通用户申请入驻允许 storeId 为空
         if (userId != null) {
-            Store query = new Store();
-            query.setUserId(userId);
-            query.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(query);
-            if (!ValidateUtil.isEmpty(storeList) && storeList.get(0).getStoreId() != null) {
-                visitor.setStoreId(storeList.get(0).getStoreId());
+            Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(userId, storeAuthHelper.parseHeaderStoreId(request));
+            if (currentStoreId != null) {
+                visitor.setStoreId(currentStoreId);
             }
         }
 
@@ -82,14 +82,11 @@ public class VisitorServiceimpl implements VisitorService {
         }
         // 商户用户：仅返回本账号绑定商户下的来客
         if (identityType != null && identityType == 2) {
-            Store storeQuery = new Store();
-            storeQuery.setUserId(userId);
-            storeQuery.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(storeQuery);
-            if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
+            Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(userId, storeAuthHelper.parseHeaderStoreId(request));
+            if (currentStoreId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }
-            visitor.setStoreId(storeList.get(0).getStoreId());
+            visitor.setStoreId(currentStoreId);
         }
         // 管理员(3)：不额外过滤，返回全部
 

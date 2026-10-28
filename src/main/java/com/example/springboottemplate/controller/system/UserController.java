@@ -81,6 +81,15 @@ public class UserController {
         return userService.getUserInfo(request);
     }
 
+    @PutMapping("/switchStore")
+    @ResponseBody
+    @ApiOperation(value = "切换经营门店", notes = "商家可在自己名下的门店之间切换")
+    public Response switchStore(@RequestBody User user, HttpServletRequest request) {
+        return userService.switchStore(user == null ? null : user.getLastStoreId() != null
+                ? user.getLastStoreId()
+                : user.getBindStoreId(), request);
+    }
+
     // 重置密码（管理员）：按默认规则生成新密码，响应中返回一次明文
     @PostMapping("/resetPassword")
     @ResponseBody

@@ -3,7 +3,7 @@ package com.example.springboottemplate.controller.system;
 import com.example.springboottemplate.annotation.OperLog;
 import com.example.springboottemplate.annotation.OperTypes;
 import com.example.springboottemplate.dto.Response;
-import com.example.springboottemplate.service.MinioService;
+import com.example.springboottemplate.service.CosService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.stereotype.Controller;
@@ -20,15 +20,15 @@ import java.util.UUID;
 @Api(tags = "文件处理", description = "文件上传下载相关接口")
 public class FileController {
 
-    private final MinioService minioService;
+    private final CosService cosService;
 
-    public FileController(MinioService minioService) {
-        this.minioService = minioService;
+    public FileController(CosService cosService) {
+        this.cosService = cosService;
     }
 
     @PostMapping("/upload")
     @ResponseBody
-    @ApiOperation(value = "文件上传", notes = "上传文件到MinIO")
+    @ApiOperation(value = "文件上传", notes = "上传文件到腾讯云 COS")
     @OperLog(module = "文件管理", type = OperTypes.ADD)
     public Response upload(@RequestParam("file") MultipartFile file) throws Exception {
         if (file.isEmpty()) {
@@ -44,13 +44,10 @@ public class FileController {
         }
         String objectName = UUID.randomUUID() + fileExtension;
 
-        // 上传到 MinIO
-        minioService.upload(file, objectName);
-
-        // 返回桶路径：xy-community/xxx.jpg（也可配置返回完整URL）
-        if (minioService.isReturnFullUrl()) {
-            return Response.success(minioService.buildPublicUrl(objectName));
+        cosService.upload(file, objectName);
+        if (cosService.isReturnFullUrl()) {
+            return Response.success(cosService.buildPublicUrl(objectName));
         }
-        return Response.success(minioService.buildObjectPath(objectName));
+        return Response.success(cosService.buildObjectPath(objectName));
     }
 }

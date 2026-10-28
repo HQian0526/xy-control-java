@@ -54,6 +54,18 @@ public class OperLog {
     @ApiModelProperty(value = "备注")
     private String remark;
 
+    @ApiModelProperty(value = "请求方法")
+    private String requestMethod;
+
+    @ApiModelProperty(value = "请求接口")
+    private String requestUri;
+
+    @ApiModelProperty(value = "请求参数（脱敏）")
+    private String requestParams;
+
+    @ApiModelProperty(value = "响应内容（脱敏，截断）")
+    private String responseBody;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     @ApiModelProperty(value = "创建时间")
     private Date createdTime;

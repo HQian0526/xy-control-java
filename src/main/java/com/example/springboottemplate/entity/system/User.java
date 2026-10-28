@@ -74,6 +74,14 @@ public class User {
     @ApiModelProperty(value = "默认绑定的店铺id", required = false)
     private Long bindStoreId;
 
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "商家上次经营的门店id", required = false)
+    private Long lastStoreId;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "商家名下门店", required = false)
+    private java.util.List<com.example.springboottemplate.dto.OwnedStoreVO> ownedStores;
+
     @TableField(exist = false)
     @ApiModelProperty(value = "所属店铺名", required = false)
     private String storeName;
@@ -81,6 +89,19 @@ public class User {
     @TableField(exist = false)
     @ApiModelProperty(value = "商家店铺租期是否已到期（计算字段）", required = false)
     private Boolean storeExpired;
+
+    @TableField(exist = false)
+    @JsonSerialize(using = ToStringSerializer.class)
+    @ApiModelProperty(value = "任职店铺id（启用中的员工）", required = false)
+    private Long staffStoreId;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "任职店铺名", required = false)
+    private String staffStoreName;
+
+    @TableField(exist = false)
+    @ApiModelProperty(value = "任职店铺是否已到期", required = false)
+    private Boolean staffStoreExpired;
 
     @TableField(exist = false)
     @ApiModelProperty(value = "是否本店会员 0否 1是")

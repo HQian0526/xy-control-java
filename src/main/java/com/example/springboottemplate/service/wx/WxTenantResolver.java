@@ -141,11 +141,14 @@ public class WxTenantResolver {
 
     public WxTenantContext fromConfig(StoreWxConfig cfg) {
         Long storeId = cfg.getStoreId();
+        WxTenantContext platform = platform();
+        String appId = firstText(trimToNull(cfg.getAppId()), platform.getAppId());
+        String appSecret = firstText(secretCodec.decrypt(trimToNull(cfg.getAppSecret())), platform.getAppSecret());
         return WxTenantContext.builder()
                 .storeId(storeId)
                 .source(WxTenantContext.SOURCE_STORE)
-                .appId(trimToNull(cfg.getAppId()))
-                .appSecret(secretCodec.decrypt(trimToNull(cfg.getAppSecret())))
+                .appId(appId)
+                .appSecret(appSecret)
                 .mchId(trimToNull(cfg.getMchId()))
                 .apiV3Key(secretCodec.decrypt(trimToNull(cfg.getApiV3Key())))
                 .merchantSerialNumber(trimToNull(cfg.getMerchantSerialNumber()))

@@ -11,6 +11,7 @@ import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.StoreBlacklistService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.ValidateUtil;
 import com.github.pagehelper.PageHelper;
@@ -46,6 +47,8 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
     private JwtUtil jwtUtil;
     @Autowired
     private LogicDeleteHelper logicDeleteHelper;
+    @Autowired
+    private StoreAuthHelper storeAuthHelper;
 
     @Override
     public Response addStoreBlacklist(StoreBlacklist record, HttpServletRequest request) {
@@ -61,7 +64,10 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
             throw new BusinessException("无权操作黑名单");
         }
 
-        Long storeId = resolveWritableStoreId(identityType, operatorId, record.getStoreId());
+        Long requestedStoreId = record.getStoreId() != null
+                ? record.getStoreId()
+                : storeAuthHelper.parseHeaderStoreId(request);
+        Long storeId = resolveWritableStoreId(identityType, operatorId, requestedStoreId);
         record.setStoreId(storeId);
 
         fillTarget(record);
@@ -111,7 +117,7 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
             return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
         }
         if (identityType != null && identityType == 2) {
-            Long storeId = findMerchantStoreId(operatorId);
+            Long storeId = storeAuthHelper.resolveCurrentOwnedStoreId(operatorId, storeAuthHelper.parseHeaderStoreId(request));
             if (storeId == null) {
                 return buildPageResponse(Collections.emptyList(), pageNum, pageSize);
             }
@@ -295,7 +301,7 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
 
     private Long resolveWritableStoreId(Integer identityType, Long operatorId, Long requestStoreId) {
         if (identityType != null && identityType == 2) {
-            Long storeId = findMerchantStoreId(operatorId);
+            Long storeId = storeAuthHelper.resolveCurrentOwnedStoreId(operatorId, requestStoreId);
             if (storeId == null) {
                 throw new BusinessException("当前账号未绑定店铺");
             }
@@ -315,24 +321,9 @@ public class StoreBlacklistServiceimpl implements StoreBlacklistService {
         if (identityType != null && identityType == 3) {
             return;
         }
-        Long mine = findMerchantStoreId(operatorId);
-        if (mine == null || storeId == null || !mine.equals(storeId)) {
+        if (!storeAuthHelper.ownsStore(operatorId, storeId)) {
             throw new BusinessException("无权操作其他店铺的黑名单");
         }
-    }
-
-    private Long findMerchantStoreId(Long userId) {
-        if (userId == null) {
-            return null;
-        }
-        Store query = new Store();
-        query.setUserId(userId);
-        query.setDeleted(0);
-        List<Store> storeList = storeMapper.findStore(query);
-        if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
-            return null;
-        }
-        return storeList.get(0).getStoreId();
     }
 
     private Claims parseClaims(HttpServletRequest request) {

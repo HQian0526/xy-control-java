@@ -315,15 +315,12 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
 
         if (identityType != null && identityType == 2) {
-            // 商户：查本店订单（忽略前端传入的 storeId）
-            Store storeQuery = new Store();
-            storeQuery.setUserId(userId);
-            storeQuery.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(storeQuery);
-            if (ValidateUtil.isEmpty(storeList) || storeList.get(0).getStoreId() == null) {
+            Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(
+                    userId, storeId != null ? storeId : storeAuthHelper.parseHeaderStoreId(httpRequest));
+            if (currentStoreId == null) {
                 return buildListResponse(Collections.emptyList(), pageNum, pageSize);
             }
-            query.setStoreId(storeList.get(0).getStoreId());
+            query.setStoreId(currentStoreId);
         } else if (identityType != null && identityType == 3) {
             // 管理员：可查全部，可按 storeId 过滤
             if (storeId != null) {
@@ -565,7 +562,12 @@ public class MallOrderServiceimpl implements MallOrderService {
         User user = userMapper.selectById(userId);
         Integer identityType = user == null ? null : user.getIdentityType();
         if (identityType != null && identityType == 2) {
-            Store store = findOwnStore(userId);
+            Long currentStoreId = storeAuthHelper.resolveCurrentOwnedStoreId(
+                    userId, storeId != null ? storeId : storeAuthHelper.parseHeaderStoreId(httpRequest));
+            if (currentStoreId == null) {
+                throw new BusinessException("未找到店铺信息");
+            }
+            Store store = storeMapper.selectByStoreId(currentStoreId);
             if (store == null || store.getStoreId() == null) {
                 throw new BusinessException("未找到店铺信息");
             }
@@ -584,15 +586,8 @@ public class MallOrderServiceimpl implements MallOrderService {
         throw new BusinessException("仅商家或管理员可查询流水");
     }
 
-    private Store findOwnStore(Long userId) {
-        Store storeQuery = new Store();
-        storeQuery.setUserId(userId);
-        storeQuery.setDeleted(0);
-        List<Store> storeList = storeMapper.findStore(storeQuery);
-        if (ValidateUtil.isEmpty(storeList)) {
-            return null;
-        }
-        return storeList.get(0);
+    private boolean merchantOwnsOrderStore(Long userId, Long storeId) {
+        return storeAuthHelper.ownsStore(userId, storeId);
     }
 
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
@@ -1032,16 +1027,8 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (identityType != null && identityType == 3) {
             return;
         }
-        if (identityType != null && identityType == 2 && order.getStoreId() != null) {
-            Store storeQuery = new Store();
-            storeQuery.setUserId(userId);
-            storeQuery.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(storeQuery);
-            if (!ValidateUtil.isEmpty(storeList)
-                    && storeList.get(0).getStoreId() != null
-                    && storeList.get(0).getStoreId().equals(order.getStoreId())) {
-                return;
-            }
+        if (identityType != null && identityType == 2 && merchantOwnsOrderStore(userId, order.getStoreId())) {
+            return;
         }
         throw new BusinessException("仅本店商家或管理员可发起退款");
     }
@@ -1072,6 +1059,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (rows <= 0) {
             return;
         }
+        storeMemberService.touchCustomer(order.getStoreId(), order.getUserId());
         mallCouponService.markUsedByOrderNo(orderNo);
         // 扣库存、加销量（幂等：仅首次 markPaid 成功时执行）
         List<MallOrderItem> items = mallOrderItemMapper.selectByOrderId(order.getId());
@@ -1148,16 +1136,8 @@ public class MallOrderServiceimpl implements MallOrderService {
             return order;
         }
         // 本店商户可查
-        if (identityType != null && identityType == 2 && order.getStoreId() != null) {
-            Store storeQuery = new Store();
-            storeQuery.setUserId(userId);
-            storeQuery.setDeleted(0);
-            List<Store> storeList = storeMapper.findStore(storeQuery);
-            if (!ValidateUtil.isEmpty(storeList)
-                    && storeList.get(0).getStoreId() != null
-                    && storeList.get(0).getStoreId().equals(order.getStoreId())) {
-                return order;
-            }
+        if (identityType != null && identityType == 2 && merchantOwnsOrderStore(userId, order.getStoreId())) {
+            return order;
         }
         throw new BusinessException("无权查看该订单");
     }

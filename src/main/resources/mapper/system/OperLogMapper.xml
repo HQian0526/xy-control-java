@@ -12,6 +12,10 @@
         <result property="operResult" column="oper_result"/>
         <result property="operTime" column="oper_time"/>
         <result property="remark" column="remark"/>
+        <result property="requestMethod" column="request_method"/>
+        <result property="requestUri" column="request_uri"/>
+        <result property="requestParams" column="request_params"/>
+        <result property="responseBody" column="response_body"/>
         <result property="createdTime" column="created_time"/>
         <result property="createdBy" column="created_by"/>
         <result property="updateTime" column="update_time"/>
@@ -22,10 +26,12 @@
     <insert id="addOperLog" parameterType="OperLog">
         INSERT INTO oper_log (
             id, oper_module, oper_type, oper_user, ip_address, ip_location,
-            oper_result, oper_time, remark, created_time, created_by, deleted
+            oper_result, oper_time, remark, request_method, request_uri,
+            request_params, response_body, created_time, created_by, deleted
         ) VALUES (
             #{id}, #{operModule}, #{operType}, #{operUser}, #{ipAddress}, #{ipLocation},
-            #{operResult}, #{operTime}, #{remark}, #{createdTime}, #{createdBy}, #{deleted}
+            #{operResult}, #{operTime}, #{remark}, #{requestMethod}, #{requestUri},
+            #{requestParams}, #{responseBody}, #{createdTime}, #{createdBy}, #{deleted}
         )
     </insert>
 

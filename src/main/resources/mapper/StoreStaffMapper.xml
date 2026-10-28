@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreStaffMapper">
+    <resultMap id="storeStaffResultMap" type="StoreStaff">
+        <id property="id" column="id"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+        <result property="phone" column="phone"/>
+        <result property="realName" column="real_name"/>
+        <result property="avatar" column="avatar"/>
+    </resultMap>
+
+    <insert id="addStoreStaff" parameterType="StoreStaff">
+        INSERT into store_staff (id, store_id, user_id, status, remark, created_by, created_time, deleted)
+        value (#{id}, #{storeId}, #{userId}, #{status}, #{remark}, #{createdBy}, #{createdTime}, #{deleted})
+    </insert>
+
+    <select id="findStoreStaff" parameterType="StoreStaff" resultMap="storeStaffResultMap">
+        select s.*, u.phone, u.real_name, u.avatar
+        from store_staff s
+        left join user u on s.user_id = u.id
+        <where>
+            <if test="id != null">
+                and s.id = #{id}
+            </if>
+            <if test="storeId != null">
+                and s.store_id = #{storeId}
+            </if>
+            <if test="userId != null">
+                and s.user_id = #{userId}
+            </if>
+            <if test="status != null">
+                and s.status = #{status}
+            </if>
+            <if test="phone != null and phone != ''">
+                and u.phone like CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="realName != null and realName != ''">
+                and u.real_name like CONCAT('%', #{realName}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                and (u.phone like CONCAT('%', #{keyword}, '%') or u.real_name like CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="remark != null and remark != ''">
+                and s.remark like CONCAT('%', #{remark}, '%')
+            </if>
+            <choose>
+                <when test="deleted != null">
+                    and s.deleted = #{deleted}
+                </when>
+                <otherwise>
+                    and s.deleted = 0
+                </otherwise>
+            </choose>
+        </where>
+        order by s.created_time desc, s.id desc
+    </select>
+
+    <update id="updateStoreStaff" parameterType="StoreStaff">
+        update store_staff
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="selectEnabledByUserId" resultMap="storeStaffResultMap">
+        select * from store_staff
+        where user_id = #{userId} and deleted = 0 and status = 1
+        limit 1
+    </select>
+
+    <select id="selectByUserId" resultMap="storeStaffResultMap">
+        select * from store_staff
+        where user_id = #{userId} and deleted = 0
+        limit 1
+    </select>
+</mapper>

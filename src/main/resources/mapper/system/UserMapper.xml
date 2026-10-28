@@ -19,6 +19,7 @@
         <result property="email" column="email"/>
         <result property="identityType" column="identity_type"/>
         <result property="bindStoreId" column="bind_store_id"/>
+        <result property="lastStoreId" column="last_store_id"/>
         <result property="storeName" column="store_name"/>
         <result property="isMember" column="is_member"/>
         <result property="memberBalance" column="member_balance"/>
@@ -96,17 +97,25 @@
     <!-- 店铺顾客：已绑定店铺的普通用户，排除本店黑名单 -->
     <select id="findCustomer" parameterType="User" resultMap="userResultMap">
         SELECT u.*, s.store_name AS store_name,
-               ifnull(sm.is_member, 0) AS is_member,
-               ifnull(sm.balance, 0) AS member_balance
+               ifnull(mm.is_member, ifnull(sm.is_member, 0)) AS is_member,
+               ifnull(mm.balance, ifnull(sm.balance, 0)) AS member_balance
         FROM user u
-        LEFT JOIN store s ON s.store_id = u.bind_store_id AND s.deleted = 0
-        LEFT JOIN store_member sm ON sm.store_id = u.bind_store_id AND sm.user_id = u.id AND sm.deleted = 0
+        <choose>
+            <when test="bindStoreId != null">
+                INNER JOIN store_member sm ON sm.store_id = #{bindStoreId} AND sm.user_id = u.id AND sm.deleted = 0
+                LEFT JOIN store s ON s.store_id = #{bindStoreId} AND s.deleted = 0
+            </when>
+            <otherwise>
+                LEFT JOIN store s ON s.store_id = u.bind_store_id AND s.deleted = 0
+                LEFT JOIN store_member sm ON sm.store_id = u.bind_store_id AND sm.user_id = u.id AND sm.deleted = 0
+            </otherwise>
+        </choose>
+        LEFT JOIN merchant_member mm ON mm.merchant_user_id = s.user_id AND mm.user_id = u.id AND mm.deleted = 0
         <where>
             u.deleted = 0
             AND u.identity_type = 1
-            AND u.bind_store_id IS NOT NULL
-            <if test="bindStoreId != null">
-                AND u.bind_store_id = #{bindStoreId}
+            <if test="bindStoreId == null">
+                AND u.bind_store_id IS NOT NULL
             </if>
             <if test="phone != null and phone != ''">
                 AND u.phone LIKE CONCAT('%', #{phone}, '%')
@@ -120,7 +129,7 @@
             AND NOT EXISTS (
                 SELECT 1 FROM store_blacklist b
                 WHERE b.deleted = 0
-                  AND b.store_id = u.bind_store_id
+                  AND b.store_id = IFNULL(#{bindStoreId}, u.bind_store_id)
                   AND (
                     b.user_id = u.id
                     OR (u.phone IS NOT NULL AND u.phone != '' AND b.phone = u.phone)
@@ -145,6 +154,7 @@
             <if test="email != null">email = #{email},</if>
             <if test="identityType != null">identity_type = #{identityType},</if>
             <if test="bindStoreId != null">bind_store_id = #{bindStoreId},</if>
+            <if test="lastStoreId != null">last_store_id = #{lastStoreId},</if>
             <if test="openid != null">openid = #{openid},</if>
             <if test="unionid != null">unionid = #{unionid},</if>
             <if test="appId != null">app_id = #{appId},</if>

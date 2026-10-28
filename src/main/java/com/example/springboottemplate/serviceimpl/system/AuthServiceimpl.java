@@ -397,6 +397,7 @@ public class AuthServiceimpl implements AuthService {
         userInfo.put("avatar", user.getAvatar());
         userInfo.put("identityType", user.getIdentityType());
         userInfo.put("bindStoreId", user.getBindStoreId());
+        userInfo.put("lastStoreId", user.getLastStoreId() == null ? null : String.valueOf(user.getLastStoreId()));
         userInfo.put("openid", user.getOpenid());
         userInfo.put("appId", user.getAppId());
         userInfo.put("needBindPhone", !StringUtils.hasText(user.getPhone()));

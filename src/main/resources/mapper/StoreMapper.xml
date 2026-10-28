@@ -43,6 +43,13 @@
         <result property="listBtnText" column="list_btn_text"/>
         <result property="showSaleNum" column="show_sale_num"/>
         <result property="showDeliveryFee" column="show_delivery_fee"/>
+        <result property="intro" column="intro"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="activityNotice" column="activity_notice"/>
+        <result property="showHours" column="show_hours"/>
+        <result property="showActivity" column="show_activity"/>
+        <result property="showContact" column="show_contact"/>
+        <result property="showOtherBusiness" column="show_other_business"/>
         <result property="deleted" column="deleted"/>
     </resultMap>
 
@@ -148,6 +155,13 @@
             <if test="listBtnText != null">list_btn_text = #{listBtnText},</if>
             <if test="showSaleNum != null">show_sale_num = #{showSaleNum},</if>
             <if test="showDeliveryFee != null">show_delivery_fee = #{showDeliveryFee},</if>
+            <if test="intro != null">intro = #{intro},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="activityNotice != null">activity_notice = #{activityNotice},</if>
+            <if test="showHours != null">show_hours = #{showHours},</if>
+            <if test="showActivity != null">show_activity = #{showActivity},</if>
+            <if test="showContact != null">show_contact = #{showContact},</if>
+            <if test="showOtherBusiness != null">show_other_business = #{showOtherBusiness},</if>
             <if test="identityName != null">identity_name = #{identityName},</if>
             <if test="identityCompanyName != null">identity_company_name = #{identityCompanyName},</if>
             <if test="businessLicense != null">business_license = #{businessLicense},</if>

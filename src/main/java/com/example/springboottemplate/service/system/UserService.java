@@ -32,6 +32,9 @@ public interface UserService {
     // 查询当前用户信息
     Response getUserInfo(HttpServletRequest request);
 
+    // 商家切换当前经营门店
+    Response switchStore(Long storeId, HttpServletRequest request);
+
     // 重置用户密码（按默认规则生成，返回一次明文）
     Response resetPassword(Long id, HttpServletRequest request);
 
