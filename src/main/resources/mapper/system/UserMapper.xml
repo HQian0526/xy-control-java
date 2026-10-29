@@ -37,10 +37,12 @@
         value (#{id}, #{userName}, #{password}, #{realName}, #{sex}, #{phone}, #{avatar}, #{address}, #{birthday}, #{email}, #{identityType}, #{bindStoreId}, #{openid}, #{unionid}, #{appId}, #{createdTime}, #{createdBy}, #{remark}, #{deleted})
     </insert>
 
-    <!-- 查询所有用户信息（模糊查询）-->
+    <!-- 查询所有用户信息（模糊查询）。用户管理只展示已授权手机号的账号，不含微信临时号和合并空壳 -->
     <select id="findUser" parameterType="User" resultMap="userResultMap">
         select * from user
         <where>
+            and phone is not null
+            and phone != ''
             <if test="id != null and id != ''">
                 and id LIKE CONCAT('%', #{id}, '%')
             </if>

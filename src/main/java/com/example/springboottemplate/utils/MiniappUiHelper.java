@@ -104,6 +104,9 @@ public final class MiniappUiHelper {
         if (store.getEnablePay() == null) {
             store.setEnablePay(1);
         }
+        if (store.getEnableRecharge() == null) {
+            store.setEnableRecharge(1);
+        }
     }
 
     public static boolean enablePay(Store store) {
@@ -113,10 +116,26 @@ public final class MiniappUiHelper {
         return store.getEnablePay() == 1;
     }
 
+    /** 是否接入储值：需同时接入支付才有意义 */
+    public static boolean enableRecharge(Store store) {
+        if (store == null || store.getEnableRecharge() == null) {
+            return enablePay(store);
+        }
+        return store.getEnableRecharge() == 1;
+    }
+
     public static void applySave(Store patch, Integer miniappType, Integer showStock, Integer showAddress,
                                  Integer showQuantity, Integer showCart, String orderBtnText, Integer enablePay,
                                  String homeTabText, String listBtnText, Integer showSaleNum, Integer showDeliveryFee,
                                  BigDecimal deliveryFee) {
+        applySave(patch, miniappType, showStock, showAddress, showQuantity, showCart, orderBtnText, enablePay,
+                homeTabText, listBtnText, showSaleNum, showDeliveryFee, deliveryFee, null);
+    }
+
+    public static void applySave(Store patch, Integer miniappType, Integer showStock, Integer showAddress,
+                                 Integer showQuantity, Integer showCart, String orderBtnText, Integer enablePay,
+                                 String homeTabText, String listBtnText, Integer showSaleNum, Integer showDeliveryFee,
+                                 BigDecimal deliveryFee, Integer enableRecharge) {
         int type = normalizeType(miniappType);
         patch.setMiniappType(type);
         patch.setShowStock(showStock == null ? defaultFlag(type) : (showStock == 1 ? 1 : 0));
@@ -134,5 +153,8 @@ public final class MiniappUiHelper {
         patch.setHomeTabText(clipText(homeTabText, defaultHomeTab(type), HOME_TAB_MAX));
         patch.setListBtnText(clipText(listBtnText, LIST_BTN, LIST_BTN_MAX));
         patch.setEnablePay(enablePay != null && enablePay == 0 ? 0 : 1);
+        // 储值需依附支付：支付关闭时强制关闭储值
+        boolean payOn = patch.getEnablePay() != null && patch.getEnablePay() == 1;
+        patch.setEnableRecharge(!payOn ? 0 : (enableRecharge != null && enableRecharge == 0 ? 0 : 1));
     }
 }

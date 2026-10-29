@@ -193,7 +193,8 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
                 body.getListBtnText(),
                 body.getShowSaleNum(),
                 body.getShowDeliveryFee(),
-                body.getDeliveryFee());
+                body.getDeliveryFee(),
+                body.getEnableRecharge());
         patch.setUpdateBy(operator.getUsername());
         storeMapper.updateStore(patch);
         Store refreshed = storeMapper.selectByStoreId(body.getStoreId());
@@ -213,6 +214,7 @@ public class StoreWxConfigServiceimpl implements StoreWxConfigService {
         vo.setShowCart(store.getShowCart());
         vo.setOrderBtnText(store.getOrderBtnText());
         vo.setEnablePay(store.getEnablePay());
+        vo.setEnableRecharge(store.getEnableRecharge());
         vo.setHomeTabText(store.getHomeTabText());
         vo.setListBtnText(store.getListBtnText());
         vo.setShowSaleNum(store.getShowSaleNum());

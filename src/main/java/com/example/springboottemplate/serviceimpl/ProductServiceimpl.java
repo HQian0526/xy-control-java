@@ -13,6 +13,7 @@ import com.example.springboottemplate.mapper.StoreMapper;
 import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.ProductService;
 import com.example.springboottemplate.utils.JwtUtil;
+import com.example.springboottemplate.utils.MiniappUiHelper;
 import com.example.springboottemplate.utils.StoreAuthHelper;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
 import com.example.springboottemplate.utils.StoreExpireHelper;
@@ -104,6 +105,7 @@ public class ProductServiceimpl implements ProductService {
         product.setCreatedTime(new Date());
         product.setCreatedBy(username);
         normalizeMemberPrice(product);
+        validatePricingForPay(product, null);
         productMapper.addProduct(product);
         return new Response(200, null, "操作成功");
     }
@@ -193,6 +195,37 @@ public class ProductServiceimpl implements ProductService {
         product.setClearMemberPrice(false);
     }
 
+    /**
+     * 价格、库存已改为选填：接入支付的店铺上架商品仍须有价格，否则用户下单会失败。
+     * 更新时按「请求值优先，缺失取库中原值」判断，避免只改状态时误报。
+     */
+    private void validatePricingForPay(Product product, Product exist) {
+        if (product == null) {
+            return;
+        }
+        String storeIdText = product.getStoreId() != null
+                ? product.getStoreId()
+                : (exist == null ? null : exist.getStoreId());
+        Long storeId = storeAuthHelper.parseStoreId(storeIdText);
+        if (storeId == null) {
+            return;
+        }
+        Store store = storeMapper.selectByStoreId(storeId);
+        if (store == null || !MiniappUiHelper.enablePay(store)) {
+            return;
+        }
+        Integer status = product.getProductStatus() != null
+                ? product.getProductStatus()
+                : (exist == null ? 1 : exist.getProductStatus());
+        boolean onShelf = status == null || status == 1;
+        BigDecimal effectivePrice = product.getPrice() != null
+                ? product.getPrice()
+                : (exist == null ? null : exist.getPrice());
+        if (onShelf && effectivePrice == null) {
+            throw new BusinessException("该店铺已接入支付，商品价格不能为空");
+        }
+    }
+
     @Override
     public Response updateProduct(Product product, HttpServletRequest request) {
         // 1. 从请求头中获取JWT令牌
@@ -203,6 +236,8 @@ public class ProductServiceimpl implements ProductService {
         product.setUpdateBy(username);
         product.setUpdateTime(new Date());
         normalizeMemberPrice(product);
+        Product exist = product.getId() == null ? null : productMapper.selectById(product.getId());
+        validatePricingForPay(product, exist);
         productMapper.updateProduct(product);
         return new Response(200, null, "操作成功");
     }

@@ -39,6 +39,7 @@
         <result property="showCart" column="show_cart"/>
         <result property="orderBtnText" column="order_btn_text"/>
         <result property="enablePay" column="enable_pay"/>
+        <result property="enableRecharge" column="enable_recharge"/>
         <result property="homeTabText" column="home_tab_text"/>
         <result property="listBtnText" column="list_btn_text"/>
         <result property="showSaleNum" column="show_sale_num"/>
@@ -151,6 +152,7 @@
             <if test="showCart != null">show_cart = #{showCart},</if>
             <if test="orderBtnText != null">order_btn_text = #{orderBtnText},</if>
             <if test="enablePay != null">enable_pay = #{enablePay},</if>
+            <if test="enableRecharge != null">enable_recharge = #{enableRecharge},</if>
             <if test="homeTabText != null">home_tab_text = #{homeTabText},</if>
             <if test="listBtnText != null">list_btn_text = #{listBtnText},</if>
             <if test="showSaleNum != null">show_sale_num = #{showSaleNum},</if>

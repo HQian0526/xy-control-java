@@ -171,6 +171,9 @@ public class Store {
     @ApiModelProperty(value = "是否接入支付 0否 1是", required = false)
     private Integer enablePay;
 
+    @ApiModelProperty(value = "是否接入储值 0否 1是", required = false)
+    private Integer enableRecharge;
+
     @ApiModelProperty(value = "底部首页Tab文字", required = false)
     private String homeTabText;
 

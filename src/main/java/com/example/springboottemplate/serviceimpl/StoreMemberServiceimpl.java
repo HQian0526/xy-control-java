@@ -275,7 +275,8 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     public Response lookupCustomer(String phone, Long userId, Long storeId, HttpServletRequest httpRequest) {
         StoreAuthHelper.Operator operator = storeAuthHelper.requireVerifyOperator(httpRequest);
         Long targetStoreId = storeAuthHelper.resolveVerifyStoreId(operator, storeId);
-        assertStoreCanVerify(targetStoreId);
+        // 查询顾客只需要店铺接入支付；储值/核验的额外限制在各自接口校验
+        assertStoreCanPay(targetStoreId);
         if (userId == null && !StringUtils.hasText(phone)) {
             throw new BusinessException("请选择顾客");
         }
@@ -637,7 +638,8 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         return remark.length() > 200 ? remark.substring(0, 200) : remark;
     }
 
-    private void assertStoreCanVerify(Long storeId) {
+    /** 店铺接入支付校验：查询顾客等基础能力只需要这一层 */
+    private void assertStoreCanPay(Long storeId) {
         Store store = storeMapper.selectByStoreId(storeId);
         if (store == null) {
             throw new BusinessException("店铺不存在");
@@ -648,6 +650,16 @@ public class StoreMemberServiceimpl implements StoreMemberService {
         MiniappUiHelper.fillDefaults(store);
         if (!MiniappUiHelper.enablePay(store)) {
             throw new BusinessException("当前店铺未接入支付");
+        }
+    }
+
+    /** 储值/核验校验：在支付之上还要求店铺接入储值 */
+    private void assertStoreCanVerify(Long storeId) {
+        assertStoreCanPay(storeId);
+        Store store = storeMapper.selectByStoreId(storeId);
+        MiniappUiHelper.fillDefaults(store);
+        if (!MiniappUiHelper.enableRecharge(store)) {
+            throw new BusinessException("当前店铺未接入储值");
         }
     }
 

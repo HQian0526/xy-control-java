@@ -33,6 +33,9 @@ public class StoreMiniappUiSaveRequest {
     @ApiModelProperty("是否接入支付 0否 1是")
     private Integer enablePay;
 
+    @ApiModelProperty("是否接入储值 0否 1是（未接入支付时强制关闭）")
+    private Integer enableRecharge;
+
     @ApiModelProperty("底部首页Tab文字")
     private String homeTabText;
 

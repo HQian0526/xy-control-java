@@ -1159,9 +1159,6 @@ public class MallOrderServiceimpl implements MallOrderService {
             if (product.getProductStatus() == null || product.getProductStatus() != 1) {
                 throw new BusinessException("商品已下架: " + product.getProductName());
             }
-            if (product.getPrice() == null || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessException("商品价格异常: " + product.getProductName());
-            }
 
             Long lineStoreId = parseStoreId(product.getStoreId());
             if (lineStoreId != null) {
@@ -1191,6 +1188,15 @@ public class MallOrderServiceimpl implements MallOrderService {
             }
         }
         MiniappUiHelper.fillDefaults(store);
+        // 价格校验：仅在店铺接入支付时需要（未接入支付时价格可为空，按 0 计）
+        if (MiniappUiHelper.enablePay(store)) {
+            for (QuotedLine line : lines) {
+                if (line.product.getPrice() == null
+                        || line.product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BusinessException("商品价格异常: " + line.product.getProductName());
+                }
+            }
+        }
         if (MiniappUiHelper.showStock(store)) {
             for (QuotedLine line : lines) {
                 Integer stock = line.product.getProductNum();
@@ -1299,7 +1305,10 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (useMemberPrice && validMemberPrice(product)) {
             return product.getMemberPrice().setScale(2, RoundingMode.HALF_UP);
         }
-        return product.getPrice().setScale(2, RoundingMode.HALF_UP);
+        // 价格可为空（未接入支付的店铺），按 0 计
+        return product.getPrice() == null
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : product.getPrice().setScale(2, RoundingMode.HALF_UP);
     }
 
     private static boolean validMemberPrice(Product product) {

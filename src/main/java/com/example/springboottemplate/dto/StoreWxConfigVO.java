@@ -52,6 +52,8 @@ public class StoreWxConfigVO {
     private String orderBtnText;
     @ApiModelProperty("是否接入支付 0否 1是")
     private Integer enablePay;
+    @ApiModelProperty("是否接入储值 0否 1是")
+    private Integer enableRecharge;
     @ApiModelProperty("底部首页Tab文字")
     private String homeTabText;
     @ApiModelProperty("逛店列表按钮文字")
