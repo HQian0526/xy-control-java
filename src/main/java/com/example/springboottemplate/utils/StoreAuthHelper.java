@@ -246,12 +246,23 @@ public class StoreAuthHelper {
         return current == null ? null : String.valueOf(current);
     }
 
+    /** 会员余额只在同一店长（商家账号）名下的门店共用。负责人不是店长时不归集。 */
     public Long findMerchantUserId(Long storeId) {
         if (storeId == null) {
             return null;
         }
         Store store = storeMapper.selectByStoreId(storeId);
-        return store == null ? null : store.getUserId();
+        if (store == null || store.getUserId() == null) {
+            return null;
+        }
+        User owner = userMapper.selectById(store.getUserId());
+        if (owner == null || (owner.getDeleted() != null && owner.getDeleted() == 1)) {
+            return null;
+        }
+        if (owner.getIdentityType() == null || owner.getIdentityType() != 2) {
+            return null;
+        }
+        return owner.getId();
     }
 
     public List<OwnedStoreVO> toOwnedStoreVos(List<Store> stores) {

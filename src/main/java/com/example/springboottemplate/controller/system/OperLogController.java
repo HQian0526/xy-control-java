@@ -30,7 +30,7 @@ public class OperLogController {
 
     @GetMapping("/findOperLog")
     @ResponseBody
-    @ApiOperation(value = "查询操作日志", notes = "支持模块/类型/人员/结果/时间范围筛选与分页")
+    @ApiOperation(value = "查询操作日志", notes = "支持模块/类型/人员/来源/结果/时间范围筛选与分页")
     public Response findOperLog(OperLog operLog, Integer pageNum, Integer pageSize) {
         return operLogService.findOperLog(operLog, pageNum, pageSize);
     }

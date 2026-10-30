@@ -7,6 +7,7 @@
         <result property="operModule" column="oper_module"/>
         <result property="operType" column="oper_type"/>
         <result property="operUser" column="oper_user"/>
+        <result property="clientSource" column="client_source"/>
         <result property="ipAddress" column="ip_address"/>
         <result property="ipLocation" column="ip_location"/>
         <result property="operResult" column="oper_result"/>
@@ -25,11 +26,11 @@
 
     <insert id="addOperLog" parameterType="OperLog">
         INSERT INTO oper_log (
-            id, oper_module, oper_type, oper_user, ip_address, ip_location,
+            id, oper_module, oper_type, oper_user, client_source, ip_address, ip_location,
             oper_result, oper_time, remark, request_method, request_uri,
             request_params, response_body, created_time, created_by, deleted
         ) VALUES (
-            #{id}, #{operModule}, #{operType}, #{operUser}, #{ipAddress}, #{ipLocation},
+            #{id}, #{operModule}, #{operType}, #{operUser}, #{clientSource}, #{ipAddress}, #{ipLocation},
             #{operResult}, #{operTime}, #{remark}, #{requestMethod}, #{requestUri},
             #{requestParams}, #{responseBody}, #{createdTime}, #{createdBy}, #{deleted}
         )
@@ -49,6 +50,9 @@
             </if>
             <if test="operUser != null and operUser != ''">
                 AND oper_user LIKE CONCAT('%', #{operUser}, '%')
+            </if>
+            <if test="clientSource != null and clientSource != ''">
+                AND client_source = #{clientSource}
             </if>
             <if test="ipAddress != null and ipAddress != ''">
                 AND ip_address LIKE CONCAT('%', #{ipAddress}, '%')

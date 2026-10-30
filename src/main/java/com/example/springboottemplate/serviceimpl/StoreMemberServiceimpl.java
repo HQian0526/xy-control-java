@@ -506,11 +506,11 @@ public class StoreMemberServiceimpl implements StoreMemberService {
     }
 
     @Override
-    public int markStoreSettled(Long storeId, Date settleTime, String settleBy) {
+    public int markStoreSettled(Long storeId, Date settleTime, String settleBy, String platformMchId) {
         if (storeId == null) {
             return 0;
         }
-        return storeMemberRechargeMapper.markStoreSettled(storeId, settleTime, settleBy);
+        return storeMemberRechargeMapper.markStoreSettled(storeId, settleTime, settleBy, platformMchId);
     }
 
     private void creditAndJoin(Long storeId, Long userId, BigDecimal amount, Date now) {

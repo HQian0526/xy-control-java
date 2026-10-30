@@ -160,6 +160,31 @@ public class WxTenantResolver {
                 .build();
     }
 
+    /** 钱是否进了管理员商户号。空商户号按历史订单视为平台代收；填了且不是平台商户号的，视为商家自收。 */
+    public boolean isPlatformHeldMch(String mchId) {
+        if (!StringUtils.hasText(mchId)) {
+            return true;
+        }
+        String platformMch = platformMchId();
+        return platformMch != null && platformMch.equals(mchId.trim());
+    }
+
+    public String platformMchId() {
+        return trimToNull(wxPayProperties.getMchId());
+    }
+
+    /** 店铺已启用且支付材料齐全，收款进商家自己的商户号。 */
+    public boolean storeUsesOwnMch(Long storeId) {
+        if (storeId == null) {
+            return false;
+        }
+        StoreWxConfig cfg = storeWxConfigMapper.selectByStoreId(storeId);
+        if (cfg == null || cfg.getEnabled() == null || cfg.getEnabled() != 1) {
+            return false;
+        }
+        return fromConfig(cfg).payReady();
+    }
+
     public String defaultNotifyUrl(Long storeId) {
         return appendStoreId(wxPayProperties.getNotifyUrl(), storeId);
     }

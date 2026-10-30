@@ -34,6 +34,7 @@ import com.example.springboottemplate.mapper.system.UserMapper;
 import com.example.springboottemplate.service.MallCouponService;
 import com.example.springboottemplate.service.MallOrderService;
 import com.example.springboottemplate.service.MallPromoService;
+import com.example.springboottemplate.service.StoreBalanceService;
 import com.example.springboottemplate.service.StoreBlacklistService;
 import com.example.springboottemplate.service.StoreMemberService;
 import com.example.springboottemplate.service.wx.MallOrderTimeoutService;
@@ -121,6 +122,8 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Autowired
     @Lazy
     private StoreMemberService storeMemberService;
+    @Autowired
+    private StoreBalanceService storeBalanceService;
 
     @Override
     public Response checkoutAndPay(MallCheckoutRequest request, HttpServletRequest httpRequest) {
@@ -476,18 +479,20 @@ public class MallOrderServiceimpl implements MallOrderService {
     @Override
     public Response settlementSummary(Long storeId, HttpServletRequest httpRequest) {
         Store store = requireMerchantOrAdminStore(storeId, httpRequest);
-        LocalDate today = LocalDate.now(SHANGHAI);
-        MallSettlementSummary summary = mallOrderMapper.sumSettlementSummary(
-                store.getStoreId(), toDate(today), toDate(today.plusDays(1)));
+        MallSettlementSummary summary = loadStoreSettlementSummary(store.getStoreId());
         if (summary == null) {
             summary = new MallSettlementSummary();
         }
+        boolean platformCollect = !wxTenantResolver.storeUsesOwnMch(store.getStoreId());
         summary.setPendingAmount(money(summary.getPendingAmount()));
+        summary.setMonthSales(money(summary.getMonthSales()));
         summary.setTodayIncome(money(summary.getTodayIncome()));
         Map<String, Object> data = new HashMap<>();
         data.put("storeId", String.valueOf(store.getStoreId()));
         data.put("storeName", store.getStoreName());
-        data.put("pendingAmount", summary.getPendingAmount());
+        data.put("platformCollect", platformCollect);
+        data.put("pendingAmount", platformCollect ? summary.getPendingAmount() : BigDecimal.ZERO);
+        data.put("monthSales", summary.getMonthSales());
         data.put("todayIncome", summary.getTodayIncome());
         return Response.success(data);
     }
@@ -503,7 +508,8 @@ public class MallOrderServiceimpl implements MallOrderService {
         List<MallPendingSettlementStore> list = mallOrderMapper.selectPendingSettlementStores(
                 storeId,
                 StringUtils.hasText(storeName) ? storeName.trim() : null,
-                statusFilter);
+                statusFilter,
+                wxTenantResolver.platformMchId());
         if (list == null) {
             list = Collections.emptyList();
         }
@@ -512,9 +518,14 @@ public class MallOrderServiceimpl implements MallOrderService {
             if (row.getOrderCount() == null) {
                 row.setOrderCount(0);
             }
-            boolean pending = row.getPendingAmount() != null
-                    && row.getPendingAmount().compareTo(BigDecimal.ZERO) > 0;
-            row.setStatus(pending ? "待结算" : "已结算");
+            BigDecimal amount = row.getPendingAmount() == null ? BigDecimal.ZERO : row.getPendingAmount();
+            if (amount.compareTo(BigDecimal.ZERO) > 0) {
+                row.setStatus("待结算");
+            } else if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                row.setStatus("余额为负");
+            } else {
+                row.setStatus("已结算");
+            }
         }
         PageInfo<MallPendingSettlementStore> pageInfo = new PageInfo<>(list);
         Map<String, Object> data = new HashMap<>();
@@ -536,19 +547,36 @@ public class MallOrderServiceimpl implements MallOrderService {
         if (store == null || (store.getDeleted() != null && store.getDeleted() == 1)) {
             throw new BusinessException("未找到店铺信息");
         }
+        String platformMchId = wxTenantResolver.platformMchId();
+        MallSettlementSummary summary = loadStoreSettlementSummary(store.getStoreId());
+        BigDecimal pending = summary == null || summary.getPendingAmount() == null
+                ? BigDecimal.ZERO : summary.getPendingAmount();
+        if (pending.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("店铺余额为负，需等后续收款抵扣后再结算");
+        }
+        if (pending.compareTo(BigDecimal.ZERO) == 0) {
+            throw new BusinessException("该店铺暂无店铺余额可结算");
+        }
         Date now = new Date();
         String settleBy = StringUtils.hasText(operator.getUsername())
                 ? operator.getUsername()
                 : String.valueOf(operator.getUserId());
-        int updated = mallOrderMapper.markStoreSettled(store.getStoreId(), now, settleBy);
-        int rechargeUpdated = storeMemberService.markStoreSettled(store.getStoreId(), now, settleBy);
-        if (updated + rechargeUpdated <= 0) {
-            throw new BusinessException("该店铺暂无待结算订单");
+        int updated = mallOrderMapper.markStoreSettled(store.getStoreId(), now, settleBy, platformMchId);
+        int rechargeUpdated = storeMemberService.markStoreSettled(store.getStoreId(), now, settleBy, platformMchId);
+        int balanceUpdated = storeBalanceService.markStoreSettled(store.getStoreId(), now, settleBy);
+        int adjustUpdated = storeBalanceService.markAdjustSettled(store.getStoreId(), now, settleBy);
+        if (updated + rechargeUpdated + balanceUpdated + adjustUpdated <= 0) {
+            throw new BusinessException("该店铺暂无店铺余额可结算");
+        }
+        BigDecimal settled = mallOrderMapper.sumSettledBatch(store.getStoreId(), now);
+        if (settled == null || settled.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("店铺余额已变化，请刷新后重试");
         }
         Map<String, Object> data = new HashMap<>();
         data.put("storeId", String.valueOf(store.getStoreId()));
         data.put("storeName", store.getStoreName());
-        data.put("settledOrderCount", updated + rechargeUpdated);
+        data.put("settledAmount", money(settled));
+        data.put("settledOrderCount", updated + rechargeUpdated + balanceUpdated);
         data.put("status", "已结算");
         return Response.success(data);
     }
@@ -794,6 +822,8 @@ public class MallOrderServiceimpl implements MallOrderService {
                 String outTradeNo = transaction.getOutTradeNo();
                 if (StringUtils.hasText(outTradeNo) && outTradeNo.startsWith("S")) {
                     storeMemberService.applyRechargePaid(outTradeNo, transaction.getTransactionId());
+                } else if (StringUtils.hasText(outTradeNo) && outTradeNo.startsWith("B")) {
+                    storeBalanceService.applyPaid(outTradeNo, transaction.getTransactionId());
                 } else {
                     markOrderPaid(outTradeNo, transaction.getTransactionId(), new Date());
                 }
@@ -862,6 +892,7 @@ public class MallOrderServiceimpl implements MallOrderService {
         }
 
         String reason = StringUtils.hasText(request.getReason()) ? request.getReason().trim() : "商家协商退款";
+        assertPlatformRefundBalance(order, refundFen);
         String outRefundNo = generateRefundNo();
 
         int locked = mallOrderMapper.markRefunding(order.getOrderNo(), refundFen, outRefundNo, reason, operator);
@@ -886,9 +917,13 @@ public class MallOrderServiceimpl implements MallOrderService {
             return Response.success(data);
         }
 
+        WxTenantContext refundTenant = wxTenantResolver.byOrder(order);
+        if (!wxTenantResolver.isPlatformHeldMch(order.getMchId()) && refundTenant.isPlatform()) {
+            throw new BusinessException("商家商户号配置已失效，无法退款");
+        }
         try {
             Refund refund = wxPayClientService.createRefund(
-                    wxTenantResolver.byOrder(order),
+                    refundTenant,
                     order.getOrderNo(), outRefundNo, order.getPayAmountFen(), refundFen, reason);
             Status status = refund.getStatus();
             String wxRefundId = refund.getRefundId();
@@ -897,7 +932,7 @@ public class MallOrderServiceimpl implements MallOrderService {
                 applyRefundSuccess(order.getOrderNo(), outRefundNo, wxRefundId, refundFen, new Date(), false);
             } else if (status == Status.CLOSED || status == Status.ABNORMAL) {
                 mallOrderMapper.markRefundFailed(order.getOrderNo(), outRefundNo);
-                throw new BusinessException("微信退款未成功: " + status);
+                throw new BusinessException("退款未成功，请确认商户号余额充足后重试");
             }
             // PROCESSING：保持退款中，等回调
 
@@ -994,6 +1029,12 @@ public class MallOrderServiceimpl implements MallOrderService {
             BigDecimal refundYuan = BigDecimal.valueOf(refundFen).movePointLeft(2);
             storeMemberService.credit(before.getStoreId(), before.getUserId(), refundYuan);
         }
+        if (before.getPayChannel() != null && before.getPayChannel() == 1
+                && wxTenantResolver.isPlatformHeldMch(before.getMchId())
+                && before.getSettleStatus() != null && before.getSettleStatus() == 1) {
+            storeBalanceService.addSettledRefundClawback(
+                    before.getStoreId(), outRefundNo, before.getOrderNo(), refundFen);
+        }
         // 全额退款成功后回滚库存/销量
         if (willFull) {
             restoreStock(before);
@@ -1017,6 +1058,35 @@ public class MallOrderServiceimpl implements MallOrderService {
             product.setSaleNum(Math.max(0, sale - qty));
             product.setUpdateTime(now);
             productMapper.updateProduct(product);
+        }
+    }
+
+    private MallSettlementSummary loadStoreSettlementSummary(Long storeId) {
+        LocalDate today = LocalDate.now(SHANGHAI);
+        LocalDate monthStart = today.withDayOfMonth(1);
+        return mallOrderMapper.sumSettlementSummary(
+                storeId,
+                toDate(today),
+                toDate(today.plusDays(1)),
+                toDate(monthStart),
+                toDate(monthStart.plusMonths(1)),
+                wxTenantResolver.platformMchId());
+    }
+
+    /** 平台代收的微信支付：店铺余额不少于本次退款才从管理员商户号退。余额支付不走这里。 */
+    private void assertPlatformRefundBalance(MallOrder order, int refundFen) {
+        if (order.getPayChannel() == null || order.getPayChannel() != 1) {
+            return;
+        }
+        if (!wxTenantResolver.isPlatformHeldMch(order.getMchId())) {
+            return;
+        }
+        MallSettlementSummary summary = loadStoreSettlementSummary(order.getStoreId());
+        BigDecimal pending = summary == null || summary.getPendingAmount() == null
+                ? BigDecimal.ZERO : summary.getPendingAmount();
+        BigDecimal refundYuan = BigDecimal.valueOf(refundFen).movePointLeft(2);
+        if (pending.compareTo(refundYuan) < 0) {
+            throw new BusinessException("店铺余额不足，请储值保证店铺余额充足");
         }
     }
 

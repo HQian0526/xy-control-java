@@ -96,6 +96,12 @@
           and store_id = #{storeId}
           and ifnull(settle_status, 0) = 0
           and pay_status = 1
+          and (
+              mch_id is null or mch_id = ''
+              <if test="platformMchId != null and platformMchId != ''">
+                  or mch_id = #{platformMchId}
+              </if>
+          )
     </update>
 
     <update id="updateWxShippingSync">

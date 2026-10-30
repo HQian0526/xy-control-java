@@ -114,6 +114,13 @@ public class StoreServiceimpl implements StoreService {
         String username = claims.getSubject();
         Store exist = findById(store.getId());
         MiniappUiHelper.fillDefaults(exist);
+        if (store.getHomeNotice() != null) {
+            String homeNotice = store.getHomeNotice().trim().replaceAll("\\s+", " ");
+            if (homeNotice.length() > 200) {
+                return Response.fail(400, "首页公告不能超过200个字符");
+            }
+            store.setHomeNotice(homeNotice);
+        }
         if (store.getDeliveryFee() != null) {
             if (!MiniappUiHelper.showDeliveryFee(exist)) {
                 store.setDeliveryFee(null);

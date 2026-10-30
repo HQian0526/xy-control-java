@@ -3,6 +3,7 @@ package com.example.springboottemplate.aspect;
 import com.example.springboottemplate.annotation.OperLog;
 import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.service.system.OperLogRecordService;
+import com.example.springboottemplate.utils.ClientSourceHelper;
 import com.example.springboottemplate.utils.IpUtils;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.OperLogPayloadHelper;
@@ -105,6 +106,7 @@ public class OperLogAspect {
                         .operModule(anno.module())
                         .operType(anno.type())
                         .operUser(operUser)
+                        .clientSource(ClientSourceHelper.resolve(request))
                         .ipAddress(ip)
                         .ipLocation(IpUtils.resolveLocation(ip))
                         .operResult(operResult)

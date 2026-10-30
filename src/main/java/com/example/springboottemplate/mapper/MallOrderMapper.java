@@ -78,14 +78,22 @@ public interface MallOrderMapper extends BaseMapper<MallOrder> {
     com.example.springboottemplate.dto.mall.MallSettlementSummary sumSettlementSummary(
             @Param("storeId") Long storeId,
             @Param("startTime") java.util.Date startTime,
-            @Param("endTime") java.util.Date endTime);
+            @Param("endTime") java.util.Date endTime,
+            @Param("monthStart") java.util.Date monthStart,
+            @Param("monthEnd") java.util.Date monthEnd,
+            @Param("platformMchId") String platformMchId);
 
     java.util.List<com.example.springboottemplate.dto.mall.MallPendingSettlementStore> selectPendingSettlementStores(
             @Param("storeId") Long storeId,
             @Param("storeName") String storeName,
-            @Param("settleStatus") String settleStatus);
+            @Param("settleStatus") String settleStatus,
+            @Param("platformMchId") String platformMchId);
 
     int markStoreSettled(@Param("storeId") Long storeId,
                          @Param("settleTime") java.util.Date settleTime,
-                         @Param("settleBy") String settleBy);
+                         @Param("settleBy") String settleBy,
+                         @Param("platformMchId") String platformMchId);
+
+    java.math.BigDecimal sumSettledBatch(@Param("storeId") Long storeId,
+                                         @Param("settleTime") java.util.Date settleTime);
 }

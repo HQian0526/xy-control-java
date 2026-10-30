@@ -220,9 +220,9 @@ public class WxPayClientService {
         try {
             return clients.refundService().create(request);
         } catch (ServiceException e) {
-            throw new BusinessException("微信退款失败: " + e.getErrorMessage());
+            throw new BusinessException(refundFailMessage(tenant, e));
         } catch (Exception e) {
-            throw new BusinessException("微信退款失败: " + e.getMessage(), e);
+            throw new BusinessException("退款失败：" + e.getMessage(), e);
         }
     }
 
@@ -254,6 +254,24 @@ public class WxPayClientService {
             tenant = wxTenantResolver.platform();
         }
         return wxPayClientFactory.clients(tenant).notificationParser();
+    }
+
+    private static String refundFailMessage(WxTenantContext tenant, ServiceException e) {
+        String code = e.getErrorCode() == null ? "" : e.getErrorCode();
+        String detail = e.getErrorMessage() == null ? "" : e.getErrorMessage();
+        if ("NOT_ENOUGH".equals(code) || detail.contains("余额不足") || detail.contains("NOT_ENOUGH")) {
+            if (tenant != null && tenant.isPlatform()) {
+                return "平台商户号余额不足，退款失败。请店长先储值，保证店铺余额充足后再试";
+            }
+            return "商户号余额不足，退款失败，请先给商户号充值后再试";
+        }
+        if ("USER_ACCOUNT_ABNORMAL".equals(code)) {
+            return "用户账户异常，退款失败，请稍后重试";
+        }
+        if (StringUtils.hasText(detail)) {
+            return "退款失败：" + detail;
+        }
+        return "退款失败，请稍后重试";
     }
 
     private static String truncate(String text, int max) {

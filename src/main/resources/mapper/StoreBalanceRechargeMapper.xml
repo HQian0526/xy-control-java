@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreBalanceRechargeMapper">
+    <resultMap id="storeBalanceRechargeResultMap" type="StoreBalanceRecharge">
+        <id property="id" column="id"/>
+        <result property="rechargeNo" column="recharge_no"/>
+        <result property="storeId" column="store_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="openid" column="openid"/>
+        <result property="appId" column="app_id"/>
+        <result property="mchId" column="mch_id"/>
+        <result property="amount" column="amount"/>
+        <result property="amountFen" column="amount_fen"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="prepayId" column="prepay_id"/>
+        <result property="transactionId" column="transaction_id"/>
+        <result property="paidTime" column="paid_time"/>
+        <result property="settleStatus" column="settle_status"/>
+        <result property="settleTime" column="settle_time"/>
+        <result property="settleBy" column="settle_by"/>
+        <result property="wxShippingStatus" column="wx_shipping_status"/>
+        <result property="wxShippingErrcode" column="wx_shipping_errcode"/>
+        <result property="wxShippingErrmsg" column="wx_shipping_errmsg"/>
+        <result property="wxShippingRetry" column="wx_shipping_retry"/>
+        <result property="wxShippingTime" column="wx_shipping_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <insert id="addRecharge" parameterType="StoreBalanceRecharge">
+        insert into store_balance_recharge (
+            id, recharge_no, store_id, user_id, openid, app_id, mch_id,
+            amount, amount_fen, pay_status, created_by, created_time, deleted
+        ) values (
+            #{id}, #{rechargeNo}, #{storeId}, #{userId}, #{openid}, #{appId}, #{mchId},
+            #{amount}, #{amountFen}, #{payStatus}, #{createdBy}, #{createdTime}, #{deleted}
+        )
+    </insert>
+
+    <select id="selectByRechargeNo" resultMap="storeBalanceRechargeResultMap">
+        select * from store_balance_recharge
+        where recharge_no = #{rechargeNo} and deleted = 0
+        limit 1
+    </select>
+
+    <update id="markPaid">
+        update store_balance_recharge
+        set pay_status = 1,
+            transaction_id = #{transactionId},
+            paid_time = #{paidTime},
+            update_time = #{paidTime}
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+          and pay_status = 0
+    </update>
+
+    <update id="updatePrepayId">
+        update store_balance_recharge
+        set prepay_id = #{prepayId},
+            update_time = now()
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+    </update>
+
+    <update id="markStoreSettled">
+        update store_balance_recharge
+        set settle_status = 1,
+            settle_time = #{settleTime},
+            settle_by = #{settleBy},
+            update_time = #{settleTime}
+        where deleted = 0
+          and store_id = #{storeId}
+          and ifnull(settle_status, 0) = 0
+          and pay_status = 1
+    </update>
+
+    <update id="updateWxShippingSync">
+        update store_balance_recharge
+        set wx_shipping_status = #{status},
+            wx_shipping_errcode = #{errcode},
+            wx_shipping_errmsg = #{errmsg},
+            wx_shipping_retry = #{retry},
+            wx_shipping_time = #{shippingTime},
+            update_time = now()
+        where recharge_no = #{rechargeNo}
+          and deleted = 0
+    </update>
+
+    <select id="selectPendingWxShipping" resultMap="storeBalanceRechargeResultMap">
+        select * from store_balance_recharge
+        where deleted = 0
+          and pay_status = 1
+          and (wx_shipping_status is null or wx_shipping_status in (0, 2))
+          and ifnull(wx_shipping_retry, 0) &lt; #{maxRetry}
+        order by paid_time asc, id asc
+        limit #{limit}
+    </select>
+</mapper>

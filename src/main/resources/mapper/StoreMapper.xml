@@ -47,6 +47,7 @@
         <result property="intro" column="intro"/>
         <result property="contactPhone" column="contact_phone"/>
         <result property="activityNotice" column="activity_notice"/>
+        <result property="homeNotice" column="home_notice"/>
         <result property="showHours" column="show_hours"/>
         <result property="showActivity" column="show_activity"/>
         <result property="showContact" column="show_contact"/>
@@ -160,6 +161,7 @@
             <if test="intro != null">intro = #{intro},</if>
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
             <if test="activityNotice != null">activity_notice = #{activityNotice},</if>
+            <if test="homeNotice != null">home_notice = #{homeNotice},</if>
             <if test="showHours != null">show_hours = #{showHours},</if>
             <if test="showActivity != null">show_activity = #{showActivity},</if>
             <if test="showContact != null">show_contact = #{showContact},</if>

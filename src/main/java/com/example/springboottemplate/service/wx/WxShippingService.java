@@ -3,9 +3,11 @@ package com.example.springboottemplate.service.wx;
 import com.example.springboottemplate.config.WxPayProperties;
 import com.example.springboottemplate.entity.MallOrder;
 import com.example.springboottemplate.entity.MallOrderItem;
+import com.example.springboottemplate.entity.StoreBalanceRecharge;
 import com.example.springboottemplate.entity.StoreMemberRecharge;
 import com.example.springboottemplate.mapper.MallOrderItemMapper;
 import com.example.springboottemplate.mapper.MallOrderMapper;
+import com.example.springboottemplate.mapper.StoreBalanceRechargeMapper;
 import com.example.springboottemplate.mapper.StoreMemberRechargeMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +64,8 @@ public class WxShippingService {
     @Autowired
     private StoreMemberRechargeMapper storeMemberRechargeMapper;
     @Autowired
+    private StoreBalanceRechargeMapper storeBalanceRechargeMapper;
+    @Autowired
     private WxApiService wxApiService;
     @Autowired
     private WxPayClientService wxPayClientService;
@@ -83,6 +87,15 @@ public class WxShippingService {
             uploadRechargeShipping(rechargeNo);
         } catch (Exception e) {
             log.error("微信储值发货异步任务异常 rechargeNo={}", rechargeNo, e);
+        }
+    }
+
+    @Async("wxShippingExecutor")
+    public void uploadStoreBalanceShippingAsync(String rechargeNo) {
+        try {
+            uploadStoreBalanceShipping(rechargeNo);
+        } catch (Exception e) {
+            log.error("微信店铺余额储值发货异步任务异常 rechargeNo={}", rechargeNo, e);
         }
     }
 
@@ -108,6 +121,15 @@ public class WxShippingService {
                 uploadRechargeShipping(recharge.getRechargeNo());
             } catch (Exception e) {
                 log.error("微信储值发货重试异常 rechargeNo={}", recharge.getRechargeNo(), e);
+            }
+        }
+        List<StoreBalanceRecharge> pendingBalances =
+                storeBalanceRechargeMapper.selectPendingWxShipping(shipping.getMaxRetry(), batch);
+        for (StoreBalanceRecharge recharge : pendingBalances) {
+            try {
+                uploadStoreBalanceShipping(recharge.getRechargeNo());
+            } catch (Exception e) {
+                log.error("微信店铺余额储值发货重试异常 rechargeNo={}", recharge.getRechargeNo(), e);
             }
         }
     }
@@ -166,6 +188,32 @@ public class WxShippingService {
                 buildRechargeItemDesc(recharge.getAmount()),
                 retry,
                 result -> storeMemberRechargeMapper.updateWxShippingSync(
+                        recharge.getRechargeNo(), result.status, result.errcode, result.errmsg,
+                        result.retry, result.shippingTime)
+        ));
+    }
+
+    public void uploadStoreBalanceShipping(String rechargeNo) {
+        if (!StringUtils.hasText(rechargeNo) || !isShippingEnabled()) {
+            return;
+        }
+        StoreBalanceRecharge recharge = storeBalanceRechargeMapper.selectByRechargeNo(rechargeNo.trim());
+        if (recharge == null || recharge.getPayStatus() == null || recharge.getPayStatus() != 1) {
+            return;
+        }
+        if (recharge.getWxShippingStatus() != null && recharge.getWxShippingStatus() == STATUS_SUCCESS) {
+            return;
+        }
+        int retry = recharge.getWxShippingRetry() == null ? 0 : recharge.getWxShippingRetry();
+        doUpload(new UploadCommand(
+                recharge.getRechargeNo(),
+                recharge.getOpenid(),
+                recharge.getAppId(),
+                recharge.getMchId(),
+                LOGISTICS_VIRTUAL,
+                "店铺余额储值" + (recharge.getAmount() == null ? "" : recharge.getAmount().setScale(2, RoundingMode.HALF_UP).toPlainString() + "元"),
+                retry,
+                result -> storeBalanceRechargeMapper.updateWxShippingSync(
                         recharge.getRechargeNo(), result.status, result.errcode, result.errmsg,
                         result.retry, result.shippingTime)
         ));

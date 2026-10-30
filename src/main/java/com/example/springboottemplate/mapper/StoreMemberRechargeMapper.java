@@ -27,7 +27,8 @@ public interface StoreMemberRechargeMapper extends BaseMapper<StoreMemberRecharg
 
     int markStoreSettled(@Param("storeId") Long storeId,
                          @Param("settleTime") Date settleTime,
-                         @Param("settleBy") String settleBy);
+                         @Param("settleBy") String settleBy,
+                         @Param("platformMchId") String platformMchId);
 
     int updateWxShippingSync(@Param("rechargeNo") String rechargeNo,
                              @Param("status") Integer status,

@@ -38,6 +38,9 @@ public class OperLog {
     @ApiModelProperty(value = "操作人员")
     private String operUser;
 
+    @ApiModelProperty(value = "操作来源 pc=PC管理端 miniapp=小程序")
+    private String clientSource;
+
     @ApiModelProperty(value = "IP地址")
     private String ipAddress;
 

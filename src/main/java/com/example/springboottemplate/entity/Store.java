@@ -195,6 +195,9 @@ public class Store {
     @ApiModelProperty(value = "店铺活动公告", required = false)
     private String activityNotice;
 
+    @ApiModelProperty(value = "小程序首页滚动公告", required = false)
+    private String homeNotice;
+
     @ApiModelProperty(value = "本店介绍展示营业时间 0否 1是", required = false)
     private Integer showHours;
 

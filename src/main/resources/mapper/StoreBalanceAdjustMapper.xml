@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.springboottemplate.mapper.StoreBalanceAdjustMapper">
+    <insert id="insertIgnore">
+        insert ignore into store_balance_adjust (
+            id, store_id, amount, biz_no, order_no, remark, settle_status, deleted, created_time
+        ) values (
+            #{id}, #{storeId}, #{amount}, #{bizNo}, #{orderNo}, #{remark}, 0, 0, #{createdTime}
+        )
+    </insert>
+
+    <update id="markStoreSettled">
+        update store_balance_adjust
+        set settle_status = 1,
+            settle_time = #{settleTime},
+            settle_by = #{settleBy}
+        where deleted = 0
+          and store_id = #{storeId}
+          and ifnull(settle_status, 0) = 0
+    </update>
+</mapper>

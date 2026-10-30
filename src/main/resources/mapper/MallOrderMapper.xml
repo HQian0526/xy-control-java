@@ -327,6 +327,26 @@
               </if>
             union all
             select
+                concat(recharge_no, '-bal') as id,
+                'income' as type,
+                '店铺储值' as title,
+                recharge_no as orderNo,
+                amount as amount,
+                date_format(paid_time, '%Y-%m-%d %H:%i:%s') as time,
+                '已到账' as status
+            from store_balance_recharge
+            where deleted = 0
+              and store_id = #{storeId}
+              and paid_time is not null
+              and pay_status = 1
+              <if test="startTime != null">
+                  and paid_time &gt;= #{startTime}
+              </if>
+              <if test="endTime != null">
+                  and paid_time &lt; #{endTime}
+              </if>
+            union all
+            select
                 concat(order_no, '-out') as id,
                 'expense' as type,
                 '订单退款' as title,
@@ -387,6 +407,19 @@
                   <if test="endTime != null">
                       and paid_time &lt; #{endTime}
                   </if>
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_balance_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status = 1
+                  <if test="startTime != null">
+                      and paid_time &gt;= #{startTime}
+                  </if>
+                  <if test="endTime != null">
+                      and paid_time &lt; #{endTime}
+                  </if>
             ), 0) as income,
             ifnull((
                 select sum(refund_amount)
@@ -416,6 +449,12 @@
                   and ifnull(pay_channel, 1) = 1
                   and ifnull(settle_status, 0) = 0
                   and (pay_amount - ifnull(refund_amount, 0)) &gt; 0
+                  and (
+                      mch_id is null or mch_id = ''
+                      <if test="platformMchId != null and platformMchId != ''">
+                          or mch_id = #{platformMchId}
+                      </if>
+                  )
             ), 0) + ifnull((
                 select sum(amount)
                 from store_member_recharge
@@ -425,6 +464,27 @@
                   and pay_status = 1
                   and ifnull(settle_status, 0) = 0
                   and amount &gt; 0
+                  and (
+                      mch_id is null or mch_id = ''
+                      <if test="platformMchId != null and platformMchId != ''">
+                          or mch_id = #{platformMchId}
+                      </if>
+                  )
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_balance_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and pay_status = 1
+                  and ifnull(settle_status, 0) = 0
+                  and amount &gt; 0
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_balance_adjust
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and ifnull(settle_status, 0) = 0
             ), 0) as pendingAmount,
             ifnull((
                 select sum(pay_amount - ifnull(refund_amount, 0))
@@ -445,7 +505,27 @@
                   and paid_time &gt;= #{startTime}
                   and paid_time &lt; #{endTime}
                   and pay_status = 1
-            ), 0) as todayIncome
+            ), 0) as todayIncome,
+            ifnull((
+                select sum(pay_amount - ifnull(refund_amount, 0))
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and paid_time &gt;= #{monthStart}
+                  and paid_time &lt; #{monthEnd}
+                  and pay_status in (1, 3, 4, 5)
+                  and ifnull(pay_channel, 1) = 1
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_member_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and paid_time is not null
+                  and paid_time &gt;= #{monthStart}
+                  and paid_time &lt; #{monthEnd}
+                  and pay_status = 1
+            ), 0) as monthSales
     </select>
 
     <select id="selectPendingSettlementStores"
@@ -466,12 +546,20 @@
                          and o.pay_status in (1, 4)
                          and ifnull(o.pay_channel, 1) = 1
                          and (o.pay_amount - ifnull(o.refund_amount, 0)) &gt; 0
+                         and (o.mch_id is null or o.mch_id = ''
+                              <if test="platformMchId != null and platformMchId != ''">
+                                  or o.mch_id = #{platformMchId}
+                              </if>)
                     then 1 else 0 end), 0) as orderCount,
                 ifnull(sum(case
                     when ifnull(o.settle_status, 0) = 0
                          and o.pay_status in (1, 4)
                          and ifnull(o.pay_channel, 1) = 1
                          and (o.pay_amount - ifnull(o.refund_amount, 0)) &gt; 0
+                         and (o.mch_id is null or o.mch_id = ''
+                              <if test="platformMchId != null and platformMchId != ''">
+                                  or o.mch_id = #{platformMchId}
+                              </if>)
                     then o.pay_amount - ifnull(o.refund_amount, 0)
                     else 0 end), 0) as pendingAmount,
                 date_format(max(case
@@ -499,9 +587,17 @@
                 s.store_name as storeName,
                 ifnull(sum(case
                     when ifnull(r.settle_status, 0) = 0 and r.pay_status = 1
+                         and (r.mch_id is null or r.mch_id = ''
+                              <if test="platformMchId != null and platformMchId != ''">
+                                  or r.mch_id = #{platformMchId}
+                              </if>)
                     then 1 else 0 end), 0) as orderCount,
                 ifnull(sum(case
                     when ifnull(r.settle_status, 0) = 0 and r.pay_status = 1
+                         and (r.mch_id is null or r.mch_id = ''
+                              <if test="platformMchId != null and platformMchId != ''">
+                                  or r.mch_id = #{platformMchId}
+                              </if>)
                     then r.amount else 0 end), 0) as pendingAmount,
                 date_format(max(case when r.pay_status = 1 then r.paid_time end), '%Y-%m-%d %H:%i:%s') as lastPaidTime,
                 date_format(max(case when r.settle_status = 1 then r.settle_time end), '%Y-%m-%d %H:%i:%s') as lastSettleTime
@@ -517,16 +613,60 @@
                   and s.store_name like concat('%', #{storeName}, '%')
               </if>
             group by r.store_id, s.store_name
+            union all
+            select
+                b.store_id as storeId,
+                s.store_name as storeName,
+                ifnull(sum(case
+                    when ifnull(b.settle_status, 0) = 0 and b.pay_status = 1
+                    then 1 else 0 end), 0) as orderCount,
+                ifnull(sum(case
+                    when ifnull(b.settle_status, 0) = 0 and b.pay_status = 1
+                    then b.amount else 0 end), 0) as pendingAmount,
+                date_format(max(case when b.pay_status = 1 then b.paid_time end), '%Y-%m-%d %H:%i:%s') as lastPaidTime,
+                date_format(max(case when b.settle_status = 1 then b.settle_time end), '%Y-%m-%d %H:%i:%s') as lastSettleTime
+            from store_balance_recharge b
+            left join store s on s.store_id = b.store_id and s.deleted = 0
+            where b.deleted = 0
+              and b.paid_time is not null
+              and b.pay_status = 1
+              <if test="storeId != null">
+                  and b.store_id = #{storeId}
+              </if>
+              <if test="storeName != null and storeName != ''">
+                  and s.store_name like concat('%', #{storeName}, '%')
+              </if>
+            group by b.store_id, s.store_name
+            union all
+            select
+                a.store_id as storeId,
+                s.store_name as storeName,
+                0 as orderCount,
+                ifnull(sum(case
+                    when ifnull(a.settle_status, 0) = 0
+                    then a.amount else 0 end), 0) as pendingAmount,
+                null as lastPaidTime,
+                date_format(max(case when a.settle_status = 1 then a.settle_time end), '%Y-%m-%d %H:%i:%s') as lastSettleTime
+            from store_balance_adjust a
+            left join store s on s.store_id = a.store_id and s.deleted = 0
+            where a.deleted = 0
+              <if test="storeId != null">
+                  and a.store_id = #{storeId}
+              </if>
+              <if test="storeName != null and storeName != ''">
+                  and s.store_name like concat('%', #{storeName}, '%')
+              </if>
+            group by a.store_id, s.store_name
             ) u
             group by storeId, storeName
         ) t
         <where>
             <choose>
                 <when test="settleStatus != null and settleStatus == 'settled'">
-                    t.pendingAmount &lt;= 0 and t.lastSettleTime is not null
+                    t.pendingAmount = 0 and t.lastSettleTime is not null
                 </when>
                 <otherwise>
-                    t.pendingAmount &gt; 0
+                    t.pendingAmount &lt;&gt; 0
                 </otherwise>
             </choose>
         </where>
@@ -553,5 +693,45 @@
           and ifnull(settle_status, 0) = 0
           and ifnull(pay_channel, 1) = 1
           and pay_status in (1, 4, 5)
+          and (
+              mch_id is null or mch_id = ''
+              <if test="platformMchId != null and platformMchId != ''">
+                  or mch_id = #{platformMchId}
+              </if>
+          )
     </update>
+
+    <select id="sumSettledBatch" resultType="java.math.BigDecimal">
+        select
+            ifnull((
+                select sum(pay_amount - ifnull(refund_amount, 0))
+                from mall_order
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and settle_time = #{settleTime}
+                  and ifnull(pay_channel, 1) = 1
+                  and pay_status in (1, 4)
+                  and (pay_amount - ifnull(refund_amount, 0)) &gt; 0
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_member_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and settle_time = #{settleTime}
+                  and pay_status = 1
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_balance_recharge
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and settle_time = #{settleTime}
+                  and pay_status = 1
+            ), 0) + ifnull((
+                select sum(amount)
+                from store_balance_adjust
+                where deleted = 0
+                  and store_id = #{storeId}
+                  and settle_time = #{settleTime}
+            ), 0)
+    </select>
 </mapper>

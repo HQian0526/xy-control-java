@@ -42,5 +42,5 @@ public interface StoreMemberService {
 
     int closeExpiredUnpaid(Date expireBefore, int limit);
 
-    int markStoreSettled(Long storeId, Date settleTime, String settleBy);
+    int markStoreSettled(Long storeId, Date settleTime, String settleBy, String platformMchId);
 }

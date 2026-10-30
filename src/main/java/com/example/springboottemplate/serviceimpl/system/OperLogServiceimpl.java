@@ -5,6 +5,7 @@ import com.example.springboottemplate.dto.Response;
 import com.example.springboottemplate.entity.system.OperLog;
 import com.example.springboottemplate.mapper.system.OperLogMapper;
 import com.example.springboottemplate.service.system.OperLogService;
+import com.example.springboottemplate.utils.ClientSourceHelper;
 import com.example.springboottemplate.utils.IpUtils;
 import com.example.springboottemplate.utils.JwtUtil;
 import com.example.springboottemplate.utils.LogicDeleteHelper;
@@ -43,6 +44,9 @@ public class OperLogServiceimpl implements OperLogService {
         }
         if (!StringUtils.hasText(operLog.getOperUser())) {
             operLog.setOperUser(username);
+        }
+        if (!StringUtils.hasText(operLog.getClientSource())) {
+            operLog.setClientSource(ClientSourceHelper.resolve(request));
         }
         if (operLog.getOperResult() == null) {
             operLog.setOperResult(1);

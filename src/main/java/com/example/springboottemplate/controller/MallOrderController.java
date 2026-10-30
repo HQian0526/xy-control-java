@@ -8,6 +8,7 @@ import com.example.springboottemplate.dto.mall.MallRefundRequest;
 import com.example.springboottemplate.dto.mall.MallSettleStoreRequest;
 import com.example.springboottemplate.exception.BusinessException;
 import com.example.springboottemplate.service.MallOrderService;
+import com.example.springboottemplate.service.StoreBalanceService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +31,8 @@ public class MallOrderController {
 
     @Autowired
     private MallOrderService mallOrderService;
+    @Autowired
+    private StoreBalanceService storeBalanceService;
 
     @PostMapping("/checkoutAndPay")
     @ResponseBody
@@ -196,6 +200,57 @@ public class MallOrderController {
             return Response.fail(400, e.getMessage());
         } catch (Exception e) {
             return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/storeBalance/recharge")
+    @ResponseBody
+    @ApiOperation(value = "店长为当前店铺余额储值", notes = "微信支付进管理员商户号，只增加本店余额")
+    @OperLog(module = "商城订单", type = OperTypes.ADD, remark = "店铺余额储值")
+    public Response storeBalanceRecharge(@RequestBody Map<String, Object> body, HttpServletRequest httpRequest) {
+        try {
+            Long storeId = null;
+            Object rawStoreId = body == null ? null : body.get("storeId");
+            if (rawStoreId != null && String.valueOf(rawStoreId).trim().length() > 0) {
+                storeId = Long.valueOf(String.valueOf(rawStoreId).trim());
+            }
+            BigDecimal amount = null;
+            Object rawAmount = body == null ? null : body.get("amount");
+            if (rawAmount != null && String.valueOf(rawAmount).trim().length() > 0) {
+                amount = new BigDecimal(String.valueOf(rawAmount).trim());
+            }
+            return storeBalanceService.recharge(storeId, amount, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("储值失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/storeBalance/query")
+    @ResponseBody
+    @ApiOperation(value = "查询店铺余额储值单")
+    public Response storeBalanceQuery(@RequestParam String rechargeNo, HttpServletRequest httpRequest) {
+        try {
+            return storeBalanceService.query(rechargeNo, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("查询失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/storeBalance/mockConfirm")
+    @ResponseBody
+    @ApiOperation(value = "mock 确认店铺余额储值")
+    public Response storeBalanceMockConfirm(@RequestBody Map<String, String> body, HttpServletRequest httpRequest) {
+        try {
+            String rechargeNo = body == null ? null : body.get("rechargeNo");
+            return storeBalanceService.mockConfirm(rechargeNo, httpRequest);
+        } catch (BusinessException e) {
+            return Response.fail(400, e.getMessage());
+        } catch (Exception e) {
+            return Response.fail("确认失败: " + e.getMessage());
         }
     }
 
